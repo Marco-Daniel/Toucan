@@ -1,0 +1,21 @@
+{
+  "name": "toucan-sidebar-owner-spike",
+  "publisher": "spike",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.100.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "viewsContainers": {
+      "secondarySidebar": [
+        { "id": "toucanSpike", "title": "Toucan Spike", "icon": "$(symbol-color)" },
+        { "id": "otherSpike", "title": "Other Spike", "icon": "$(beaker)" }
+      ]
+    },
+    "views": {
+      "toucanSpike": [ { "type": "webview", "id": "toucanSpike.block", "name": "Toucan Block" } ],
+      "otherSpike": [ { "type": "webview", "id": "otherSpike.view", "name": "Other View" } ],
+      "explorer": [ { "id": "toucanSpike.probe", "name": "Aux Probe", "when": "auxiliaryBarVisible" } ]
+    }
+  }
+}

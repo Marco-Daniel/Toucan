@@ -1,0 +1,25 @@
+{
+  "name": "toucan-spike-webview",
+  "displayName": "Toucan Spike (webview)",
+  "publisher": "toucan-spike",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.100.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "viewsContainers": {
+      "secondarySidebar": [
+        { "id": "toucanAux", "title": "Toucan", "icon": "icon.svg" }
+      ]
+    },
+    "views": {
+      "toucanAux": [
+        { "type": "webview", "id": "toucan.swatch", "name": "Window Colour" }
+      ],
+      "explorer": [
+        { "type": "webview", "id": "toucan.explorerStrip", "name": "Toucan", "initialSize": 1 },
+        { "id": "toucan.tree", "name": "Toucan Tree", "initialSize": 1 }
+      ]
+    }
+  }
+}

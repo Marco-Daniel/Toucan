@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toucan Preset Palette</title>
+<style>
+  :root { --bg:#f4f4f2; --fg:#1f1f1f; --muted:#666; --card:#fff; --line:#ddd; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141414; --fg:#e8e8e8; --muted:#999; --card:#1e1e1e; --line:#333; } }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:32px 16px 48px; background:var(--bg); color:var(--fg);
+         font:14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width:1100px; margin:0 auto; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.lead { color:var(--muted); margin:0 0 24px; max-width:760px; }
+  .legend { display:flex; gap:18px; flex-wrap:wrap; color:var(--muted); font-size:12px; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:14px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .chip { width:36px; height:36px; border-radius:8px; flex:none; }
+  .name { font-weight:600; }
+  .hex { font-family:ui-monospace, Menlo, monospace; color:var(--muted); font-size:12px; }
+  .src { color:var(--muted); font-size:11px; }
+  .label { font-size:11px; color:var(--muted); margin:10px 0 4px; text-transform:uppercase; letter-spacing:.04em; }
+  /* title bar with command center */
+  .titlebar { background:#1f1f1f; border-radius:6px; padding:6px 10px; display:flex; justify-content:center; }
+  .titlebar.light { background:#f8f8f8; border:1px solid #e5e5e5; }
+  .cc { width:78%; height:22px; border-radius:6px; border:1px solid; display:flex; align-items:center;
+        justify-content:center; font-size:12px; gap:6px; }
+  /* status bar */
+  .statusbar { height:22px; border-radius:4px; display:flex; align-items:center; padding:0 8px; gap:10px;
+               font-size:12px; }
+  .statusbar.dark { background:#181818; color:#ccc; border:1px solid #2b2b2b; }
+  .statusbar.light { background:#f8f8f8; color:#3b3b3b; border:1px solid #e5e5e5; }
+  .item { display:flex; align-items:center; gap:5px; }
+  .glyph { width:11px; height:11px; border-radius:1.5px; display:inline-block; }
+  .ratio { margin-left:auto; font-family:ui-monospace, Menlo, monospace; font-size:11px; }
+  .warn { color:#d97706; font-weight:600; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Toucan preset palette</h1>
+  <p class="lead">The 16 presets from decision 0014, each shown as a Command Center background (text black or white, whichever has more WCAG contrast) and as the status bar glyph and repo name on VS Code's Dark Modern and Light Modern status bars. A ⚠ marks a glyph with less than 3:1 contrast against the status bar.</p>
+  <div class="legend"><span>Command Center: background = preset, text derived</span><span>Status bar: glyph + name colored with the preset</span><span>Ratio = glyph vs status bar background</span></div>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+const presets = [
+  ["Beak Red","#f92824","SchemeColor “Toucan”"],
+  ["Berry Red","#a3161a","Darkened from SchemeColor “Toucan”"],
+  ["Beak Orange","#e0620b","Darkened from SchemeColor “Toucan”"],
+  ["Bill Amber","#faa404","ColorsWall 47017"],
+  ["Beak Yellow","#fde246","SchemeColor “Toucan”"],
+  ["Bill Lime","#8a9c05","Darkened from SchemeColor “Lone Toucan”"],
+  ["Jungle Green","#56915e","ColorsWall 7132"],
+  ["Canopy Teal","#14939c","Lightened from ColorsWall 47017"],
+  ["Slate Blue","#2c4a51","ColorsWall 7132"],
+  ["Orchid Purple","#6241bd","SchemeColor “Toucan”"],
+  ["Lilac","#b59ae0","Lightened from SchemeColor “Toucan”"],
+  ["Plum","#70486c","SchemeColor “Lone Toucan”"],
+  ["Tropical Pink","#e8579b","ColorsWall 7132"],
+  ["Blossom Pink","#f5a3c7","Lightened from ColorsWall 7132"],
+  ["Silver","#a7a8b3","Lightened from ColorsWall 47017"],
+  ["Plumage Black","#101316","SchemeColor “Toucan”"],
+];
+const lum = h => { const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255)
+  .map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4); return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]; };
+const contrast = (a,b) => { const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p); return (x+0.05)/(y+0.05); };
+const fgFor = bg => contrast(bg,"#000000") >= contrast(bg,"#ffffff") ? "#000000" : "#ffffff";
+const border = (bg, fg) => fg === "#ffffff" ? "rgba(255,255,255,.25)" : "rgba(0,0,0,.25)";
+const sb = (hex, kind) => {
+  const bgc = kind==="dark" ? "#181818" : "#f8f8f8";
+  const r = contrast(hex, bgc);
+  return `<div class="statusbar ${kind}">
+    <span class="item" style="color:${hex}"><span class="glyph" style="background:${hex}"></span>toucan</span>
+    <span class="item">⎇ main</span>
+    <span class="ratio ${r<3?'warn':''}">${r<3?'⚠ ':''}${r.toFixed(1)}:1</span></div>`;
+};
+document.getElementById("grid").innerHTML = presets.map(([name,hex,src]) => {
+  const fg = fgFor(hex);
+  const cc = `<div class="cc" style="background:${hex};color:${fg};border-color:${border(hex,fg)}">⌕ toucan</div>`;
+  return `<div class="card">
+    <div class="head"><div class="chip" style="background:${hex}"></div>
+      <div><div class="name">${name}</div><div class="hex">${hex} · text ${fg==="#000000"?"black":"white"} (${contrast(hex,fg).toFixed(1)}:1)</div><div class="src">${src}</div></div></div>
+    <div class="label">Command Center</div>
+    <div class="row"><div class="titlebar">${cc}</div><div class="titlebar light">${cc}</div></div>
+    <div class="label">Status bar</div>
+    <div class="row">${sb(hex,"dark")}${sb(hex,"light")}</div>
+  </div>`;
+}).join("");
+</script>
+</body>
+</html>

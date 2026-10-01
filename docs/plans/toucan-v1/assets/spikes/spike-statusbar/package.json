@@ -1,0 +1,8 @@
+{ "name": "toucan-spike-statusbar", "publisher": "spike", "version": "0.0.1",
+  "engines": { "vscode": "^1.90.0" }, "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": { "icons": {
+    "toucan-pill":   { "description": "Toucan wide swatch",  "default": { "fontPath": "./toucan-icons.woff", "fontCharacter": "\\E000" } },
+    "toucan-square": { "description": "Toucan square swatch","default": { "fontPath": "./toucan-icons.woff", "fontCharacter": "\\E001" } },
+    "toucan-bar":    { "description": "Toucan bar",          "default": { "fontPath": "./toucan-icons.woff", "fontCharacter": "\\E002" } }
+  } } }

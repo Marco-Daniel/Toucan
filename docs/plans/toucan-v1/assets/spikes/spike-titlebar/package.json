@@ -1,0 +1,19 @@
+{
+  "name": "toucan-spike-titlebar",
+  "publisher": "spike",
+  "version": "0.0.1",
+  "engines": { "vscode": "^1.138.0" },
+  "main": "./extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "toucanSpike.red", "title": "Toucan red", "icon": "$(circle-large-filled)" },
+      { "command": "toucanSpike.cycle", "title": "Toucan Spike: Cycle color" }
+    ],
+    "menus": {
+      "commandCenter": [ { "command": "toucanSpike.red" } ],
+      "titleBar": [ { "command": "toucanSpike.red" } ],
+      "layoutControl": [ { "command": "toucanSpike.red" } ]
+    }
+  }
+}
