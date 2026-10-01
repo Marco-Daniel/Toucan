@@ -13,6 +13,18 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (F): docs and notices
+- Did:
+  - L28: `THIRD_PARTY_NOTICES.md` with the culori and jsonc-parser MIT licenses and the Codicons CC BY 4.0 attribution. It ships in the VSIX (.vscodeignore) and is in check:vsix's expected list. The icon waits for the Marketplace.
+  - L25: a Commands section in the README, and `dist/extension.cjs` in the development table.
+  - L26: the README says Toucan asks "until you answer", and the offer names `chat.agentsControl.enabled`.
+  - L4: a Settings Sync note recommending `settingsSync.ignoredSettings`.
+  - L18: a note on removing `commandCenter.*` by hand after a crash followed by an uninstall.
+  - Amended 0008: the README says hand-set colors stay until Toucan first applies a color in that profile.
+  - L16: a comment in `writeLikeVsCode` accepting the truncating write of a linked file as VS Code parity. L20: a comment on why the stable document API isn't used (`save()` would save the user's unsaved edits).
+- Verified: all quality commands and check:vsix pass (7 files).
+- Next: the isolated VS Code pass, then replies on all 38 round-1 threads.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (E): literal test expectations
 - Did:
   - L29: config tests assert the issue messages literally.

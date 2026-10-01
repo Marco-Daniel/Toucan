@@ -49,7 +49,7 @@ export class AgentsControlOffer {
     }
 
     const answer = await window.showInformationMessage(
-      "Toucan's color needs the classic search bar. Switch Agents control to badge?",
+      `Toucan's color needs the classic search bar. Set ${AGENTS_CONTROL} to "badge"?`,
       "Switch",
       "Not now",
     );

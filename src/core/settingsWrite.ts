@@ -226,6 +226,15 @@ export class SettingsFileWriter {
  * Writes like VS Code does for user settings: through a symlink in place, a
  * hard-linked file in place (keeping the link), otherwise a temp file next to
  * it renamed over it, keeping its mode.
+ *
+ * The in-place write of a linked file truncates first, so a crash mid-write
+ * can leave it short. VS Code's own write has the same window, and renaming
+ * would replace the link (a symlink) or split it (a hard link), so this
+ * accepts that risk as VS Code parity.
+ *
+ * Why not the stable API (`openTextDocument`, a `WorkspaceEdit`, `save()`)?
+ * `save()` saves the whole buffer, including unsaved edits the user has open
+ * in settings.json, which Toucan must never do.
  */
 async function writeLikeVsCode(file: string, text: string): Promise<void> {
   const link = await lstat(file);

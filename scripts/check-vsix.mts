@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 const EXPECTED = [
   "LICENSE",
   "README.md",
+  "THIRD_PARTY_NOTICES.md",
   "dist/extension.cjs",
   "dist/extension.cjs.map",
   "media/toucan-icons.woff",
