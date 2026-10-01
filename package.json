@@ -153,7 +153,7 @@
           ],
           "enumDescriptions": [
             "Solid repository color.",
-            "Faint repository color with the glyph and name in full color."
+            "Faint repository color with the glyph in full color and the name in the theme's text color."
           ],
           "description": "How strongly the sidebar block is colored."
         },

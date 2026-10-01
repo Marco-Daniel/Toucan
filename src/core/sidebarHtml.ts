@@ -16,8 +16,8 @@ export interface SidebarBlockContent {
  * The block's whole page (0006, 0013): no scripts and a CSP that only allows
  * inline styles, painted in the repo color with the glyph large in the middle
  * and the repo name underneath. `full` is the solid color with the derived
- * foreground; `muted` is a faint fill over the theme with glyph and name in
- * the repo color.
+ * foreground; `muted` is a faint fill over the theme with the glyph in the
+ * repo color and the name in the theme's text color.
  */
 export function sidebarBlockHtml({ name, glyph, colors, style }: SidebarBlockContent): string {
   const muted = style === "muted";
