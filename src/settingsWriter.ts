@@ -1,4 +1,5 @@
-import { ConfigurationTarget, workspace, type LogOutputChannel } from "vscode";
+import { ConfigurationTarget, workspace } from "vscode";
+import type { Log } from "./log.ts";
 import { settingsFiles } from "./core/settingsEdit.ts";
 import { SettingsFileWriter } from "./core/settingsWrite.ts";
 
@@ -10,10 +11,7 @@ export function userValue(key: string): unknown {
 }
 
 /** The settings writer wired to VS Code (0017). Create one and share it: it holds the lock. */
-export function createSettingsWriter(
-  globalStoragePath: string,
-  log: LogOutputChannel,
-): SettingsFileWriter {
+export function createSettingsWriter(globalStoragePath: string, log: Log): SettingsFileWriter {
   return new SettingsFileWriter(settingsFiles(globalStoragePath), {
     view: userValue,
     update: async (key, value) => {
@@ -22,13 +20,7 @@ export function createSettingsWriter(
     // fsPath, not path: on Windows the path is "/c:/…", which realpath can't resolve.
     dirtyFiles: () =>
       workspace.textDocuments.filter((document) => document.isDirty).map((d) => d.uri.fsPath),
-    debug: (message) => {
-      try {
-        log.debug(message);
-      } catch {
-        // The channel can be closed during shutdown.
-      }
-    },
+    debug: (message) => log.debug(message),
   });
 }
 

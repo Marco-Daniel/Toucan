@@ -30,17 +30,22 @@ export interface EditInput {
   desired: Record<string, unknown> | undefined;
 }
 
-/** The setting's value in a settings file's text, or `undefined` when the text doesn't parse. */
-export function settingInText(text: string, key: string): { value: unknown } | undefined {
+/** A settings file's top-level object, or `undefined` when the text doesn't parse as one. */
+function parseSettings(text: string): Record<string, unknown> | undefined {
   const errors: ParseError[] = [];
   const settings = parse(text, errors, { allowTrailingComma: true }) as unknown;
-  return errors.length === 0 && isRecord(settings) ? { value: settings[key] } : undefined;
+  return errors.length === 0 && isRecord(settings) ? settings : undefined;
+}
+
+/** The setting's value in a settings file's text, or `undefined` when the text doesn't parse. */
+export function settingInText(text: string, key: string): { value: unknown } | undefined {
+  const settings = parseSettings(text);
+  return settings && { value: settings[key] };
 }
 
 export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
-  const errors: ParseError[] = [];
-  const settings = parse(text, errors, { allowTrailingComma: true }) as unknown;
-  if (errors.length > 0 || !isRecord(settings)) {
+  const settings = parseSettings(text);
+  if (!settings) {
     return { kind: "fallback", reason: "the settings file doesn't parse" };
   }
   const current = settings[key];
@@ -73,9 +78,8 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
     );
   }
   // Never trust an edit blindly: it must parse and hold exactly the result.
-  const check: ParseError[] = [];
-  const result = parse(edited, check, { allowTrailingComma: true }) as unknown;
-  if (check.length > 0 || !isRecord(result) || !isDeepStrictEqual(result[key], next)) {
+  const result = parseSettings(edited);
+  if (!result || !isDeepStrictEqual(result[key], next)) {
     return { kind: "fallback", reason: "the in-place edit didn't produce the expected value" };
   }
   return { kind: "edit", text: edited, changed };

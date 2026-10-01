@@ -5,14 +5,15 @@ import {
   workspace,
   type Disposable,
   type ExtensionContext,
-  type LogOutputChannel,
   type WebviewView,
   type WebviewViewProvider,
 } from "vscode";
+import type { Log } from "./log.ts";
 import { deriveColors } from "./core/derive.ts";
 import { resolveSidebarSettings, SidebarController, type SidebarSettings } from "./core/sidebar.ts";
 import { sidebarBlockHtml } from "./core/sidebarHtml.ts";
-import { commands, configs } from "./generated/meta.ts";
+import type { SidebarStyle } from "./core/model.ts";
+import { configs } from "./generated/meta.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "./ids.ts";
 import type { ActiveRepo } from "./repo.ts";
 
@@ -29,14 +30,10 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   private readonly disposables: Disposable[] = [];
 
   private readonly context: ExtensionContext;
-  private readonly log: LogOutputChannel;
+  private readonly log: Log;
   private readonly repo: () => ActiveRepo | undefined;
 
-  constructor(
-    context: ExtensionContext,
-    log: LogOutputChannel,
-    repo: () => ActiveRepo | undefined,
-  ) {
+  constructor(context: ExtensionContext, log: Log, repo: () => ActiveRepo | undefined) {
     this.context = context;
     this.log = log;
     this.repo = repo;
@@ -56,10 +53,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
       },
       () => this.settings(),
     );
-    this.disposables.push(
-      window.registerWebviewViewProvider(SIDEBAR_VIEW_ID, this),
-      vscodeCommands.registerCommand(commands.toggleSidebarBlock, () => this.toggle()),
-    );
+    this.disposables.push(window.registerWebviewViewProvider(SIDEBAR_VIEW_ID, this));
   }
 
   resolveWebviewView(view: WebviewView): void {
@@ -114,7 +108,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   }
 
   /** Enabled means: the setting is on and this repo has a color. */
-  private settings(): SidebarSettings & { style: "full" | "muted" } {
+  private settings(): SidebarSettings & { style: SidebarStyle } {
     const configuration = workspace.getConfiguration();
     return resolveSidebarSettings({
       enabled: configuration.get(configs.sidebarBlockEnabled.key),
@@ -124,7 +118,12 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
     });
   }
 
-  private async toggle(): Promise<void> {
+  /**
+   * Toggle Sidebar Block. Turning the block on writes the boolean with
+   * VS Code's own update(): a boolean has no comments inside it to keep, and
+   * the settings writer only edits Toucan's object settings (0017).
+   */
+  async toggle(): Promise<void> {
     if (!this.repo()) {
       void window.showInformationMessage("Set a Toucan color for this repo first.");
       return;

@@ -92,6 +92,9 @@ export function toHex(color: Color): Hex {
   return (isTranslucent(srgb) ? formatHex8(srgb) : formatHex(srgb)) as Hex;
 }
 
+/** The background a preview starts from before the repo has a color. */
+export const NEUTRAL_GRAY = toHex({ mode: "rgb", r: 0.5, g: 0.5, b: 0.5 });
+
 /** Parses any CSS color string to hex, or `undefined` when it isn't a color. */
 export function normalizeColor(input: string): Hex | undefined {
   const color = parseColor(input);

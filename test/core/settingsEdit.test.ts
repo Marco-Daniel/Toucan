@@ -221,4 +221,9 @@ describe("settingInText", () => {
   it("gives nothing for text that doesn't parse", () => {
     expect(settingInText("{ oops", KEY)).toBeUndefined();
   });
+
+  it("gives nothing for a file that isn't an object", () => {
+    expect(settingInText(`["${KEY}"]`, KEY)).toBeUndefined();
+    expect(settingInText("null", KEY)).toBeUndefined();
+  });
 });

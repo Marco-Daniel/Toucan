@@ -13,6 +13,15 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (D): wiring and small cleanups
+- Did:
+  - L12 (and toucan-2c's L1 on 74840b9): fire-and-forget work in extension.ts goes through `background(what, task)`, which logs a failure instead of leaving an unhandled rejection. The search emoji's reassert timer catches too.
+  - L21: one guarded logger, `createLog()` in `src/log.ts`, used by every adapter. The copies in focus.ts and settingsWriter.ts are gone.
+  - L22: all five commands are registered in commands.ts. Toggle stays a `SidebarBlock` method; its boolean `update()` is kept on purpose, since a boolean has no comments inside it and the writer handles Toucan's object settings. extension.ts has the one `onDidChangeWindowState` listener, which fans out to the coordinator, the sidebar, the Agents offer and the search emoji.
+  - L23: a `parseSettings` helper, `SidebarStyle` instead of the re-spelled union, and `NEUTRAL_GRAY` (built through `toHex`) instead of `"#808080" as Hex`. `SIDEBAR_CONTAINER_ID` stays: the manifest test uses it to keep package.json in sync.
+  - toucan-2c's L2 on 74840b9: the workspace window.title note is logged once per change, not on every focus.
+- Verified: all quality commands and check:vsix pass. Mutations proven red: the parse error check and the object check (with a new non-object test). Making `!result` optional is equivalent: an unparsable edit gives `undefined`, which never equals the expected value.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (C3): a clock for the writer's verify step
 - Did: L37. `SettingsFileWriter` takes an optional `clock` (`now`, `sleep`) for the verify step, real by default. The tests use a fake clock whose `sleep` is where VS Code's view catches up, replacing the 5 ms `setInterval` watcher. The "someone else wrote" step runs from that callback instead of a wall-clock wait. No writer test waits on real time any more: the file runs in about 0.2 s, and the full 4 s / 100 ms timing is asserted (40 polls).
 - Verified: all quality commands pass; the suite was green 5 times in a row. Mutations proven red: the deadline, `<=` at the deadline, the changed-since check.

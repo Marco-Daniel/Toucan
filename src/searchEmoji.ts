@@ -7,8 +7,8 @@ import {
   type Disposable,
   type Event,
   type ExtensionContext,
-  type LogOutputChannel,
 } from "vscode";
+import type { Log } from "./log.ts";
 import { emojiFor } from "./core/emoji.ts";
 import { TitleSetup, type TitlePorts } from "./core/titleSetup.ts";
 import { repoVariableValue, shouldLabel, type TitleChange } from "./core/windowTitle.ts";
@@ -44,43 +44,43 @@ export class SearchEmoji implements Disposable {
   private gitHasRepository = false;
   /** Whether this window has set the key, so it can hand it back. */
   private labelled = false;
+  /** Whether the workspace's own window.title was logged, so it's logged once per change. */
+  private reportedOverride = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
   private readonly context: ExtensionContext;
-  private readonly log: LogOutputChannel;
+  private readonly log: Log;
   private readonly repo: () => ActiveRepo | undefined;
   private readonly title: TitleSetup;
 
-  constructor(
-    context: ExtensionContext,
-    log: LogOutputChannel,
-    repo: () => ActiveRepo | undefined,
-  ) {
+  constructor(context: ExtensionContext, log: Log, repo: () => ActiveRepo | undefined) {
     this.context = context;
     this.log = log;
     this.repo = repo;
     this.title = new TitleSetup(titlePorts(context, log));
-    this.disposables.push(
-      window.onDidChangeActiveTextEditor(() => this.reassertSoon()),
-      window.onDidChangeWindowState((state) => {
-        this.reassertSoon();
-        // A pending consent or restore waits for a focused window.
-        if (state.focused) {
-          void this.refresh();
-        }
-      }),
-    );
+    this.disposables.push(window.onDidChangeActiveTextEditor(() => this.reassertSoon()));
+  }
+
+  /** On every window focus change; returns the refresh a focused window runs. */
+  async focusChanged(focused: boolean): Promise<void> {
+    this.reassertSoon();
+    // A pending consent or restore waits for a focused window.
+    if (focused) {
+      await this.refresh();
+    }
   }
 
   /** After activation, a focus change or a `toucan.*` change. */
   async refresh(): Promise<void> {
     const change = await this.title.settle();
     if (shouldLabel(enabled(), change)) {
-      if (workspaceTitle()) {
+      const overridden = workspaceTitle();
+      if (overridden && !this.reportedOverride) {
         this.log.info(
           `This workspace sets its own ${WINDOW_TITLE}, so the search emoji doesn't show here.`,
         );
       }
+      this.reportedOverride = overridden;
       await this.hookGit();
       await this.assert();
     } else {
@@ -140,7 +140,9 @@ export class SearchEmoji implements Disposable {
     }
     this.timer = setTimeout(() => {
       this.timer = undefined;
-      void this.assert();
+      this.assert().catch((error: unknown) => {
+        this.log.warn(`Couldn't set the search emoji: ${String(error)}`);
+      });
     }, REASSERT_DELAY_MS);
   }
 
@@ -188,7 +190,7 @@ function workspaceTitle(): boolean {
   return inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined;
 }
 
-function titlePorts(context: ExtensionContext, log: LogOutputChannel): TitlePorts {
+function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
   return {
     enabled,
     focused: () => window.state.focused,

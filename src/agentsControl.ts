@@ -1,10 +1,5 @@
-import {
-  ConfigurationTarget,
-  window,
-  workspace,
-  type ExtensionContext,
-  type LogOutputChannel,
-} from "vscode";
+import { ConfigurationTarget, window, workspace, type ExtensionContext } from "vscode";
+import type { Log } from "./log.ts";
 import { AGENTS_CONTROL, agentsControlAction } from "./core/agentsControl.ts";
 
 /** globalState key for "Not now" (per profile). */
@@ -20,9 +15,9 @@ export class AgentsControlOffer {
   private checked = false;
 
   private readonly context: ExtensionContext;
-  private readonly log: LogOutputChannel;
+  private readonly log: Log;
 
-  constructor(context: ExtensionContext, log: LogOutputChannel) {
+  constructor(context: ExtensionContext, log: Log) {
     this.context = context;
     this.log = log;
   }

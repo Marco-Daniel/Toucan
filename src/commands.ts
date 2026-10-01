@@ -8,7 +8,7 @@ import {
   type Disposable,
   type QuickPickItem,
 } from "vscode";
-import { validateColorInput } from "./core/color.ts";
+import { NEUTRAL_GRAY, validateColorInput } from "./core/color.ts";
 import {
   LOW_CONTRAST_WARNING,
   activeThemeName,
@@ -23,6 +23,7 @@ import { PRESETS } from "./core/presets.ts";
 import { commands, configs } from "./generated/meta.ts";
 import type { ActiveRepo } from "./repo.ts";
 import { userValue, type SettingsUpdate, type SettingsWriter } from "./settingsWriter.ts";
+import type { SidebarBlock } from "./sidebar.ts";
 import type { StatusBarIndicator } from "./statusBar.ts";
 import { isRecord } from "./core/records.ts";
 
@@ -34,11 +35,16 @@ export interface CommandHost {
   /** This window's repo if it has an entry. */
   activeRepo(): ActiveRepo | undefined;
   indicator: StatusBarIndicator;
+  sidebar: Pick<SidebarBlock, "toggle">;
 }
 
-/** Set Color, Pick Preset Color, Set Glyph and Clear Color, all writing `toucan.repos`. */
+/**
+ * All five commands. Set Color, Pick Preset Color, Set Glyph and Clear Color
+ * write `toucan.repos`; Toggle Sidebar Block belongs to the sidebar block.
+ */
 export function registerCommands(host: CommandHost): Disposable[] {
   return [
+    vscodeCommands.registerCommand(commands.toggleSidebarBlock, () => host.sidebar.toggle()),
     vscodeCommands.registerCommand(commands.setColor, withRepo(host, setColor)),
     vscodeCommands.registerCommand(commands.pickPreset, withRepo(host, pickPreset)),
     vscodeCommands.registerCommand(commands.setGlyph, withRepo(host, setGlyph)),
@@ -258,7 +264,7 @@ class Preview {
     this.host = host;
     this.name = name;
     this.base = host.activeRepo()?.config ?? {
-      background: "#808080" as Hex,
+      background: NEUTRAL_GRAY,
       overrides: {},
       glyph: DEFAULT_GLYPH,
     };

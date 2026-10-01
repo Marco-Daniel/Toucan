@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { window, type Disposable, type ExtensionContext, type LogOutputChannel } from "vscode";
+import type { ExtensionContext } from "vscode";
+import type { Log } from "./log.ts";
 import { FocusCoordinator, type FocusPorts } from "./core/focus.ts";
 import { createOwnerFile } from "./core/ownerFile.ts";
 import { settingInText } from "./core/settingsEdit.ts";
@@ -12,29 +13,25 @@ export const COLOR_CUSTOMIZATIONS = "workbench.colorCustomizations";
 const APPLIED_KEY = "commandCenter.applied";
 
 /**
- * Wires the focus coordinator to VS Code: window focus events, the owner file
- * in global storage (shared by all local windows, since Toucan is a UI
- * extension) and the user-level color customizations. The caller feeds the
- * initial focus state once its repo is resolved.
+ * Wires the focus coordinator to VS Code: the owner file in global storage
+ * (shared by all local windows, since Toucan is a UI extension) and the
+ * user-level color customizations. The caller feeds it focus changes,
+ * starting with the initial state once its repo is resolved.
  */
 export function startFocusCoordinator(
   context: ExtensionContext,
-  log: LogOutputChannel,
+  log: Log,
   writer: SettingsWriter,
   desired: () => CommandCenterColors | undefined,
-): { coordinator: FocusCoordinator; disposable: Disposable } {
+): FocusCoordinator {
   const id = randomUUID();
-  const coordinator = new FocusCoordinator(id, ownerFilePorts(context, id, log, writer), desired);
-  const disposable = window.onDidChangeWindowState((state) => {
-    coordinator.setFocused(state.focused);
-  });
-  return { coordinator, disposable };
+  return new FocusCoordinator(id, ownerFilePorts(context, id, log, writer), desired);
 }
 
 function ownerFilePorts(
   context: ExtensionContext,
   id: string,
-  log: LogOutputChannel,
+  log: Log,
   writer: SettingsWriter,
 ): FocusPorts {
   // A guess: a profile can share the default global state and keep its own
@@ -64,22 +61,10 @@ function ownerFilePorts(
       await writer.write(COLOR_CUSTOMIZATIONS, update, "profile");
     },
     warn(message) {
-      safeLog(() => log.warn(message));
+      log.warn(message);
     },
     debug(message) {
-      safeLog(() => log.debug(`[${id.slice(0, 8)}] ${message}`));
+      log.debug(`[${id.slice(0, 8)}] ${message}`);
     },
   };
-}
-
-/**
- * During shutdown the output channel can already be closed when deactivate's
- * best-effort clear runs; logging then throws, which must not fail deactivate.
- */
-function safeLog(write: () => void): void {
-  try {
-    write();
-  } catch {
-    // The channel is gone; there's nobody left to read the message.
-  }
 }

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { normalizeColor, validateColorInput } from "../../src/core/color.ts";
+import { NEUTRAL_GRAY, normalizeColor, validateColorInput } from "../../src/core/color.ts";
+
+describe("NEUTRAL_GRAY", () => {
+  it("is mid gray", () => {
+    expect(NEUTRAL_GRAY).toBe("#808080");
+  });
+});
 
 describe("normalizeColor", () => {
   it.each([
