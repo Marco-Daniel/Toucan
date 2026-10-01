@@ -125,6 +125,13 @@ export class FocusCoordinator {
   }
 
   private async takeOver(): Promise<void> {
+    const colors = this.desired();
+    if (colors === undefined && !this.ports.hasApplied()) {
+      // Not managing commandCenter.* yet (0008). Taking ownership anyway would
+      // stop the previous owner's blur from clearing its colors here.
+      this.ports.debug("not taking ownership: no color to apply or clear yet");
+      return;
+    }
     // Owner first: another window's pending blur checks it before clearing.
     try {
       await this.ports.writeOwner(this.id);
@@ -134,7 +141,7 @@ export class FocusCoordinator {
       // focus change; the verify step heals if another window clears them.
       this.ports.warn(`Couldn't record this window as the color owner: ${String(error)}`);
     }
-    await this.write(this.desired());
+    await this.write(colors);
     this.cancel("verify");
     this.verifyTimer = setTimeout(() => {
       this.verifyTimer = undefined;

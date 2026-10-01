@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { lowContrast, presetName, statusBarBackground } from "../../src/core/contrast.ts";
+import {
+  activeThemeName,
+  lowContrast,
+  presetName,
+  statusBarBackground,
+} from "../../src/core/contrast.ts";
 import { accessibilityLabel } from "../../src/core/labels.ts";
 import type { Hex } from "../../src/core/model.ts";
 
@@ -60,10 +65,46 @@ describe("statusBarBackground", () => {
   });
 });
 
+describe("activeThemeName", () => {
+  const themes = {
+    colorTheme: "Default Dark Modern",
+    preferredDark: "Monokai",
+    preferredLight: "Solarized Light",
+  };
+
+  it("uses workbench.colorTheme without auto-detect", () => {
+    expect(activeThemeName({ kind: "light", autoDetect: false, ...themes })).toBe(
+      "Default Dark Modern",
+    );
+  });
+
+  it("uses the preferred theme for the OS scheme with auto-detect", () => {
+    expect(activeThemeName({ kind: "dark", autoDetect: true, ...themes })).toBe("Monokai");
+    expect(activeThemeName({ kind: "light", autoDetect: true, ...themes })).toBe("Solarized Light");
+  });
+
+  it("ignores auto-detect in high contrast themes", () => {
+    expect(activeThemeName({ kind: "highContrast", autoDetect: true, ...themes })).toBe(
+      "Default Dark Modern",
+    );
+  });
+
+  it("gives no name for a value that isn't a string", () => {
+    expect(
+      activeThemeName({ kind: "dark", autoDetect: true, ...themes, preferredDark: 42 }),
+    ).toBeUndefined();
+  });
+});
+
 describe("lowContrast", () => {
   it("flags colors under 3:1 against the status bar", () => {
     expect(lowContrast(hex("#101316"), hex("#181818"))).toBe(true); // Plumage Black, 1.05
     expect(lowContrast(hex("#8a9c05"), hex("#f8f8f8"))).toBe(true); // Bill Lime, 2.89
+  });
+
+  it("puts the line at 3:1 (no hex color lands exactly on it against Dark Modern)", () => {
+    expect(lowContrast(hex("#7747cb"), hex("#181818"))).toBe(true); // 2.999999, the closest below
+    expect(lowContrast(hex("#646464"), hex("#181818"))).toBe(false); // 3.0006
   });
 
   it("accepts colors at or above 3:1", () => {

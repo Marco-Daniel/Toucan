@@ -13,6 +13,13 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1: toucan-2c on A/B
+- Did:
+  - [M1] A window with nothing to apply that hasn't seen a first applied color no longer takes ownership. Before, it wrote the owner file and then skipped the clear, so the previous owner's blur skipped its clear too and the colors stayed. Test: exactly that scenario, with a per-window lagging `hasApplied`. Another new test pins the guard in `write()`: an owner whose first apply failed doesn't clear hand-set colors on blur.
+  - [L1] `activeThemeName` picks `workbench.preferredDarkColorTheme` / `preferredLightColorTheme` when `window.autoDetectColorScheme` is on (not in high contrast). 0018 now names the theme-block lookup and auto-detect.
+  - [L2] The 3:1 line is pinned with the closest hex below it (#7747cb, 2.999999) and a gray just above (#646464, 3.0006) on #181818. `<` vs `<=` is equivalent for hex colors: a search found no pair at exactly 3:1 on #181818, #f8f8f8, black or white, nor among all gray pairs.
+- Verified: all quality commands pass. Mutations proven red: both first-use guards, auto-detect, dark/light swap, the string check, the high contrast clause, thresholds 2.99999 and 3.001.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (C1): sidebar guards and the owner file
 - Did:
   - M7 / L38: sidebar tests for a settings change while disabled, before `start()`, while visible and during a running reveal, and for Toggle forgetting the remembered close without a visibility event.

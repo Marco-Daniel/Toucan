@@ -30,6 +30,8 @@ class World {
   disk: "same" | "unreadable" | { value: unknown } = "same";
   /** Whether Toucan has applied a color in this profile before (0008). */
   applied = true;
+  /** Windows whose globalState hasn't caught up with `applied` yet. */
+  lagging = new Set<string>();
   writes = 0;
   /** Which window made each write, in order. */
   writers: string[] = [];
@@ -56,7 +58,7 @@ class World {
         writeOwner: async (owner) => {
           this.owner = owner;
         },
-        hasApplied: () => this.applied,
+        hasApplied: () => this.applied && !this.lagging.has(id),
         markApplied: async () => {
           this.applied = true;
         },
@@ -211,6 +213,35 @@ describe("FocusCoordinator", () => {
       "editor.background": "#111111",
     });
     expect(world.writes).toBe(0);
+  });
+
+  it("doesn't take ownership while it isn't managing commandCenter.*, so the owner's blur still clears", async () => {
+    const world = new World();
+    const a = world.window("A", "#e0620b");
+    const plain = world.window("P", undefined);
+    world.lagging.add("P"); // A just applied its first color; P hasn't seen that yet
+    a.setFocused(true);
+    await settle();
+    a.setFocused(false);
+    plain.setFocused(true);
+    await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS + VERIFY_DELAY_MS);
+    expect(world.owner).toBe("A");
+    expect(world.settings).toEqual({ "editor.background": "#111111" });
+  });
+
+  it("doesn't clear hand-set colors on blur when its first apply failed", async () => {
+    const world = new World();
+    world.applied = false;
+    world.settings = { "commandCenter.background": "#123456" };
+    world.failWrites = true;
+    const a = world.window("A", "#e0620b");
+    a.setFocused(true);
+    await settle();
+    world.failWrites = false;
+    a.setFocused(false);
+    await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS);
+    expect(world.owner).toBe("A");
+    expect(world.settings).toEqual({ "commandCenter.background": "#123456" });
   });
 
   it("starts managing commandCenter.* once it has applied a color", async () => {

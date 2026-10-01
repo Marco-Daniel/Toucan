@@ -42,6 +42,27 @@ export function statusBarBackground(input: {
   return KIND_DEFAULTS[input.kind];
 }
 
+/**
+ * The name of the active color theme, for the `"[Theme Name]"` lookup. With
+ * `window.autoDetectColorScheme` on, VS Code uses the preferred theme for the
+ * OS scheme instead of `workbench.colorTheme`.
+ */
+export function activeThemeName(input: {
+  kind: ThemeKind;
+  autoDetect: unknown;
+  colorTheme: unknown;
+  preferredDark: unknown;
+  preferredLight: unknown;
+}): string | undefined {
+  const name =
+    input.autoDetect === true && input.kind !== "highContrast"
+      ? input.kind === "dark"
+        ? input.preferredDark
+        : input.preferredLight
+      : input.colorTheme;
+  return typeof name === "string" ? name : undefined;
+}
+
 /** Whether `color` may be hard to see on `background`. */
 export function lowContrast(color: Hex, background: Hex | undefined): boolean {
   return (

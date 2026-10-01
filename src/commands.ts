@@ -9,7 +9,12 @@ import {
   type QuickPickItem,
 } from "vscode";
 import { validateColorInput } from "./core/color.ts";
-import { LOW_CONTRAST_WARNING, lowContrast, statusBarBackground } from "./core/contrast.ts";
+import {
+  LOW_CONTRAST_WARNING,
+  activeThemeName,
+  lowContrast,
+  statusBarBackground,
+} from "./core/contrast.ts";
 import type { RepoConfig } from "./core/config.ts";
 import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "./core/entries.ts";
 import { glyphSvg, svgDataUri } from "./core/glyphs.ts";
@@ -290,16 +295,23 @@ function swatch(glyph: Glyph, hex: Hex): Uri {
 
 /** The status bar background to check picked colors against (0018). */
 function statusBarAgainst(): Hex | undefined {
-  const kind = window.activeColorTheme.kind;
+  const themeKind = window.activeColorTheme.kind;
+  const kind =
+    themeKind === ColorThemeKind.Light
+      ? "light"
+      : themeKind === ColorThemeKind.Dark
+        ? "dark"
+        : "highContrast";
   const configuration = workspace.getConfiguration();
   return statusBarBackground({
-    kind:
-      kind === ColorThemeKind.Light
-        ? "light"
-        : kind === ColorThemeKind.Dark
-          ? "dark"
-          : "highContrast",
-    themeName: configuration.get<string>("workbench.colorTheme"),
+    kind,
+    themeName: activeThemeName({
+      kind,
+      autoDetect: configuration.get("window.autoDetectColorScheme"),
+      colorTheme: configuration.get("workbench.colorTheme"),
+      preferredDark: configuration.get("workbench.preferredDarkColorTheme"),
+      preferredLight: configuration.get("workbench.preferredLightColorTheme"),
+    }),
     customizations: configuration.get("workbench.colorCustomizations"),
   });
 }
