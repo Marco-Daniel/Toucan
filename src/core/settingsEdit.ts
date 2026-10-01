@@ -70,22 +70,23 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
   }
 
   const next = desired ?? {};
-  const changed = [...new Set([...Object.keys(current), ...Object.keys(next)])].filter(
-    (property) => !isDeepStrictEqual(current[property], next[property]),
-  );
+  const changed = changedKeys(current, next);
   if (changed.length === 0) {
     return { kind: "noop" };
   }
 
+  // Edit as deep as both sides stay objects (a repo entry's fields), so
+  // comments inside an entry survive a change to one of its fields.
+  const paths = changedPaths(current, next, [key]);
+
   const formattingOptions = detectFormatting(text);
   let edited = text;
   // From the end first, so each edit leaves the offsets of the earlier ones alone.
-  for (const property of changed.toReversed()) {
+  for (const { path, value } of paths.toReversed()) {
     const edits =
-      next[property] === undefined
-        ? (removeLines(edited, key, property) ??
-          modify(edited, [key, property], undefined, { formattingOptions }))
-        : modify(edited, [key, property], next[property], { formattingOptions });
+      value === undefined
+        ? (removeLines(edited, path) ?? modify(edited, path, undefined, { formattingOptions }))
+        : modify(edited, path, value, { formattingOptions });
     edited = applyEdits(edited, edits);
   }
   // Never trust an edit blindly: it must parse and hold exactly the result,
@@ -94,7 +95,13 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
   if (!result || !isDeepStrictEqual(result[key], next)) {
     return { kind: "fallback", reason: "the in-place edit didn't produce the expected value" };
   }
-  if (!keepsComments(text, edited, key, changed)) {
+  if (
+    !keepsComments(
+      text,
+      edited,
+      paths.map(({ path }) => path),
+    )
+  ) {
     return { kind: "fallback", reason: "the in-place edit would drop a comment" };
   }
   return { kind: "edit", text: edited, changed };
@@ -125,9 +132,9 @@ const SyntaxKind = {
  * `undefined` when the property doesn't have its lines to itself; the caller
  * then uses jsonc-parser, and the comment check catches any loss.
  */
-function removeLines(text: string, key: string, property: string): Edit[] | undefined {
+function removeLines(text: string, path: string[]): Edit[] | undefined {
   const root = parseTree(text);
-  const node = root && findNodeAtLocation(root, [key, property])?.parent;
+  const node = root && findNodeAtLocation(root, path)?.parent;
   if (node?.type !== "property") {
     return undefined;
   }
@@ -193,10 +200,10 @@ function removeLines(text: string, key: string, property: string): Edit[] | unde
  * Whether `edited` still has every comment of `text` that isn't inside the
  * value of a changed property (those go with the value they annotate).
  */
-function keepsComments(text: string, edited: string, key: string, changed: string[]): boolean {
+function keepsComments(text: string, edited: string, paths: string[][]): boolean {
   const root = parseTree(text);
-  const replaced = changed.flatMap((property) => {
-    const node = root && findNodeAtLocation(root, [key, property]);
+  const replaced = paths.flatMap((path) => {
+    const node = root && findNodeAtLocation(root, path);
     return node ? [{ start: node.offset, end: node.offset + node.length }] : [];
   });
   const kept = comments(text)
@@ -222,6 +229,28 @@ function comments(text: string): { offset: number; value: string }[] {
     }
   }
   return found;
+}
+
+/** The paths to every changed value, descending while both sides are objects. */
+function changedPaths(
+  before: Record<string, unknown>,
+  after: Record<string, unknown>,
+  prefix: string[],
+): { path: string[]; value: unknown }[] {
+  return changedKeys(before, after).flatMap((property) => {
+    const from = before[property];
+    const to = after[property];
+    return isRecord(from) && isRecord(to)
+      ? changedPaths(from, to, [...prefix, property])
+      : [{ path: [...prefix, property], value: to }];
+  });
+}
+
+/** The keys whose values differ between two objects, in `before`'s order, then new ones. */
+function changedKeys(before: Record<string, unknown>, after: Record<string, unknown>): string[] {
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+    (property) => !isDeepStrictEqual(before[property], after[property]),
+  );
 }
 
 /** Whether VS Code's view shows the edited properties (others may change concurrently). */

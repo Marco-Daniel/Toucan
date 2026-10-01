@@ -117,6 +117,17 @@ async function refreshView(file: string): Promise<void> {
 
 const replace = () => ({ value: NEXT });
 
+/** A settings file with one commented object entry. */
+const entry = (background: string) => `{
+  "toucan.repos": {
+    "webshop": {
+      "background": "${background}", // orange
+      "glyph": "heart",
+    },
+  },
+}
+`;
+
 describe("SettingsFileWriter", () => {
   beforeEach(() => {
     fileCache = new Map();
@@ -133,6 +144,20 @@ describe("SettingsFileWriter", () => {
     expect(await readFile(file, "utf8")).toBe(AFTER);
     expect((await stat(file)).mode & 0o777).toBe(0o640);
     expect((await stat(file)).ino).not.toBe(inode);
+    expect(updates).toEqual([]);
+  });
+
+  it("changes one field of a commented repo entry in place, and VS Code's view confirms it", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, entry("#e0620b"));
+    await refreshView(file);
+    const { writer, updates } = setup(file);
+    await writer.write(
+      KEY,
+      () => ({ value: { webshop: { background: "#101316", glyph: "heart" } } }),
+      "profile",
+    );
+    expect(await readFile(file, "utf8")).toBe(entry("#101316"));
     expect(updates).toEqual([]);
   });
 

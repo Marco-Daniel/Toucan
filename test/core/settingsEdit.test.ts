@@ -173,6 +173,61 @@ describe("planEdit", () => {
     expect(plan).toEqual({ kind: "fallback", reason: "the in-place edit would drop a comment" });
   });
 
+  it("changes one field of a repo entry, keeping the comments inside the entry", () => {
+    const text = `{\n  "toucan.repos": {\n    "webshop": {\n      // picked at launch\n      "background": "#e0620b", // orange\n      "glyph": "heart",\n    },\n  },\n}\n`;
+    const view = { webshop: { background: "#e0620b", glyph: "heart" } };
+    const plan = planEdit({
+      text,
+      key: "toucan.repos",
+      view,
+      desired: { webshop: { background: "#101316", glyph: "heart" } },
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{\n  "toucan.repos": {\n    "webshop": {\n      // picked at launch\n      "background": "#101316", // orange\n      "glyph": "heart",\n    },\n  },\n}\n`,
+      changed: ["webshop"],
+    });
+  });
+
+  it("edits as deep as both sides stay objects", () => {
+    const text = `{\n  "${KEY}": {\n    "a": {\n      "b": {\n        "c": 1, // deep\n      },\n    },\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: { b: { c: 1 } } },
+      desired: { a: { b: { c: 2 } } },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    "a": {\n      "b": {\n        "c": 2, // deep\n      },\n    },\n  },\n}\n`,
+    });
+  });
+
+  it("removes one field of a repo entry by its own lines", () => {
+    const text = `{\n  "toucan.repos": {\n    "webshop": {\n      "background": "#e0620b", // orange\n      "glyph": "heart",\n    },\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: "toucan.repos",
+      view: { webshop: { background: "#e0620b", glyph: "heart" } },
+      desired: { webshop: { background: "#e0620b" } },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "toucan.repos": {\n    "webshop": {\n      "background": "#e0620b", // orange\n    },\n  },\n}\n`,
+    });
+  });
+
+  it("falls back rather than drop a comment inside an entry it only partly changes", () => {
+    const text = `{\n  "toucan.repos": {\n    "webshop": { "background": "#e0620b", /* mine */ "glyph": "heart" }\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: "toucan.repos",
+      view: { webshop: { background: "#e0620b", glyph: "heart" } },
+      desired: { webshop: { background: "#e0620b" } },
+    });
+    expect(plan).toEqual({ kind: "fallback", reason: "the in-place edit would drop a comment" });
+  });
+
   it("lets comments inside a removed value go with it", () => {
     const text = `{\n  "toucan.repos": {\n    // work\n    "webshop": {\n      "background": "#e0620b", // orange\n    },\n    "toucan": "#14939c", // mine\n  },\n}\n`;
     const plan = planEdit({

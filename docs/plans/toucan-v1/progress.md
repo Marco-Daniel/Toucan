@@ -13,6 +13,12 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1: comments inside repo entries (0017)
+- Found by the isolated VS Code pass: Set Color replaced the whole `toucan.repos` entry, so a comment inside an object entry was lost. Manager: fix now; toucan-2c: recurse generally.
+- Did: `planEdit` edits every changed path as deep as both sides stay objects (`changedPaths`), so Set Color changes only `background` inside the entry. Removals use the whole-line removal at any depth, and the comment check exempts only the changed values themselves. `changed` stays the top-level keys: `viewReflects` compares each whole entry by deep equality, so a nested edit is still recognized as reflected.
+- Tests: one field changed and one removed inside a commented entry (exact text); a three-level edit; a partly changed one-line entry with an inline comment falls back; and a writer test where a nested in-place edit is verified by the following view with no `update()`.
+- Verified: all quality commands and check:vsix pass. Mutations proven red: no descent, one level only, jsonc removal instead of the own removal, top-level exemption in the comment check, `===` in viewReflects.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1: self-found comment loss (0017)
 - Found while checking tests against the project's test rules: jsonc-parser removes a property from the end of the previous value, so a trailing comment on the line before Toucan's keys, or a comment line above them, was deleted with them. Manager: fix within 0017 now.
 - Did:
