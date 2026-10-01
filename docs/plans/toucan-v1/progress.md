@@ -13,6 +13,14 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (C2): search emoji sequencing into core
+- Did:
+  - M9: the window.title heal/consent/apply/restore sequence moved from `src/searchEmoji.ts` to `TitleSetup` in `src/core/titleSetup.ts`, behind ports. The adapter keeps labelling and git hooks. Tests pin the order (pending record, title, settled record), decline turning the feature off, a failed write clearing the record and warning, no dialog when the variable is already there, a single dialog at a time, restore and keep-edited, and crash recovery only in the focused window.
+  - L15: the title is read again after the dialog, so a change made while it was open isn't overwritten and the record isn't stale.
+  - L14: when the workspace or folder sets its own `window.title`, the consent dialog says the emoji won't show in this window, and labelling logs it.
+- Verified: all quality commands pass. 14 mutations proven red, including writing the title before the pending record.
+- Open: an isolated VS Code pass over the search emoji consent, the contrast warnings and the status bar label at the end of round 1.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1: toucan-2c on A/B
 - Did:
   - [M1] A window with nothing to apply that hasn't seen a first applied color no longer takes ownership. Before, it wrote the owner file and then skipped the clear, so the previous owner's blur skipped its clear too and the colors stayed. Test: exactly that scenario, with a per-window lagging `hasApplied`. Another new test pins the guard in `write()`: an owner whose first apply failed doesn't clear hand-set colors on blur.
