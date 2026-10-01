@@ -20,6 +20,7 @@ import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "./core/e
 import { glyphSvg, svgDataUri } from "./core/glyphs.ts";
 import { DEFAULT_GLYPH, GLYPHS, type Glyph, type Hex } from "./core/model.ts";
 import { PRESETS } from "./core/presets.ts";
+import { COLOR_CUSTOMIZATIONS } from "./focus.ts";
 import { commands, configs } from "./generated/meta.ts";
 import type { ActiveRepo } from "./repo.ts";
 import { userValue, type SettingsUpdate, type SettingsWriter } from "./settingsWriter.ts";
@@ -318,7 +319,8 @@ function statusBarAgainst(): Hex | undefined {
       preferredDark: configuration.get("workbench.preferredDarkColorTheme"),
       preferredLight: configuration.get("workbench.preferredLightColorTheme"),
     }),
-    customizations: configuration.get("workbench.colorCustomizations"),
+    // The effective (merged) value on purpose: workspace overrides color the status bar too.
+    customizations: configuration.get(COLOR_CUSTOMIZATIONS),
   });
 }
 
