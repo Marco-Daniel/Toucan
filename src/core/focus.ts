@@ -193,6 +193,9 @@ export class FocusCoordinator {
       }
       if (!stale || snapshot === this.staleSnapshot || (view !== undefined && !isRecord(view))) {
         this.ports.debug(colors ? "colors already applied" : "nothing to clear");
+        // Toucan's colors are in effect (a reinstall or Settings Sync can
+        // leave them without the flag): from now on it manages them.
+        await this.recordApplied(colors);
         return;
       }
       this.staleSnapshot = snapshot;
@@ -203,9 +206,6 @@ export class FocusCoordinator {
       await this.ports.writeCustomizations((current) => customizationsFor(current, colors));
       this.ports.debug(colors ? `applied ${colors.background}` : "cleared");
       this.failing = false;
-      if (colors && !this.ports.hasApplied()) {
-        await this.ports.markApplied();
-      }
     } catch (error) {
       // Log once per failure streak, e.g. while settings.json has unsaved edits.
       const first = !this.failing;
@@ -213,6 +213,20 @@ export class FocusCoordinator {
       if (first) {
         this.ports.warn(`Couldn't update workbench.colorCustomizations: ${String(error)}`);
       }
+      return;
+    }
+    await this.recordApplied(colors);
+  }
+
+  /** Records the first applied color in this profile (0008); a failure here isn't a settings failure. */
+  private async recordApplied(colors: CommandCenterColors | undefined): Promise<void> {
+    if (!colors || this.ports.hasApplied()) {
+      return;
+    }
+    try {
+      await this.ports.markApplied();
+    } catch (error) {
+      this.ports.warn(`Couldn't record that Toucan applied a color: ${String(error)}`);
     }
   }
 

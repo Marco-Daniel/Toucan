@@ -13,6 +13,10 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 2
+- Context: blind review of 5b9dd0c, 2 Medium + 2 Low, with agreed refinements in the threads; judged independently, all four accepted.
+- R2-1: Toucan records the applied flag also when its colors are already in settings (reinstall, Settings Sync, a crash before the flag was written), and after a successful write, each in its own try with its own warning. The reproduced scenario is the test. Mutation-red: either call site, the catch, the hasApplied short-circuit.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1: isolated VS Code pass
 - Run 1 (f830912, VS Code 1.139.1): all checks passed. Status label "Toucan: webshop, Beak Orange check circle"; focus apply/clear in about 200 ms; the contrast warning in Set Color (warning severity) and Pick Preset (Plumage Black marked, Beak Red not); Toggle registered from commands.ts; search emoji consent/apply/restore; the Agents offer naming `chat.agentsControl.enabled`. Finding (a), comments inside a repo entry lost on Set Color, is fixed in a996c47.
 - Run 2 (fcde45e, `--log marco-daniel.toucan:debug`):

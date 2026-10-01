@@ -30,6 +30,8 @@ class World {
   disk: "same" | "unreadable" | { value: unknown } = "same";
   /** Whether Toucan has applied a color in this profile before (0008). */
   applied = true;
+  markAppliedCalls = 0;
+  failMarkApplied = false;
   /** Windows whose globalState hasn't caught up with `applied` yet. */
   lagging = new Set<string>();
   writes = 0;
@@ -60,6 +62,10 @@ class World {
         },
         hasApplied: () => this.applied && !this.lagging.has(id),
         markApplied: async () => {
+          this.markAppliedCalls++;
+          if (this.failMarkApplied) {
+            throw new Error("globalState is read-only");
+          }
           this.applied = true;
         },
         readCustomizations: () => this.settings,
@@ -242,6 +248,42 @@ describe("FocusCoordinator", () => {
     await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS);
     expect(world.owner).toBe("A");
     expect(world.settings).toEqual({ "commandCenter.background": "#123456" });
+  });
+
+  it("records Toucan's colors already in settings as applied, so its blur still clears them", async () => {
+    // A reinstall wiped globalState, but settings.json still has Toucan's colors.
+    const world = new World();
+    world.applied = false;
+    world.settings = { "editor.background": "#111111", ...applied("#e0620b") };
+    const a = world.window("A", "#e0620b");
+    const plain = world.window("P", undefined);
+    a.setFocused(true);
+    await settle();
+    expect(world.writes).toBe(0);
+    expect(world.markAppliedCalls).toBe(1);
+    a.setFocused(false);
+    plain.setFocused(true);
+    await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS + VERIFY_DELAY_MS);
+    expect(world.settings).toEqual({ "editor.background": "#111111" });
+    // Recorded once: later applies don't write globalState again.
+    plain.setFocused(false);
+    a.setFocused(true);
+    await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS + VERIFY_DELAY_MS);
+    expect(world.background).toBe("#e0620b");
+    expect(world.markAppliedCalls).toBe(1);
+  });
+
+  it("warns separately when recording the first color fails, and keeps the colors", async () => {
+    const world = new World();
+    world.applied = false;
+    world.failMarkApplied = true;
+    const a = world.window("A", "#e0620b");
+    a.setFocused(true);
+    await settle();
+    expect(world.background).toBe("#e0620b");
+    expect(world.warnings).toEqual([
+      "A: Couldn't record that Toucan applied a color: Error: globalState is read-only",
+    ]);
   });
 
   it("starts managing commandCenter.* once it has applied a color", async () => {
