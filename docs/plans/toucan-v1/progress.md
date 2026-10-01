@@ -13,6 +13,10 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 4
+- Context: blind review of 0af5358 (1 High, 1 Low); judged independently, both accepted. R4-1 was reproduced live before the fix: a folder named `[x](command:workbench.action.showCommands)` rendered a clickable command link in the Set Glyph and Clear Color toasts, trusted and in Restricted Mode; the Clear Color modal stayed plain text.
+- R4-1: the Set Glyph and Clear Color toasts and the Clear Color modal no longer include the folder name (`src/core/messages.ts`, "This folder …"). A guard test scans every `show*Message` call in src for an interpolated folder name. Mutation-red: putting the name back at any of the three sites, or into another message.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 3
 - Context: blind review of 33b4d0c, 2 Low; judged independently, both accepted.
 - R3-1: the applied flag is recorded on the "already applied" path only when colorCustomizations is an object; a non-object value is never written over, so nothing was applied. Test: a string setting with colors defined, no write and no markApplied. Mutation-red.

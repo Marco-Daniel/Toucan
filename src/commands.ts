@@ -18,6 +18,7 @@ import {
 import type { RepoConfig } from "./core/config.ts";
 import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "./core/entries.ts";
 import { glyphSvg, svgDataUri } from "./core/glyphs.ts";
+import { NO_COLOR, NO_COLOR_YET, clearConfirmation } from "./core/messages.ts";
 import { DEFAULT_GLYPH, GLYPHS, type Glyph, type Hex } from "./core/model.ts";
 import { PRESETS } from "./core/presets.ts";
 import { COLOR_CUSTOMIZATIONS } from "./focus.ts";
@@ -142,10 +143,7 @@ async function pickPreset(host: CommandHost, name: string): Promise<void> {
 async function setGlyph(host: CommandHost, name: string): Promise<void> {
   const repo = host.activeRepo();
   if (!repo) {
-    const action = await window.showInformationMessage(
-      `${name} has no Toucan color yet. Set a color first.`,
-      "Set Color",
-    );
+    const action = await window.showInformationMessage(NO_COLOR_YET, "Set Color");
     if (action) {
       await vscodeCommands.executeCommand(commands.setColor);
     }
@@ -185,20 +183,14 @@ async function setGlyph(host: CommandHost, name: string): Promise<void> {
 async function clearColor(host: CommandHost, name: string): Promise<void> {
   const raw = readRepos();
   if (!isRecord(raw) || !Object.hasOwn(raw, name)) {
-    void window.showInformationMessage(`${name} has no Toucan color.`);
+    void window.showInformationMessage(NO_COLOR);
     return;
   }
   // Only a bare color is cheap to set again; anything more was typed by hand.
   const handEdited = handEditedKeys(raw, name);
   if (handEdited.length > 0) {
-    const answer = await window.showWarningMessage(
-      `Clear Toucan's settings for ${name}?`,
-      {
-        modal: true,
-        detail: `This removes its whole entry from toucan.repos, including ${handEdited.join(", ")}.`,
-      },
-      "Clear",
-    );
+    const { message, detail } = clearConfirmation(handEdited);
+    const answer = await window.showWarningMessage(message, { modal: true, detail }, "Clear");
     if (answer !== "Clear") {
       return;
     }
