@@ -38,7 +38,19 @@ export interface SettingsWriteOptions {
   /** How long VS Code may take to pick up an in-place edit (measured 0.3–1.9 s). */
   verifyTimeoutMs?: number;
   verifyPollMs?: number;
+  /** Time for the verify step; tests pass a fake one. */
+  clock?: Clock;
 }
+
+export interface Clock {
+  now(): number;
+  sleep(ms: number): Promise<void>;
+}
+
+const realClock: Clock = {
+  now: () => Date.now(),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+};
 
 /**
  * Writes one of Toucan's two settings, keeping comments when it can (0017).
@@ -51,6 +63,7 @@ export class SettingsFileWriter {
   private readonly ports: SettingsWritePorts;
   private readonly verifyTimeoutMs: number;
   private readonly verifyPollMs: number;
+  private readonly clock: Clock;
   /**
    * The focus coordinator and the commands share this writer, and both
    * settings can live in the same file: one read-plan-write-verify at a time,
@@ -73,6 +86,7 @@ export class SettingsFileWriter {
     this.ports = ports;
     this.verifyTimeoutMs = options.verifyTimeoutMs ?? 4000;
     this.verifyPollMs = options.verifyPollMs ?? 100;
+    this.clock = options.clock ?? realClock;
   }
 
   /** The settings file a target resolves to (a guess for `profile`, see 0017). */
@@ -187,13 +201,13 @@ export class SettingsFileWriter {
     desired: Record<string, unknown> | undefined,
     changed: readonly string[],
   ): Promise<boolean> {
-    const deadline = Date.now() + this.verifyTimeoutMs;
-    while (Date.now() < deadline) {
+    const deadline = this.clock.now() + this.verifyTimeoutMs;
+    while (this.clock.now() < deadline) {
       if (viewReflects(this.ports.view(key), desired, changed)) {
         return true;
       }
       // oxlint-disable-next-line no-await-in-loop -- polling is sequential by nature
-      await new Promise((resolve) => setTimeout(resolve, this.verifyPollMs));
+      await this.clock.sleep(this.verifyPollMs);
     }
     return viewReflects(this.ports.view(key), desired, changed);
   }

@@ -14,8 +14,8 @@ import { execFileSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SettingsFileWriter } from "../../src/core/settingsWrite.ts";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { SettingsFileWriter, type Clock } from "../../src/core/settingsWrite.ts";
 
 const KEY = "toucan.repos";
 const BEFORE = `{
@@ -47,15 +47,39 @@ afterEach(async () => {
 });
 
 /**
+ * A fake clock for the verify step: no real waiting. Each poll interval runs
+ * `onSleep`, which is where a test lets VS Code's view catch up with the file
+ * (or another writer step in).
+ */
+function fakeClock(onSleep: () => Promise<void> = async () => {}): Clock {
+  let now = 0;
+  return {
+    now: () => now,
+    sleep: async (ms) => {
+      now += ms;
+      await onSleep();
+    },
+  };
+}
+
+const TIMING = { verifyTimeoutMs: 4000, verifyPollMs: 100 };
+
+/**
  * A writer for `file`. `view: "follows"` behaves like VS Code picking up the
- * file; `"stale"` never does (the file isn't this window's). Records update().
+ * file during the first poll interval; `"stale"` never does (the file isn't
+ * this window's). `onSleep` runs during each poll interval. Records update().
  */
 function setup(
   file: string,
-  { view = "follows", dirty = [] }: { view?: "follows" | "stale"; dirty?: string[] } = {},
+  {
+    view = "follows",
+    dirty = [],
+    onSleep,
+  }: { view?: "follows" | "stale"; dirty?: string[]; onSleep?: () => Promise<void> } = {},
 ) {
   const updates: unknown[] = [];
   const debugs: string[] = [];
+  const sleeps: number[] = [];
   const writer = new SettingsFileWriter(
     { profile: file, defaultProfile: file },
     {
@@ -66,9 +90,18 @@ function setup(
       dirtyFiles: () => dirty,
       debug: (message) => debugs.push(message),
     },
-    { verifyTimeoutMs: 300, verifyPollMs: 10 },
+    {
+      ...TIMING,
+      clock: fakeClock(async () => {
+        sleeps.push(sleeps.length);
+        if (view === "follows") {
+          await refreshView(file);
+        }
+        await onSleep?.();
+      }),
+    },
   );
-  return { writer, updates, debugs };
+  return { writer, updates, debugs, sleeps };
 }
 
 /** What VS Code would see: the key's value in the file (comments stripped crudely). */
@@ -80,14 +113,6 @@ async function refreshView(file: string): Promise<void> {
   const text = await readFile(file, "utf8");
   const json = text.replace(/\/\/.*$/gm, "").replace(/,(\s*[}\]])/g, "$1");
   fileCache.set(file, (JSON.parse(json) as Record<string, unknown>)[KEY]);
-}
-
-/** Polls the file into the fake view like VS Code's watcher, until stopped. */
-function watch(file: string): () => void {
-  const timer = setInterval(() => {
-    void refreshView(file).catch(() => undefined);
-  }, 5);
-  return () => clearInterval(timer);
 }
 
 const replace = () => ({ value: NEXT });
@@ -103,10 +128,8 @@ describe("SettingsFileWriter", () => {
     await chmod(file, 0o640);
     const inode = (await stat(file)).ino;
     await refreshView(file);
-    const stop = watch(file);
     const { writer, updates } = setup(file);
     await writer.write(KEY, replace, "profile");
-    stop();
     expect(await readFile(file, "utf8")).toBe(AFTER);
     expect((await stat(file)).mode & 0o777).toBe(0o640);
     expect((await stat(file)).ino).not.toBe(inode);
@@ -120,10 +143,8 @@ describe("SettingsFileWriter", () => {
     await symlink(target, file);
     const inode = (await stat(target)).ino;
     await refreshView(file);
-    const stop = watch(file);
     const { writer, updates } = setup(file);
     await writer.write(KEY, replace, "profile");
-    stop();
     expect((await lstat(file)).isSymbolicLink()).toBe(true);
     expect(await readFile(target, "utf8")).toBe(AFTER);
     expect((await stat(target)).ino).toBe(inode);
@@ -136,10 +157,8 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     await link(file, other);
     await refreshView(file);
-    const stop = watch(file);
     const { writer } = setup(file);
     await writer.write(KEY, replace, "profile");
-    stop();
     expect((await stat(file)).nlink).toBe(2);
     expect(await readFile(other, "utf8")).toBe(AFTER);
   });
@@ -147,23 +166,27 @@ describe("SettingsFileWriter", () => {
   it("reverts the edit and uses update() when VS Code never picks it up", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
-    const { writer, updates } = setup(file, { view: "stale" });
+    const { writer, updates, sleeps } = setup(file, { view: "stale" });
     await writer.write(KEY, replace, "profile");
     expect(await readFile(file, "utf8")).toBe(BEFORE);
     expect(updates).toEqual([NEXT]);
+    expect(sleeps).toHaveLength(40); // polled every 100 ms for the full 4 s
   });
 
   it("leaves a file someone else changed during the check, and uses update()", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
-    const { writer, updates } = setup(file, { view: "stale" });
-    const writing = writer.write(KEY, replace, "profile");
-    // Mid-verify: wait for the edit itself, not a fixed delay a slow runner can outlast.
-    await vi.waitFor(async () => expect(await readFile(file, "utf8")).toBe(AFTER), {
-      interval: 5,
+    let edited: string | undefined;
+    const { writer, updates } = setup(file, {
+      view: "stale",
+      onSleep: async () => {
+        // Mid-verify, right after Toucan's edit landed.
+        edited ??= await readFile(file, "utf8");
+        await writeFile(file, "{ /* someone else */ }\n");
+      },
     });
-    await writeFile(file, "{ /* someone else */ }\n");
-    await writing;
+    await writer.write(KEY, replace, "profile");
+    expect(edited).toBe(AFTER);
     expect(await readFile(file, "utf8")).toBe("{ /* someone else */ }\n");
     expect(updates).toEqual([NEXT]);
   });
@@ -176,10 +199,8 @@ describe("SettingsFileWriter", () => {
     await refreshView(file);
     // VS Code follows the file, so an in-place edit would stick: only the
     // dirty check keeps the file unchanged here.
-    const stop = watch(file);
     const { writer, updates } = setup(file, { dirty: [target] });
     await writer.write(KEY, replace, "profile");
-    stop();
     expect(await readFile(target, "utf8")).toBe(BEFORE);
     expect(updates).toEqual([NEXT]);
   });
@@ -229,7 +250,7 @@ describe("SettingsFileWriter", () => {
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { verifyTimeoutMs: 50, verifyPollMs: 10 },
+      { ...TIMING, clock: fakeClock() },
     );
     await writer.write(
       KEY,
@@ -302,7 +323,7 @@ describe("SettingsFileWriter", () => {
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { verifyTimeoutMs: 50, verifyPollMs: 10 },
+      { ...TIMING, clock: fakeClock() },
     );
     await writer.write(KEY, replace, "profile");
     expect(updates).toEqual([NEXT]);
@@ -330,7 +351,7 @@ describe("SettingsFileWriter", () => {
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { verifyTimeoutMs: 50, verifyPollMs: 10 },
+      { ...TIMING, clock: fakeClock() },
     );
     // First call computes a value; the recompute after the file changed says "leave alone".
     await writer.write(KEY, () => (++updaterCalls === 1 ? { value: NEXT } : undefined), "profile");
@@ -345,7 +366,6 @@ describe("SettingsFileWriter", () => {
     await writeFile(profile, BEFORE);
     await writeFile(defaultProfile, BEFORE);
     await refreshView(defaultProfile);
-    const stop = watch(defaultProfile);
     const writer = new SettingsFileWriter(
       { profile, defaultProfile },
       {
@@ -356,10 +376,9 @@ describe("SettingsFileWriter", () => {
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { verifyTimeoutMs: 300, verifyPollMs: 10 },
+      { ...TIMING, clock: fakeClock(() => refreshView(defaultProfile)) },
     );
     await writer.write(KEY, replace, "defaultProfile");
-    stop();
     expect(await readFile(defaultProfile, "utf8")).toBe(AFTER);
     expect(await readFile(profile, "utf8")).toBe(BEFORE);
   });
@@ -381,7 +400,6 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
     await refreshView(file);
-    const stop = watch(file);
     const { writer, updates } = setup(file);
     await Promise.all([
       writer.write(
@@ -395,7 +413,6 @@ describe("SettingsFileWriter", () => {
         "profile",
       ),
     ]);
-    stop();
     expect(await readFile(file, "utf8")).toBe(
       AFTER.replace('"other": "#123456"', '"other": "#654321"'),
     );

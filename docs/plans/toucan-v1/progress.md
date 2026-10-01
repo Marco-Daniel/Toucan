@@ -13,6 +13,11 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (C3): a clock for the writer's verify step
+- Did: L37. `SettingsFileWriter` takes an optional `clock` (`now`, `sleep`) for the verify step, real by default. The tests use a fake clock whose `sleep` is where VS Code's view catches up, replacing the 5 ms `setInterval` watcher. The "someone else wrote" step runs from that callback instead of a wall-clock wait. No writer test waits on real time any more: the file runs in about 0.2 s, and the full 4 s / 100 ms timing is asserted (40 polls).
+- Verified: all quality commands pass; the suite was green 5 times in a row. Mutations proven red: the deadline, `<=` at the deadline, the changed-since check.
+- Next: group D (logging, Toggle registration, settings helpers).
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (C2): search emoji sequencing into core
 - Did:
   - M9: the window.title heal/consent/apply/restore sequence moved from `src/searchEmoji.ts` to `TitleSetup` in `src/core/titleSetup.ts`, behind ports. The adapter keeps labelling and git hooks. Tests pin the order (pending record, title, settled record), decline turning the feature off, a failed write clearing the record and warning, no dialog when the variable is already there, a single dialog at a time, restore and keep-edited, and crash recovery only in the focused window.
