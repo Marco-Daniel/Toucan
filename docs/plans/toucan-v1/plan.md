@@ -87,7 +87,7 @@ The repo currently holds only grounding and this plan. The first implementer set
 
 ## Risks
 
-- **Status bar contrast**: only the glyph/text color is ours; a dark color on a dark status bar is hard to see. Consider a contrast warning.
+- **Status bar contrast**: only the glyph/text color is ours; a dark color on a dark status bar is hard to see. Set Color and Pick Preset warn below about 3:1 ([0018](decisions/0018-warn-about-low-status-bar-contrast-when-picking.md)).
 - **Focus races**: blur and focus writes from two windows can overlap briefly. Mitigated by the owner marker; newest focus wins.
 - **settings.json churn**: every focus change writes user settings. Mitigated by skipping no-op writes and ignoring `active` toggles.
 - **Emoji hack fragility**: relies on an undocumented context key and SCM rewriting it (brief flicker). Kept opt-in and labelled experimental.
