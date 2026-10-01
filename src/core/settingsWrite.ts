@@ -141,7 +141,9 @@ export class SettingsFileWriter {
     const file = this.files[target];
     let desired = computed;
     const fallback = (reason: string) => ({ reason, desired });
-    if (this.unfollowed.has(file)) {
+    // Only the guess is ever given up on: both targets can resolve to the same
+    // file, and the default profile's settings are always followed there.
+    if (target === "profile" && this.unfollowed.has(file)) {
       return fallback("VS Code didn't follow an earlier edit of this file");
     }
     if (await this.isDirty(file)) {

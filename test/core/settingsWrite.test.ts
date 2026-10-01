@@ -439,6 +439,41 @@ describe("SettingsFileWriter", () => {
     expect(reasons(debugs)).toEqual([REVERTED, REVERTED, REVERTED]);
   });
 
+  it("still edits toucan.repos in place when both targets share a file given up on for colors", async () => {
+    // A profile with its own settings but shared global state: both targets
+    // resolve to the default profile's file, which VS Code follows for repos.
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    let follows = false;
+    const updates: unknown[] = [];
+    const writer = new SettingsFileWriter(
+      { profile: file, defaultProfile: file },
+      {
+        view: () => readKey(file),
+        update: async (_key, value) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      {
+        ...TIMING,
+        clock: fakeClock(async () => {
+          if (follows) {
+            await refreshView(file);
+          }
+        }),
+      },
+    );
+    await refreshView(file);
+    await writer.write(KEY, replace, "profile"); // missed
+    await writer.write(KEY, replace, "profile"); // missed again: given up for "profile"
+    follows = true;
+    await writer.write(KEY, replace, "defaultProfile");
+    expect(updates).toEqual([NEXT, NEXT]);
+    expect(await readFile(file, "utf8")).toBe(AFTER);
+  });
+
   it("doesn't count a miss when someone else changed the file meanwhile", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
