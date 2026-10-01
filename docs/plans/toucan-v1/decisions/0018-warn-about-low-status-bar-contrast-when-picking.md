@@ -22,4 +22,6 @@ Chosen: **warn when picking.** *Set Color* and *Pick Preset Color* check the cho
 
 - Good: the user decides with the information in front of them, and the color stays exactly what they chose everywhere.
 - Bad: a color that's fine on one theme can be hard to see after switching themes; the warning only applies at pick time.
-- Follow-ups: how to read the active theme's status bar color (theme colors aren't exposed as values to extensions, so this may need the theme kind as an approximation, or the `workbench.colorCustomizations` override if set). Decide during implementation and note it here.
+**Which status bar color to compare against.** Extensions can't read a theme's resolved colors, only `window.activeColorTheme.kind`. So Toucan uses the user's `workbench.colorCustomizations["statusBar.background"]` when it's set, and otherwise a representative background for the theme kind (the Default Dark Modern and Light Modern status bar colors). Because custom themes can differ, the warning says the color *may* be hard to see on the status bar, and doesn't state a measured ratio. In high-contrast themes VS Code draws status bar items with borders, so Toucan doesn't warn there.
+
+- Follow-ups: revisit if VS Code ever exposes resolved theme colors to extensions.
