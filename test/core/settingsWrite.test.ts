@@ -117,6 +117,13 @@ async function refreshView(file: string): Promise<void> {
 
 const replace = () => ({ value: NEXT });
 
+/** The fallback reasons the writer logged, in order. */
+const reasons = (debugs: string[]) =>
+  debugs.map((message) => /in-place edit \((.*)\)$/.exec(message)?.[1]);
+const REVERTED = "VS Code didn't pick up the edit; reverted it";
+const CHANGED = "VS Code didn't pick up the edit, and the file changed since; left it";
+const UNFOLLOWED = "VS Code didn't follow an earlier edit of this file";
+
 /** A settings file with one commented object entry. */
 const entry = (background: string) => `{
   "toucan.repos": {
@@ -408,17 +415,89 @@ describe("SettingsFileWriter", () => {
     expect(await readFile(profile, "utf8")).toBe(BEFORE);
   });
 
-  it("goes straight to update() for a file VS Code didn't follow before", async () => {
+  it("goes straight to update() for a guessed file VS Code missed twice in a row", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
     const { writer, updates, debugs } = setup(file, { view: "stale" });
-    await writer.write(KEY, replace, "profile");
-    await writer.write(KEY, replace, "profile");
-    expect(updates).toEqual([NEXT, NEXT]);
-    expect(debugs.at(-1)).toBe(
-      "toucan.repos: update() instead of an in-place edit (VS Code didn't follow an earlier edit of this file)",
-    );
+    for (let i = 0; i < 3; i++) {
+      // oxlint-disable-next-line no-await-in-loop -- the writes are sequential by design
+      await writer.write(KEY, replace, "profile");
+    }
+    expect(updates).toEqual([NEXT, NEXT, NEXT]);
+    expect(reasons(debugs)).toEqual([REVERTED, REVERTED, UNFOLLOWED]);
     expect(await readFile(file, "utf8")).toBe(BEFORE);
+  });
+
+  it("never gives up on the default profile's file, which VS Code always follows", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const { writer, debugs } = setup(file, { view: "stale" });
+    for (let i = 0; i < 3; i++) {
+      // oxlint-disable-next-line no-await-in-loop -- the writes are sequential by design
+      await writer.write(KEY, replace, "defaultProfile");
+    }
+    expect(reasons(debugs)).toEqual([REVERTED, REVERTED, REVERTED]);
+  });
+
+  it("doesn't count a miss when someone else changed the file meanwhile", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    let interfere = true;
+    const { writer, debugs } = setup(file, {
+      view: "stale",
+      onSleep: async () => {
+        if (interfere) {
+          await writeFile(file, `${BEFORE}\n`); // same settings, different text
+        }
+      },
+    });
+    await writer.write(KEY, replace, "profile");
+    interfere = false;
+    await writeFile(file, BEFORE);
+    await writer.write(KEY, replace, "profile");
+    await writer.write(KEY, replace, "profile");
+    expect(reasons(debugs)).toEqual([CHANGED, REVERTED, REVERTED]);
+  });
+
+  it("keeps editing in place after one slow pickup, and starts counting again", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const updates: unknown[] = [];
+    const debugs: string[] = [];
+    let follows = false;
+    const writer = new SettingsFileWriter(
+      { profile: file, defaultProfile: file },
+      {
+        view: () => readKey(file),
+        update: async (_key, value) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: (message) => debugs.push(message),
+      },
+      {
+        ...TIMING,
+        clock: fakeClock(async () => {
+          if (follows) {
+            await refreshView(file);
+          }
+        }),
+      },
+    );
+    // VS Code is in sync before each write; `follow` says whether it picks up the edit in time.
+    const write = async (value: Record<string, unknown>, follow: boolean) => {
+      await refreshView(file);
+      follows = follow;
+      await writer.write(KEY, () => ({ value }), "profile");
+    };
+    await write(NEXT, false); // a slow pickup: missed once
+    await write(NEXT, true);
+    expect(await readFile(file, "utf8")).toBe(AFTER);
+    expect(updates).toEqual([NEXT]);
+    await write(VIEW, false); // missed once again, not twice in a row
+    await write(VIEW, true);
+    expect(await readFile(file, "utf8")).toBe(BEFORE);
+    expect(updates).toEqual([NEXT, VIEW]);
   });
 
   it("serializes overlapping writes so neither edit is lost", async () => {

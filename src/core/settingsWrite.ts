@@ -47,6 +47,9 @@ export interface Clock {
   sleep(ms: number): Promise<void>;
 }
 
+/** Consecutive missed edits before a guessed settings file counts as not this window's. */
+export const MISSES_BEFORE_UNFOLLOWED = 2;
+
 const realClock: Clock = {
   now: () => Date.now(),
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -71,11 +74,13 @@ export class SettingsFileWriter {
    */
   private readonly lock = createLock();
   /**
-   * Files whose in-place edit VS Code didn't pick up: the guess was another
-   * profile's file, so later writes go straight to `update()` instead of
-   * editing it and waiting out the verify timeout every time.
+   * Guessed (`profile`) files whose in-place edits VS Code missed twice in a
+   * row: the guess was another profile's file, so later writes go straight to
+   * `update()` instead of waiting out the verify timeout every time.
    */
   private readonly unfollowed = new Set<string>();
+  /** Consecutive missed edits per guessed file; one slow pickup isn't enough. */
+  private readonly misses = new Map<string, number>();
 
   constructor(
     files: Record<SettingsTarget, string>,
@@ -115,7 +120,7 @@ export class SettingsFileWriter {
     if (next === undefined) {
       return;
     }
-    const outcome = await this.tryInPlace(this.files[target], key, update, next.value);
+    const outcome = await this.tryInPlace(target, key, update, next.value);
     if (outcome.reason === undefined) {
       return;
     }
@@ -128,11 +133,12 @@ export class SettingsFileWriter {
    * `undefined` when it did), with the latest value the fallback should write.
    */
   private async tryInPlace(
-    file: string,
+    target: SettingsTarget,
     key: string,
     update: SettingsUpdate,
     computed: Record<string, unknown> | undefined,
   ): Promise<{ reason: string | undefined; desired: Record<string, unknown> | undefined }> {
+    const file = this.files[target];
     let desired = computed;
     const fallback = (reason: string) => ({ reason, desired });
     if (this.unfollowed.has(file)) {
@@ -178,14 +184,16 @@ export class SettingsFileWriter {
       return fallback(`couldn't write the settings file (${String(error)})`);
     }
     if (await this.reflected(key, desired, plan.changed)) {
+      this.misses.delete(file);
       return { reason: undefined, desired };
     }
-    // VS Code didn't follow: the file wasn't this window's (0017 step 5).
-    this.unfollowed.add(file);
+    // VS Code didn't follow: maybe slow, maybe not this window's file (0017 step 5).
     const now = await readFile(file, "utf8").catch(() => undefined);
     if (now !== plan.text) {
+      // Someone else wrote meanwhile: no evidence either way about the guess.
       return fallback("VS Code didn't pick up the edit, and the file changed since; left it");
     }
+    this.recordMiss(target, file);
     try {
       await writeLikeVsCode(file, text);
     } catch (error) {
@@ -194,6 +202,18 @@ export class SettingsFileWriter {
       );
     }
     return fallback("VS Code didn't pick up the edit; reverted it");
+  }
+
+  /** Only the `profile` file is a guess; the default profile's file is always followed. */
+  private recordMiss(target: SettingsTarget, file: string): void {
+    if (target !== "profile") {
+      return;
+    }
+    const misses = (this.misses.get(file) ?? 0) + 1;
+    this.misses.set(file, misses);
+    if (misses >= MISSES_BEFORE_UNFOLLOWED) {
+      this.unfollowed.add(file);
+    }
   }
 
   private async reflected(
