@@ -1,0 +1,224 @@
+import { describe, expect, it } from "vitest";
+import {
+  planEdit,
+  settingInText,
+  settingsFiles,
+  viewReflects,
+} from "../../src/core/settingsEdit.ts";
+
+const KEY = "workbench.colorCustomizations";
+
+const FILE = `{
+  // my settings
+  "editor.fontSize": 13,
+  "${KEY}": {
+    // keep my editor color
+    "editor.background": "#101010",
+    "commandCenter.background": "#aa0000", // Toucan's
+  },
+}
+`;
+
+const VIEW = { "editor.background": "#101010", "commandCenter.background": "#aa0000" };
+
+describe("planEdit", () => {
+  it("edits only the changed keys and keeps every comment", () => {
+    const plan = planEdit({
+      text: FILE,
+      key: KEY,
+      view: VIEW,
+      desired: {
+        ...VIEW,
+        "commandCenter.background": "#00bb00",
+        "commandCenter.border": "#111111",
+      },
+    });
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
+    expect(plan.changed.toSorted()).toEqual(["commandCenter.background", "commandCenter.border"]);
+    expect(plan.text).toContain("// my settings");
+    expect(plan.text).toContain("// keep my editor color");
+    expect(plan.text).toContain('"commandCenter.background": "#00bb00"');
+    expect(plan.text).toContain('"commandCenter.border": "#111111"');
+    expect(plan.text).toContain('"editor.background": "#101010"');
+  });
+
+  it("clears Toucan's keys and keeps the user's keys and comments", () => {
+    const plan = planEdit({
+      text: FILE,
+      key: KEY,
+      view: VIEW,
+      desired: { "editor.background": "#101010" },
+    });
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
+    expect(plan.changed).toEqual(["commandCenter.background"]);
+    expect(plan.text).toContain("// my settings");
+    expect(plan.text).toContain("// keep my editor color");
+    expect(plan.text).toContain('"editor.background": "#101010"');
+    expect(plan.text).not.toContain("commandCenter");
+  });
+
+  it("falls back instead of writing an edit that doesn't parse back as intended", () => {
+    // Trailing comma plus comment on the only property: a removal jsonc-parser can't do cleanly.
+    const text = `{\n  "${KEY}": {\n    "commandCenter.background": "#aa0000", // Toucan's\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { "commandCenter.background": "#aa0000" },
+      desired: undefined,
+    });
+    // jsonc-parser leaves "{ , // Toucan's }" here; the re-parse check catches it.
+    expect(plan).toMatchObject({ kind: "fallback" });
+  });
+
+  it("is a no-op when nothing changes", () => {
+    expect(planEdit({ text: FILE, key: KEY, view: VIEW, desired: VIEW })).toEqual({ kind: "noop" });
+  });
+
+  it("falls back when the key is absent from the file", () => {
+    const plan = planEdit({ text: '{ "a": 1 }', key: KEY, view: undefined, desired: VIEW });
+    expect(plan).toMatchObject({ kind: "fallback" });
+  });
+
+  it("falls back when the file differs from VS Code's view (another profile's file)", () => {
+    const plan = planEdit({
+      text: FILE,
+      key: KEY,
+      view: { "editor.background": "#202020" },
+      desired: VIEW,
+    });
+    expect(plan).toMatchObject({ kind: "fallback" });
+  });
+
+  it("falls back on a file that doesn't parse", () => {
+    expect(planEdit({ text: "{ oops", key: KEY, view: VIEW, desired: VIEW })).toMatchObject({
+      kind: "fallback",
+    });
+  });
+
+  it("keeps tab indentation and CRLF line endings", () => {
+    const text = `{\r\n\t"${KEY}": {\r\n\t\t"a": "#000000"\r\n\t}\r\n}\r\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000" },
+      desired: { a: "#000000", b: "#111111" },
+    });
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
+    expect(plan.text).toContain(`\t\t"b": "#111111"`);
+    expect(plan.text.replaceAll("\r\n", "")).not.toContain("\n");
+  });
+
+  it("replaces a changed repo entry without touching the others", () => {
+    const text = `{\n  "toucan.repos": {\n    // work\n    "webshop": "#e0620b",\n    "toucan": { "background": "#14939c" } // mine\n  }\n}\n`;
+    const view = { webshop: "#e0620b", toucan: { background: "#14939c" } };
+    const plan = planEdit({
+      text,
+      key: "toucan.repos",
+      view,
+      desired: { ...view, webshop: { background: "#e0620b", glyph: "star" } },
+    });
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
+    expect(plan.changed).toEqual(["webshop"]);
+    expect(plan.text).toContain("// work");
+    expect(plan.text).toContain("// mine");
+    expect(plan.text).toContain('"glyph": "star"');
+  });
+});
+
+describe("viewReflects", () => {
+  it("checks only the changed properties", () => {
+    const desired = { a: 1, b: 2 };
+    expect(
+      viewReflects({ a: 1, b: 2, other: "changed by someone else" }, desired, ["a", "b"]),
+    ).toBe(true);
+    expect(viewReflects({ a: 1, b: 3 }, desired, ["a", "b"])).toBe(false);
+  });
+
+  it("treats removed properties as reflected when they're gone", () => {
+    expect(viewReflects({}, undefined, ["a"])).toBe(true);
+    expect(viewReflects(undefined, undefined, ["a"])).toBe(true);
+    expect(viewReflects({ a: 1 }, undefined, ["a"])).toBe(false);
+  });
+});
+
+describe("settingsFiles", () => {
+  it("derives both files for the default profile", () => {
+    expect(settingsFiles("/home/me/.config/Code/User/globalStorage/marco-daniel.toucan")).toEqual({
+      profile: "/home/me/.config/Code/User/settings.json",
+      defaultProfile: "/home/me/.config/Code/User/settings.json",
+    });
+  });
+
+  it("derives both files for a non-default profile", () => {
+    expect(
+      settingsFiles("/home/me/.config/Code/User/profiles/-6a1f/globalStorage/marco-daniel.toucan"),
+    ).toEqual({
+      profile: "/home/me/.config/Code/User/profiles/-6a1f/settings.json",
+      defaultProfile: "/home/me/.config/Code/User/settings.json",
+    });
+  });
+
+  it("handles Windows paths", () => {
+    expect(
+      settingsFiles(
+        "C:\\Users\\me\\AppData\\Roaming\\Code\\User\\globalStorage\\marco-daniel.toucan",
+      ),
+    ).toEqual({
+      profile: "C:\\Users\\me\\AppData\\Roaming\\Code\\User\\settings.json",
+      defaultProfile: "C:\\Users\\me\\AppData\\Roaming\\Code\\User\\settings.json",
+    });
+  });
+});
+
+describe("planEdit, clearing every key", () => {
+  // Keeps the (now empty) object: removing the key would drop comments inside it (0017).
+  it("leaves an empty object (closing brace on its own line) in a plain file", () => {
+    const text = `{\n  "${KEY}": {\n    "commandCenter.background": "#aa0000"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { "commandCenter.background": "#aa0000" },
+      desired: undefined,
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n  }\n}\n`,
+      changed: ["commandCenter.background"],
+    });
+  });
+
+  it("keeps CRLF line endings", () => {
+    const text = `{\r\n  "${KEY}": {\r\n    "a": "#000000",\r\n    "b": "#111111"\r\n  }\r\n}\r\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: undefined,
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{\r\n  "${KEY}": {\r\n  }\r\n}\r\n`,
+      changed: ["a", "b"],
+    });
+  });
+});
+
+describe("settingInText", () => {
+  it("reads the setting from commented JSON", () => {
+    expect(settingInText(`{\n  // c\n  "${KEY}": { "a": 1 },\n}`, KEY)).toEqual({
+      value: { a: 1 },
+    });
+  });
+
+  it("reports an absent key as an undefined value", () => {
+    expect(settingInText("{}", KEY)).toEqual({ value: undefined });
+  });
+
+  it("gives nothing for text that doesn't parse", () => {
+    expect(settingInText("{ oops", KEY)).toBeUndefined();
+  });
+});

@@ -1,0 +1,76 @@
+version: 2
+updates:
+  # Keeps the SHA-pinned workflow actions current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    # Wait a week after a release before proposing it.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 3
+    labels: [dependencies, github-actions]
+    commit-message:
+      prefix: deps
+      include: scope
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # npm, as a trial: pnpm 12 works with Dependabot in practice but isn't in its
+  # documented support yet, and dependabot-core#15904 is open (it reads only the
+  # first document of a two-document pnpm 12 lockfile like ours, so security
+  # alerts may miss packages). If its pull requests fail, or CI's
+  # `pnpm install --frozen-lockfile` rejects them, switch this block off again
+  # and record why.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    open-pull-requests-limit: 5
+    labels: [dependencies, npm]
+    commit-message:
+      prefix: deps
+      include: scope
+    ignore:
+      # Must not move past engines.vscode (^1.138), or code could use APIs
+      # newer than the minimum and vsce rejects the package. Bump it by hand
+      # together with engines.vscode.
+      - dependency-name: "@types/vscode"
+      # Kept at the Node 22 floor that matches the build target in
+      # tsdown.config.ts; minor and patch updates are fine.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    # Groups match in order; majors come as their own pull requests.
+    groups:
+      test:
+        patterns: ["vitest", "@vitest/*"]
+        update-types: [minor, patch]
+      lint-format:
+        patterns: ["oxlint", "oxfmt"]
+        update-types: [minor, patch]
+      build:
+        patterns: ["tsdown", "typescript"]
+        update-types: [minor, patch]
+      vscode-tooling:
+        patterns: ["@vscode/vsce", "vscode-ext-gen"]
+        update-types: [minor, patch]
+      font:
+        patterns: ["svgicons2svgfont", "svg2ttf", "ttf2woff"]
+        update-types: [minor, patch]
+      # Bundled into the extension, so kept visible in their own pull request.
+      runtime:
+        patterns: ["culori", "jsonc-parser", "@types/culori"]
+        update-types: [minor, patch]
+      everything-else:
+        patterns: ["*"]
+        update-types: [minor, patch]

@@ -1,0 +1,7 @@
+**
+!dist/extension.cjs
+!dist/extension.cjs.map
+!package.json
+!README.md
+!LICENSE
+!media/toucan-icons.woff
