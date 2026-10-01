@@ -13,6 +13,14 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (B): status bar contrast and labels
+- Did:
+  - M5 / 0018: Set Color shows a warning (not an error) and Pick Preset marks presets that fall under 3:1 WCAG contrast against the status bar. The background is the user's `statusBar.background` override (a `"[Theme]"` block first, then top level), otherwise Dark Modern `#181818` or Light Modern `#f8f8f8` for the theme kind. High contrast themes never warn. Pure logic lives in `src/core/contrast.ts`.
+  - L27: the status bar's screen reader label names the preset color and glyph ("Toucan: webshop, Beak Orange check circle") instead of reading out a hex code (`src/core/labels.ts`).
+  - L24: the muted sidebar block draws the name in the theme's foreground; the repo color on its own tint was too faint for text.
+- Verified: all quality commands pass (296 tests). Mutations proven red: override order, the high contrast skip, the threshold, the muted name color, glyph names in the label.
+- Next: round 1 group C (sidebar guard tests, owner file and search emoji sequencing into core, injected clock in the writer).
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (A): writer and coordinator safety
 - Context: overnight review loop on PR #1, round 1 (38 findings), judged independently. This commit:
   - M3 / amended 0008: the coordinator never clears `commandCenter.*` until Toucan has applied a color in this profile (`hasApplied`/`markApplied` ports, globalState), so hand-set colors survive installing Toucan.

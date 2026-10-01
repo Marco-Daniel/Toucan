@@ -1,5 +1,6 @@
 import { MarkdownString, StatusBarAlignment, window, type Disposable } from "vscode";
 import { escapeIcons, glyphIcon, glyphSvg, svgDataUri } from "./core/glyphs.ts";
+import { accessibilityLabel } from "./core/labels.ts";
 import { commands } from "./generated/meta.ts";
 import { STATUS_ITEM_ID } from "./ids.ts";
 import type { ActiveRepo } from "./repo.ts";
@@ -50,9 +51,7 @@ export class StatusBarIndicator implements Disposable {
     const { name, config } = repo;
     this.item.text = `${glyphIcon(config.glyph)} ${escapeIcons(name)}`;
     this.item.color = config.background;
-    this.item.accessibilityInformation = {
-      label: `Toucan: ${name}, color ${config.background}`,
-    };
+    this.item.accessibilityInformation = { label: accessibilityLabel(name, config) };
     this.item.tooltip = tooltip(repo);
     this.item.show();
   }

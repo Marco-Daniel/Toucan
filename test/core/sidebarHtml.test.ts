@@ -14,6 +14,7 @@ describe("sidebarBlockHtml", () => {
 
   it("paints the full style solid with the derived foreground", () => {
     const html = sidebarBlockHtml({ name: "toucan", glyph: "square", colors, style: "full" });
+    expect(html).not.toContain("var(--vscode-foreground)");
     expect(html).toContain("background: #14939c;");
     expect(html).toContain(`color: ${colors.foreground};`);
     expect(html).toContain(`fill="${colors.foreground}"`);
@@ -23,6 +24,8 @@ describe("sidebarBlockHtml", () => {
     const html = sidebarBlockHtml({ name: "toucan", glyph: "square", colors, style: "muted" });
     expect(html).toContain("background: #14939c40;");
     expect(html).toContain("color: #14939c;");
+    // The name uses the theme's text color: the repo color on its own tint is too faint.
+    expect(html).toContain("color: var(--vscode-foreground);");
     expect(html).toContain('fill="#14939c"');
   });
 

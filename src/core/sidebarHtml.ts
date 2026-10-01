@@ -44,7 +44,14 @@ body {
   overflow: hidden;
 }
 svg { max-width: 60%; height: auto; }
-.name { max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.name {
+  /* Muted: the repo color on a tint of itself is too faint for text, so the name uses the theme's text color. */
+  color: ${muted ? "var(--vscode-foreground)" : ink};
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>

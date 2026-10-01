@@ -1,11 +1,15 @@
 import {
+  ColorThemeKind,
+  InputBoxValidationSeverity,
   Uri,
   commands as vscodeCommands,
   window,
+  workspace,
   type Disposable,
   type QuickPickItem,
 } from "vscode";
 import { validateColorInput } from "./core/color.ts";
+import { LOW_CONTRAST_WARNING, lowContrast, statusBarBackground } from "./core/contrast.ts";
 import type { RepoConfig } from "./core/config.ts";
 import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "./core/entries.ts";
 import { glyphSvg, svgDataUri } from "./core/glyphs.ts";
@@ -45,9 +49,20 @@ async function setColor(host: CommandHost, name: string): Promise<void> {
   box.value = host.activeRepo()?.config.background ?? "";
   let accepted = false;
 
+  const statusBar = statusBarAgainst();
   const validate = (value: string): Hex | undefined => {
     const input = validateColorInput(value);
-    box.validationMessage = input.kind === "invalid" ? input.message : undefined;
+    if (input.kind === "invalid") {
+      box.validationMessage = input.message;
+    } else if (input.kind === "color" && lowContrast(input.hex, statusBar)) {
+      // A warning, not an error: the color can still be saved (0018).
+      box.validationMessage = {
+        message: LOW_CONTRAST_WARNING,
+        severity: InputBoxValidationSeverity.Warning,
+      };
+    } else {
+      box.validationMessage = undefined;
+    }
     return input.kind === "color" ? input.hex : undefined;
   };
 
@@ -82,12 +97,20 @@ async function setColor(host: CommandHost, name: string): Promise<void> {
 async function pickPreset(host: CommandHost, name: string): Promise<void> {
   const glyph = host.activeRepo()?.config.glyph ?? DEFAULT_GLYPH;
   const current = host.activeRepo()?.config.background;
-  const items = PRESETS.map((preset): QuickPickItem & { hex: Hex } => ({
-    label: preset.name,
-    description: preset.hex === current ? `${preset.hex} · current` : preset.hex,
-    iconPath: swatch(glyph, preset.hex),
-    hex: preset.hex,
-  }));
+  const statusBar = statusBarAgainst();
+  const items = PRESETS.map((preset) => {
+    const item: QuickPickItem & { hex: Hex } = {
+      label: preset.name,
+      description: preset.hex === current ? `${preset.hex} · current` : preset.hex,
+      iconPath: swatch(glyph, preset.hex),
+      hex: preset.hex,
+    };
+    // Marked, not hidden: the user can still pick it (0018).
+    if (lowContrast(preset.hex, statusBar)) {
+      item.detail = `$(warning) ${LOW_CONTRAST_WARNING}`;
+    }
+    return item;
+  });
   const picked = await pickWithPreview(
     host,
     name,
@@ -263,6 +286,22 @@ function withRepo(
 
 function swatch(glyph: Glyph, hex: Hex): Uri {
   return Uri.parse(svgDataUri(glyphSvg(glyph, hex, 16)));
+}
+
+/** The status bar background to check picked colors against (0018). */
+function statusBarAgainst(): Hex | undefined {
+  const kind = window.activeColorTheme.kind;
+  const configuration = workspace.getConfiguration();
+  return statusBarBackground({
+    kind:
+      kind === ColorThemeKind.Light
+        ? "light"
+        : kind === ColorThemeKind.Dark
+          ? "dark"
+          : "highContrast",
+    themeName: configuration.get<string>("workbench.colorTheme"),
+    customizations: configuration.get("workbench.colorCustomizations"),
+  });
 }
 
 /**
