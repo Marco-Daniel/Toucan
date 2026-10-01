@@ -194,8 +194,11 @@ export class FocusCoordinator {
       if (!stale || snapshot === this.staleSnapshot || (view !== undefined && !isRecord(view))) {
         this.ports.debug(colors ? "colors already applied" : "nothing to clear");
         // Toucan's colors are in effect (a reinstall or Settings Sync can
-        // leave them without the flag): from now on it manages them.
-        await this.recordApplied(colors);
+        // leave them without the flag): from now on it manages them. Not for
+        // a non-object setting, which Toucan never writes over.
+        if (isRecord(view)) {
+          await this.recordApplied(colors);
+        }
         return;
       }
       this.staleSnapshot = snapshot;

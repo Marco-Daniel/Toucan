@@ -13,6 +13,10 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 3
+- Context: blind review of 33b4d0c, 2 Low; judged independently, both accepted.
+- R3-1: the applied flag is recorded on the "already applied" path only when colorCustomizations is an object; a non-object value is never written over, so nothing was applied. Test: a string setting with colors defined, no write and no markApplied. Mutation-red.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 2
 - Context: blind review of 5b9dd0c, 2 Medium + 2 Low, with agreed refinements in the threads; judged independently, all four accepted.
 - R2-1: Toucan records the applied flag also when its colors are already in settings (reinstall, Settings Sync, a crash before the flag was written), and after a successful write, each in its own try with its own warning. The reproduced scenario is the test. Mutation-red: either call site, the catch, the hasApplied short-circuit.

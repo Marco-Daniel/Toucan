@@ -273,6 +273,17 @@ describe("FocusCoordinator", () => {
     expect(world.markAppliedCalls).toBe(1);
   });
 
+  it("doesn't count as applied when colorCustomizations isn't an object it can write", async () => {
+    const world = new World();
+    world.applied = false;
+    world.settings = "#123456" as unknown as Record<string, unknown>; // a typo in settings.json
+    const a = world.window("A", "#e0620b");
+    a.setFocused(true);
+    await settle();
+    expect(world.writes).toBe(0);
+    expect(world.markAppliedCalls).toBe(0);
+  });
+
   it("warns separately when recording the first color fails, and keeps the colors", async () => {
     const world = new World();
     world.applied = false;
