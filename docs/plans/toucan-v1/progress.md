@@ -13,6 +13,14 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (C1): sidebar guards and the owner file
+- Did:
+  - M7 / L38: sidebar tests for a settings change while disabled, before `start()`, while visible and during a running reveal, and for Toggle forgetting the remembered close without a visibility event.
+  - M8: the owner file moved to `src/core/ownerFile.ts` and is tested in a temp dir: round trip, missing directory, garbage/null/non-string/missing `window`, 20 concurrent writers, and a failed rename leaving no temp file. The unread `at` field is gone; a failed write now removes its temp file.
+  - The mid-verify writer test waits with `vi.waitFor` (no await-in-loop lint warnings).
+- Verified: all quality commands pass. Mutations proven red: each of the three `settingsChanged` guards, the `revealing` guard, Toggle's `writeClosed(false)`, the owner key, mkdir, the string check, the per-window temp name, the temp cleanup.
+- Next: toucan-2c's review of A/B (first-use guard taking ownership, auto-detected theme name, the 3:1 boundary), then M9/L14/L15 and L37.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (B): status bar contrast and labels
 - Did:
   - M5 / 0018: Set Color shows a warning (not an error) and Pick Preset marks presets that fall under 3:1 WCAG contrast against the status bar. The background is the user's `statusBar.background` override (a `"[Theme]"` block first, then top level), otherwise Dark Modern `#181818` or Light Modern `#f8f8f8` for the theme kind. High contrast themes never warn. Pure logic lives in `src/core/contrast.ts`.

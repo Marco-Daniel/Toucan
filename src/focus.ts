@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 import { window, type Disposable, type ExtensionContext, type LogOutputChannel } from "vscode";
 import { FocusCoordinator, type FocusPorts } from "./core/focus.ts";
+import { createOwnerFile } from "./core/ownerFile.ts";
 import { settingInText } from "./core/settingsEdit.ts";
 import { userValue, type SettingsWriter } from "./settingsWriter.ts";
 import type { CommandCenterColors } from "./core/model.ts";
@@ -37,32 +37,13 @@ function ownerFilePorts(
   log: LogOutputChannel,
   writer: SettingsWriter,
 ): FocusPorts {
-  const directory = context.globalStorageUri.fsPath;
-  const ownerFile = join(directory, "owner.json");
   // A guess: a profile can share the default global state and keep its own
   // settings (or the reverse), so this may be the wrong file. See
   // readCustomizationsFromDisk.
   const settingsFile = writer.file("profile");
 
   return {
-    async readOwner() {
-      try {
-        const { window: owner } = JSON.parse(await readFile(ownerFile, "utf8")) as {
-          window?: unknown;
-        };
-        return typeof owner === "string" ? owner : undefined;
-      } catch {
-        // Missing or unreadable counts as another window's, so nothing is cleared.
-        return undefined;
-      }
-    },
-    async writeOwner(owner) {
-      await mkdir(directory, { recursive: true });
-      // Write then rename, so a reader never sees a half-written file.
-      const temporary = join(directory, `owner.${id}.tmp`);
-      await writeFile(temporary, JSON.stringify({ window: owner, at: Date.now() }));
-      await rename(temporary, ownerFile);
-    },
+    ...createOwnerFile(context.globalStorageUri.fsPath, id),
     readCustomizations() {
       return userValue(COLOR_CUSTOMIZATIONS);
     },

@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsFileWriter } from "../../src/core/settingsWrite.ts";
 
 const KEY = "toucan.repos";
@@ -159,9 +159,9 @@ describe("SettingsFileWriter", () => {
     const { writer, updates } = setup(file, { view: "stale" });
     const writing = writer.write(KEY, replace, "profile");
     // Mid-verify: wait for the edit itself, not a fixed delay a slow runner can outlast.
-    while ((await readFile(file, "utf8")) !== AFTER) {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    }
+    await vi.waitFor(async () => expect(await readFile(file, "utf8")).toBe(AFTER), {
+      interval: 5,
+    });
     await writeFile(file, "{ /* someone else */ }\n");
     await writing;
     expect(await readFile(file, "utf8")).toBe("{ /* someone else */ }\n");

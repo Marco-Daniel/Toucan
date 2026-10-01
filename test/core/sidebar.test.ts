@@ -8,12 +8,20 @@ import {
 
 /**
  * A fake secondary sidebar: reveal and close feed visibility back like VS Code
- * does, unless `silentClose`, where Toucan's close produces no visibility event.
+ * does, unless `silentClose` or `silentReveal` suppress that event. With
+ * `holdReveals`, each reveal stays pending until `release()`.
  */
 function setup(
-  initial: Partial<SidebarSettings> & { closed?: boolean; silentClose?: boolean } = {},
+  initial: Partial<SidebarSettings> & {
+    closed?: boolean;
+    silentClose?: boolean;
+    silentReveal?: boolean;
+    holdReveals?: boolean;
+  } = {},
 ) {
-  const { closed: initiallyClosed, silentClose, ...rest } = initial;
+  const { closed: initiallyClosed, silentClose, silentReveal, holdReveals, ...rest } = initial;
+  const held: (() => void)[] = [];
+  const release = () => held.splice(0).forEach((resolve) => resolve());
   const settings: SidebarSettings = { enabled: true, visibility: "always", ...rest };
   const state = { closed: initiallyClosed ?? false, reveals: 0, closes: 0 };
   let controller!: SidebarController;
@@ -21,7 +29,12 @@ function setup(
     {
       reveal: async () => {
         state.reveals++;
-        controller.visibilityChanged(true);
+        if (holdReveals) {
+          await new Promise<void>((resolve) => held.push(resolve));
+        }
+        if (!silentReveal) {
+          controller.visibilityChanged(true);
+        }
       },
       closeBar: async () => {
         state.closes++;
@@ -37,7 +50,7 @@ function setup(
     },
     () => settings,
   );
-  return { controller, settings, state };
+  return { controller, settings, state, release };
 }
 
 const settle = () => vi.advanceTimersByTimeAsync(0);
@@ -120,6 +133,13 @@ describe("SidebarController, always", () => {
     expect(state).toMatchObject({ closes: 1, closed: true });
     await controller.toggle();
     expect(state).toMatchObject({ reveals: 2, closed: false });
+  });
+
+  it("toggle forgets the remembered close itself, without waiting for a visibility event", async () => {
+    const { controller, state } = setup({ closed: true, silentReveal: true });
+    controller.start(true);
+    await controller.toggle();
+    expect(state).toMatchObject({ reveals: 1, closed: false });
   });
 });
 
@@ -223,6 +243,39 @@ describe("SidebarController, settings changes", () => {
     controller.start(true);
     settings.enabled = true;
     controller.settingsChanged();
+    await settle();
+    expect(state.reveals).toBe(1);
+  });
+
+  it("does nothing on a settings change while disabled", async () => {
+    const { controller, state } = setup({ enabled: false });
+    controller.start(true);
+    controller.settingsChanged();
+    await settle();
+    expect(state.reveals).toBe(0);
+  });
+
+  it("does nothing on a settings change before start()", async () => {
+    const { controller, state } = setup();
+    controller.settingsChanged();
+    await settle();
+    expect(state.reveals).toBe(0);
+  });
+
+  it("doesn't reveal again while the block is visible", async () => {
+    const { controller, state } = setup();
+    controller.start(true);
+    await settle();
+    controller.settingsChanged();
+    await settle();
+    expect(state.reveals).toBe(1);
+  });
+
+  it("doesn't start a second reveal while one is still running", async () => {
+    const { controller, state, release } = setup({ holdReveals: true });
+    controller.start(true);
+    controller.settingsChanged();
+    release();
     await settle();
     expect(state.reveals).toBe(1);
   });
