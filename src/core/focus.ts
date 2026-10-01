@@ -1,3 +1,4 @@
+import { createLock } from "./lock.ts";
 import { customizationsFor, mergeCustomizations } from "./merge.ts";
 import type { CommandCenterColors } from "./model.ts";
 import type { SettingsUpdate } from "./settingsWrite.ts";
@@ -36,6 +37,13 @@ export interface FocusPorts {
    * value.
    */
   writeCustomizations(update: SettingsUpdate): Promise<void>;
+  /**
+   * Whether Toucan has applied a color in this profile before (0008): until
+   * it has, it never clears `commandCenter.*`, so colors the user set by hand
+   * survive installing Toucan.
+   */
+  hasApplied(): boolean;
+  markApplied(): Promise<void>;
   warn(message: string): void;
   /** Diagnostics, shown at the output channel's debug level. */
   debug(message: string): void;
@@ -52,7 +60,8 @@ export class FocusCoordinator {
   private focused = false;
   private blurTimer: ReturnType<typeof setTimeout> | undefined;
   private verifyTimer: ReturnType<typeof setTimeout> | undefined;
-  private queue: Promise<void> = Promise.resolve();
+  /** This window's own focus tasks run one at a time. */
+  private readonly lock = createLock();
   private failing = false;
   /** The file snapshot last answered with a rewrite, so a wrong file can't cause repeats. */
   private staleSnapshot: string | undefined;
@@ -117,8 +126,14 @@ export class FocusCoordinator {
 
   private async takeOver(): Promise<void> {
     // Owner first: another window's pending blur checks it before clearing.
-    await this.ports.writeOwner(this.id);
-    this.ports.debug("took ownership");
+    try {
+      await this.ports.writeOwner(this.id);
+      this.ports.debug("took ownership");
+    } catch (error) {
+      // Apply the colors anyway: better colored now than waiting for the next
+      // focus change; the verify step heals if another window clears them.
+      this.ports.warn(`Couldn't record this window as the color owner: ${String(error)}`);
+    }
     await this.write(this.desired());
     this.cancel("verify");
     this.verifyTimer = setTimeout(() => {
@@ -147,6 +162,10 @@ export class FocusCoordinator {
   }
 
   private async write(colors: CommandCenterColors | undefined): Promise<void> {
+    if (colors === undefined && !this.ports.hasApplied()) {
+      this.ports.debug("not managing commandCenter.* yet: no color applied in this profile");
+      return;
+    }
     const view = this.ports.readCustomizations();
     const result = mergeCustomizations(view, colors);
     if (result.changed) {
@@ -159,7 +178,9 @@ export class FocusCoordinator {
       // snapshot check limits that to one redundant write per file change.
       const disk = await this.ports.readCustomizationsFromDisk();
       const stale = disk !== undefined && mergeCustomizations(disk.value, colors).changed;
-      const snapshot = stale ? JSON.stringify(disk.value) : undefined;
+      // Wrapped, so a file where the setting is gone ("undefined") still
+      // gives a snapshot distinct from "none yet".
+      const snapshot = stale ? JSON.stringify([disk.value]) : undefined;
       if (!stale) {
         this.staleSnapshot = undefined;
       }
@@ -175,6 +196,9 @@ export class FocusCoordinator {
       await this.ports.writeCustomizations((current) => customizationsFor(current, colors));
       this.ports.debug(colors ? `applied ${colors.background}` : "cleared");
       this.failing = false;
+      if (colors && !this.ports.hasApplied()) {
+        await this.ports.markApplied();
+      }
     } catch (error) {
       // Log once per failure streak, e.g. while settings.json has unsaved edits.
       const first = !this.failing;
@@ -199,7 +223,7 @@ export class FocusCoordinator {
 
   /** Runs tasks one at a time, so this window's own writes never interleave. */
   private enqueue(task: () => Promise<void>): Promise<void> {
-    this.queue = this.queue.then(async () => {
+    return this.lock(async () => {
       try {
         await task();
       } catch (error) {
@@ -210,6 +234,5 @@ export class FocusCoordinator {
         }
       }
     });
-    return this.queue;
   }
 }

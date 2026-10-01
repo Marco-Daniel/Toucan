@@ -1,5 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { chmod, lstat, readFile, realpath, rename, stat, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  lstat,
+  readFile,
+  realpath,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createLock } from "./lock.ts";
 import { planEdit, viewReflects } from "./settingsEdit.ts";
@@ -48,6 +57,12 @@ export class SettingsFileWriter {
    * or one could overwrite the other's edit.
    */
   private readonly lock = createLock();
+  /**
+   * Files whose in-place edit VS Code didn't pick up: the guess was another
+   * profile's file, so later writes go straight to `update()` instead of
+   * editing it and waiting out the verify timeout every time.
+   */
+  private readonly unfollowed = new Set<string>();
 
   constructor(
     files: Record<SettingsTarget, string>,
@@ -106,6 +121,9 @@ export class SettingsFileWriter {
   ): Promise<{ reason: string | undefined; desired: Record<string, unknown> | undefined }> {
     let desired = computed;
     const fallback = (reason: string) => ({ reason, desired });
+    if (this.unfollowed.has(file)) {
+      return fallback("VS Code didn't follow an earlier edit of this file");
+    }
     if (await this.isDirty(file)) {
       return fallback("the settings file has unsaved changes");
     }
@@ -139,17 +157,29 @@ export class SettingsFileWriter {
       return fallback(plan.reason);
     }
 
-    await writeLikeVsCode(file, plan.text);
+    try {
+      await writeLikeVsCode(file, plan.text);
+    } catch (error) {
+      // E.g. a read-only file, or a rename blocked by another process.
+      return fallback(`couldn't write the settings file (${String(error)})`);
+    }
     if (await this.reflected(key, desired, plan.changed)) {
       return { reason: undefined, desired };
     }
     // VS Code didn't follow: the file wasn't this window's (0017 step 5).
+    this.unfollowed.add(file);
     const now = await readFile(file, "utf8").catch(() => undefined);
-    if (now === plan.text) {
-      await writeLikeVsCode(file, text);
-      return fallback("VS Code didn't pick up the edit; reverted it");
+    if (now !== plan.text) {
+      return fallback("VS Code didn't pick up the edit, and the file changed since; left it");
     }
-    return fallback("VS Code didn't pick up the edit, and the file changed since; left it");
+    try {
+      await writeLikeVsCode(file, text);
+    } catch (error) {
+      return fallback(
+        `VS Code didn't pick up the edit, and reverting it failed (${String(error)})`,
+      );
+    }
+    return fallback("VS Code didn't pick up the edit; reverted it");
   }
 
   private async reflected(
@@ -190,8 +220,14 @@ async function writeLikeVsCode(file: string, text: string): Promise<void> {
     return;
   }
   const temporary = join(dirname(file), `.${randomUUID()}.toucan.tmp`);
-  await writeFile(temporary, text);
-  // writeFile's mode is masked by the umask; chmod sets it exactly.
-  await chmod(temporary, link.mode & 0o777);
-  await rename(temporary, file);
+  try {
+    await writeFile(temporary, text);
+    // writeFile's mode is masked by the umask; chmod sets it exactly.
+    await chmod(temporary, link.mode & 0o777);
+    await rename(temporary, file);
+  } catch (error) {
+    // Never leave a copy of the user's settings behind.
+    await unlink(temporary).catch(() => undefined);
+    throw error;
+  }
 }

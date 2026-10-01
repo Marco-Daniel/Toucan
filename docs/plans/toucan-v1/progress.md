@@ -13,6 +13,19 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (A): writer and coordinator safety
+- Context: overnight review loop on PR #1, round 1 (38 findings), judged independently. This commit:
+  - M3 / amended 0008: the coordinator never clears `commandCenter.*` until Toucan has applied a color in this profile (`hasApplied`/`markApplied` ports, globalState), so hand-set colors survive installing Toucan.
+  - M2: the stale snapshot wraps the file value, so a file that lost the whole setting still gets its one rewrite.
+  - L11: a failed owner write is logged and the colors are applied anyway.
+  - L19: the coordinator's queue is built on `createLock`.
+  - M1: writer I/O failures (write, chmod, rename, revert) fall back to update(), and the temp file is removed.
+  - L13: a file whose edit VS Code didn't follow goes straight to update() from then on.
+  - L17: `__proto__` repo names become own keys.
+- Tests (M6, L30 and the above): first-use guard both ways, a failing owner write, the setting gone from the file, stale → converge → same stale again, and a real change in between; writer: failing temp write (read-only dir), failing rename with temp cleanup (macOS-only: immutable flag), missing file, file gone during planning, recompute leaving the setting alone, per-target routing, unfollowed file.
+- Proved by mutation (each red, then restored): every new guard and fallback, including the reviewer's four writer mutations and both staleSnapshot resets.
+- Verified: 286 tests; all quality commands pass.
+
 ## 2026-10-01 — toucan-ab (implementer), Dependabot npm trial
 - Did (Marco's decision, after the corrected facts): the npm block is enabled as a trial, with the groups, ignores and cooldown from the draft. A note above it says pnpm 12 works in practice but isn't documented yet, and dependabot-core#15904 (only the first document of a two-document lockfile is read, so security alerts may miss packages) is open. If its PRs fail or CI's frozen-lockfile install rejects them, switch the block off again and record why. The first npm PR's CI run is the proof; toucan-6c watches it.
 

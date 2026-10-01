@@ -8,6 +8,8 @@ import { userValue, type SettingsWriter } from "./settingsWriter.ts";
 import type { CommandCenterColors } from "./core/model.ts";
 
 export const COLOR_CUSTOMIZATIONS = "workbench.colorCustomizations";
+/** globalState (per profile): Toucan has applied a color here at least once (0008). */
+const APPLIED_KEY = "commandCenter.applied";
 
 /**
  * Wires the focus coordinator to VS Code: window focus events, the owner file
@@ -69,6 +71,12 @@ function ownerFilePorts(
       // view. It can be another profile's file, so it's never written back.
       const text = await readFile(settingsFile, "utf8").catch(() => undefined);
       return text === undefined ? undefined : settingInText(text, COLOR_CUSTOMIZATIONS);
+    },
+    hasApplied() {
+      return context.globalState.get<boolean>(APPLIED_KEY, false);
+    },
+    async markApplied() {
+      await context.globalState.update(APPLIED_KEY, true);
     },
     async writeCustomizations(update) {
       // Run inside the writer's lock; keeps comments when it safely can (0017).

@@ -28,6 +28,8 @@ class World {
   settings: Record<string, unknown> | undefined = { "editor.background": "#111111" };
   /** What the guessed settings file holds: the same, something else, or unreadable. */
   disk: "same" | "unreadable" | { value: unknown } = "same";
+  /** Whether Toucan has applied a color in this profile before (0008). */
+  applied = true;
   writes = 0;
   /** Which window made each write, in order. */
   writers: string[] = [];
@@ -53,6 +55,10 @@ class World {
         readOwner: async () => this.owner,
         writeOwner: async (owner) => {
           this.owner = owner;
+        },
+        hasApplied: () => this.applied,
+        markApplied: async () => {
+          this.applied = true;
         },
         readCustomizations: () => this.settings,
         readCustomizationsFromDisk: async () =>
@@ -189,6 +195,114 @@ describe("FocusCoordinator", () => {
       "tab.activeBorder": "#ff00ff",
       ...applied("#aa0000"),
     });
+  });
+
+  it("never clears hand-set Command Center colors before Toucan has applied one (0008)", async () => {
+    const world = new World();
+    world.applied = false;
+    world.settings = { "commandCenter.background": "#123456", "editor.background": "#111111" };
+    const plain = world.window("P", undefined); // a folder without a Toucan color
+    plain.setFocused(true);
+    await settle();
+    plain.setFocused(false);
+    await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS * 2);
+    expect(world.settings).toEqual({
+      "commandCenter.background": "#123456",
+      "editor.background": "#111111",
+    });
+    expect(world.writes).toBe(0);
+  });
+
+  it("starts managing commandCenter.* once it has applied a color", async () => {
+    const world = new World();
+    world.applied = false;
+    const a = world.window("A", "#aa0000");
+    a.setFocused(true);
+    await settle();
+    expect(world.applied).toBe(true);
+    a.setFocused(false);
+    await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS);
+    expect(world.settings).toEqual({ "editor.background": "#111111" });
+  });
+
+  it("applies the colors even when recording the owner fails", async () => {
+    const world = new World();
+    const a = new FocusCoordinator(
+      "A",
+      {
+        hasApplied: () => true,
+        markApplied: async () => {},
+        readOwner: async () => undefined,
+        writeOwner: async () => {
+          throw new Error("EPERM");
+        },
+        readCustomizations: () => world.settings,
+        readCustomizationsFromDisk: async () => ({ value: world.settings }),
+        writeCustomizations: async (update) => {
+          const next = update(world.settings);
+          if (next) {
+            world.settings = next.value;
+          }
+        },
+        warn: (message) => world.warnings.push(message),
+        debug: () => {},
+      },
+      () => colors("#aa0000"),
+    );
+    a.setFocused(true);
+    await settle();
+    expect(world.background).toBe("#aa0000");
+    expect(world.warnings).toEqual([
+      "Couldn't record this window as the color owner: Error: EPERM",
+    ]);
+  });
+
+  it("rewrites when the file lost the whole setting but the view still shows the colors", async () => {
+    const world = new World();
+    world.settings = { "editor.background": "#111111", ...applied("#aa0000") };
+    world.disk = { value: undefined }; // another window's clear removed the setting
+    const a = world.window("A", "#aa0000");
+    a.setFocused(true);
+    await settle();
+    expect(world.writes).toBe(1);
+  });
+
+  it("rewrites again when a file that had converged goes stale again", async () => {
+    const world = new World();
+    world.settings = { ...applied("#aa0000") };
+    world.disk = { value: {} };
+    const a = world.window("A", "#aa0000");
+    a.setFocused(true);
+    await settle();
+    expect(world.writes).toBe(1);
+    world.disk = "same"; // converged
+    a.customizationsChanged();
+    await settle();
+    world.disk = { value: {} }; // the same stale state as before
+    a.customizationsChanged();
+    await settle();
+    expect(world.writes).toBe(2);
+  });
+
+  it("forgets the stale snapshot after a real change, so the same stale state rewrites again", async () => {
+    const world = new World();
+    let background = "#aa0000";
+    world.settings = { ...applied("#aa0000") };
+    world.disk = { value: {} };
+    const a = world.window("A", () => background);
+    a.setFocused(true);
+    await settle();
+    expect(world.writes).toBe(1); // stale rewrite, snapshot {} remembered
+    background = "#00bb00"; // a real change
+    a.refresh();
+    await settle();
+    expect(world.writes).toBe(2);
+    background = "#aa0000";
+    world.settings = { ...applied("#aa0000") };
+    world.disk = { value: {} }; // the same stale state as the first time
+    a.customizationsChanged();
+    await settle();
+    expect(world.writes).toBe(3);
   });
 
   it("keeps the color when two windows of the same repo hand over", async () => {
@@ -393,6 +507,8 @@ describe("FocusCoordinator", () => {
     const a = new FocusCoordinator(
       "A",
       {
+        hasApplied: () => true,
+        markApplied: async () => {},
         readOwner: async () => "A",
         writeOwner: async () => {},
         readCustomizations: () => ({ "commandCenter.background": "#aa0000" }),

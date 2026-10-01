@@ -12,19 +12,19 @@ type Repos = Record<string, unknown>;
 /** Sets the background; a string entry stays a string. */
 export function withBackground(raw: unknown, repo: string, background: Hex): Repos {
   const repos = copy(raw);
-  const entry = repos[repo];
-  repos[repo] = isRecord(entry) ? { ...entry, background } : background;
+  const entry = Object.hasOwn(repos, repo) ? repos[repo] : undefined;
+  set(repos, repo, isRecord(entry) ? { ...entry, background } : background);
   return repos;
 }
 
 /** Sets the glyph, turning a string entry into an object. Needs an existing entry. */
 export function withGlyph(raw: unknown, repo: string, glyph: Glyph): Repos | undefined {
   const repos = copy(raw);
-  const entry = repos[repo];
+  const entry = Object.hasOwn(repos, repo) ? repos[repo] : undefined;
   if (typeof entry === "string") {
-    repos[repo] = { background: entry, glyph };
+    set(repos, repo, { background: entry, glyph });
   } else if (isRecord(entry)) {
-    repos[repo] = { ...entry, glyph };
+    set(repos, repo, { ...entry, glyph });
   } else {
     return undefined;
   }
@@ -45,6 +45,19 @@ export function withoutRepo(raw: unknown, repo: string): Repos | undefined {
   const repos = copy(raw);
   delete repos[repo];
   return Object.keys(repos).length > 0 ? repos : undefined;
+}
+
+/**
+ * Sets an own property even for a name like "__proto__", which a plain
+ * assignment would turn into a prototype change instead of a key.
+ */
+function set(repos: Repos, repo: string, value: unknown): void {
+  Object.defineProperty(repos, repo, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
 }
 
 function copy(raw: unknown): Repos {

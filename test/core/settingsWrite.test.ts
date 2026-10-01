@@ -4,12 +4,14 @@ import {
   lstat,
   mkdtemp,
   readFile,
+  readdir,
   rm,
   stat,
   symlink,
   writeFile,
 } from "node:fs/promises";
-import { writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -40,6 +42,7 @@ beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "toucan-settings-"));
 });
 afterEach(async () => {
+  await chmod(dir, 0o755);
   await rm(dir, { recursive: true, force: true });
 });
 
@@ -52,6 +55,7 @@ function setup(
   { view = "follows", dirty = [] }: { view?: "follows" | "stale"; dirty?: string[] } = {},
 ) {
   const updates: unknown[] = [];
+  const debugs: string[] = [];
   const writer = new SettingsFileWriter(
     { profile: file, defaultProfile: file },
     {
@@ -60,11 +64,11 @@ function setup(
         updates.push(value);
       },
       dirtyFiles: () => dirty,
-      debug: () => {},
+      debug: (message) => debugs.push(message),
     },
     { verifyTimeoutMs: 300, verifyPollMs: 10 },
   );
-  return { writer, updates };
+  return { writer, updates, debugs };
 }
 
 /** What VS Code would see: the key's value in the file (comments stripped crudely). */
@@ -231,6 +235,143 @@ describe("SettingsFileWriter", () => {
     );
     // The fallback writes the value computed from the latest view, not the first.
     expect(updates).toEqual([{ other: "#654321", webshop: "#14939c" }]);
+  });
+
+  it("falls back to update() and leaves no temp file when the write fails", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    await refreshView(file);
+    await chmod(dir, 0o555); // the temp file can't be created next to settings.json
+    const { writer, updates } = setup(file);
+    await writer.write(KEY, replace, "profile");
+    await chmod(dir, 0o755);
+    expect(updates).toEqual([NEXT]);
+    expect(await readFile(file, "utf8")).toBe(BEFORE);
+    expect(await readdir(dir)).toEqual(["settings.json"]);
+  });
+
+  // Needs a rename that fails after the temp file exists: an immutable target
+  // (chflags) does that on macOS without root; Linux has no equivalent.
+  it.skipIf(process.platform !== "darwin")(
+    "removes its temp file when the rename fails",
+    async () => {
+      const file = join(dir, "settings.json");
+      await writeFile(file, BEFORE);
+      await refreshView(file);
+      execFileSync("chflags", ["uchg", file]);
+      try {
+        const { writer, updates } = setup(file);
+        await writer.write(KEY, replace, "profile");
+        expect(updates).toEqual([NEXT]);
+        expect(await readdir(dir)).toEqual(["settings.json"]);
+      } finally {
+        execFileSync("chflags", ["nouchg", file]);
+      }
+    },
+  );
+
+  it("uses update() when the settings file doesn't exist", async () => {
+    const file = join(dir, "settings.json");
+    fileCache.set(file, VIEW);
+    const { writer, updates } = setup(file);
+    await writer.write(KEY, replace, "profile");
+    expect(updates).toEqual([NEXT]);
+  });
+
+  it("uses update() when the settings file disappears while planning", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const updates: unknown[] = [];
+    let views = 0;
+    const writer = new SettingsFileWriter(
+      { profile: file, defaultProfile: file },
+      {
+        view: () => {
+          views++;
+          if (views === 2) {
+            unlinkSync(file); // gone before the re-read
+          }
+          return VIEW;
+        },
+        update: async (_key, value) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      { verifyTimeoutMs: 50, verifyPollMs: 10 },
+    );
+    await writer.write(KEY, replace, "profile");
+    expect(updates).toEqual([NEXT]);
+  });
+
+  it("writes nothing when the recomputed value leaves the setting alone", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const updates: unknown[] = [];
+    let views = 0;
+    let updaterCalls = 0;
+    const writer = new SettingsFileWriter(
+      { profile: file, defaultProfile: file },
+      {
+        view: () => {
+          views++;
+          if (views === 2) {
+            writeFileSync(file, "{}\n");
+          }
+          return VIEW;
+        },
+        update: async (_key, value) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      { verifyTimeoutMs: 50, verifyPollMs: 10 },
+    );
+    // First call computes a value; the recompute after the file changed says "leave alone".
+    await writer.write(KEY, () => (++updaterCalls === 1 ? { value: NEXT } : undefined), "profile");
+    expect(updaterCalls).toBe(2);
+    expect(updates).toEqual([]);
+    expect(await readFile(file, "utf8")).toBe("{}\n");
+  });
+
+  it("edits the file of the requested target", async () => {
+    const profile = join(dir, "profile.json");
+    const defaultProfile = join(dir, "default.json");
+    await writeFile(profile, BEFORE);
+    await writeFile(defaultProfile, BEFORE);
+    await refreshView(defaultProfile);
+    const stop = watch(defaultProfile);
+    const writer = new SettingsFileWriter(
+      { profile, defaultProfile },
+      {
+        view: () => readKey(defaultProfile),
+        update: async () => {
+          throw new Error("unexpected update()");
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      { verifyTimeoutMs: 300, verifyPollMs: 10 },
+    );
+    await writer.write(KEY, replace, "defaultProfile");
+    stop();
+    expect(await readFile(defaultProfile, "utf8")).toBe(AFTER);
+    expect(await readFile(profile, "utf8")).toBe(BEFORE);
+  });
+
+  it("goes straight to update() for a file VS Code didn't follow before", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const { writer, updates, debugs } = setup(file, { view: "stale" });
+    await writer.write(KEY, replace, "profile");
+    await writer.write(KEY, replace, "profile");
+    expect(updates).toEqual([NEXT, NEXT]);
+    expect(debugs.at(-1)).toBe(
+      "toucan.repos: update() instead of an in-place edit (VS Code didn't follow an earlier edit of this file)",
+    );
+    expect(await readFile(file, "utf8")).toBe(BEFORE);
   });
 
   it("serializes overlapping writes so neither edit is lost", async () => {

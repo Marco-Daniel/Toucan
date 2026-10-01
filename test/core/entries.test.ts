@@ -35,6 +35,15 @@ describe("withBackground", () => {
     withBackground(raw, "webshop", RED);
     expect(raw).toEqual({ webshop: { background: "#000" } });
   });
+
+  it("stores a repo named __proto__ as a real key", () => {
+    const result = withBackground({ other: "#fff" }, "__proto__", RED);
+    expect(Object.hasOwn(result, "__proto__")).toBe(true);
+    expect(Object.entries(result)).toEqual([
+      ["other", "#fff"],
+      ["__proto__", "#ff0000"],
+    ]);
+  });
 });
 
 describe("withGlyph", () => {
