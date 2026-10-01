@@ -158,7 +158,10 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const { writer, updates } = setup(file, { view: "stale" });
     const writing = writer.write(KEY, replace, "profile");
-    await new Promise((resolve) => setTimeout(resolve, 100)); // mid-verify
+    // Mid-verify: wait for the edit itself, not a fixed delay a slow runner can outlast.
+    while ((await readFile(file, "utf8")) !== AFTER) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
     await writeFile(file, "{ /* someone else */ }\n");
     await writing;
     expect(await readFile(file, "utf8")).toBe("{ /* someone else */ }\n");
