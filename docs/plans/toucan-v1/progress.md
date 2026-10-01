@@ -13,6 +13,10 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 5
+- Context: blind review of 571439c, 1 Low; judged independently, accepted. main hadn't moved, so there was nothing to merge.
+- R5-1: `SidebarController` has a `disposed` flag. After `dispose()`, `visibilityChanged`, `setFocused` and `settingsChanged` do nothing, so a view VS Code disposes late can't arm the remember timer and record a close the user never made. Tests: dispose → `visibilityChanged(false)` → past the delay gives no `writeClosed`; focus and settings changes after dispose reveal or close nothing. Each of the four guards is mutation-red. A separate timer check was dropped as redundant (dispose cancels the timer and nothing can re-arm it). The optional adapter change (disposing the view's listeners) is skipped: the controller guard covers it.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 4
 - Context: blind review of 0af5358 (1 High, 1 Low); judged independently, both accepted. R4-1 was reproduced live before the fix: a folder named `[x](command:workbench.action.showCommands)` rendered a clickable command link in the Set Glyph and Clear Color toasts, trusted and in Restricted Mode; the Clear Color modal stayed plain text.
 - R4-1: the Set Glyph and Clear Color toasts and the Clear Color modal no longer include the folder name (`src/core/messages.ts`, "This folder …"). A guard test scans every `show*Message` call in src for an interpolated folder name. Mutation-red: putting the name back at any of the three sites, or into another message.

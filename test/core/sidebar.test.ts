@@ -237,6 +237,29 @@ describe("SidebarController, remembered close across modes", () => {
   });
 });
 
+describe("SidebarController, after dispose", () => {
+  it("doesn't remember a close from a view VS Code disposes after the controller", async () => {
+    const { controller, state } = setup();
+    controller.start(true);
+    await settle();
+    controller.dispose();
+    controller.visibilityChanged(false); // the view's onDidDispose fires late
+    await vi.advanceTimersByTimeAsync(REMEMBER_CLOSE_DELAY_MS * 2);
+    expect(state.closed).toBe(false);
+  });
+
+  it("ignores focus and settings changes", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused" });
+    controller.start(true);
+    controller.dispose();
+    controller.setFocused(false);
+    settings.visibility = "always";
+    controller.settingsChanged();
+    await settle();
+    expect(state).toMatchObject({ reveals: 0, closes: 0 });
+  });
+});
+
 describe("SidebarController, settings changes", () => {
   it("reveals when the block is turned on", async () => {
     const { controller, settings, state } = setup({ enabled: false });

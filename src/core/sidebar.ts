@@ -63,6 +63,8 @@ export interface SidebarPorts {
  */
 export class SidebarController {
   private started = false;
+  /** After dispose nothing may change state: VS Code can still dispose a view and fire its events. */
+  private disposed = false;
   private revealing = false;
   private focused = false;
   private visible = false;
@@ -92,7 +94,7 @@ export class SidebarController {
   }
 
   setFocused(focused: boolean): void {
-    if (focused === this.focused) {
+    if (this.disposed || focused === this.focused) {
       return;
     }
     this.focused = focused;
@@ -123,6 +125,9 @@ export class SidebarController {
 
   /** Feed the block's `onDidChangeVisibility`; `false` also on dispose. */
   visibilityChanged(visible: boolean): void {
+    if (this.disposed) {
+      return;
+    }
     this.ports.debug(
       `visible=${visible} focused=${this.focused} closingByToucan=${this.closingByToucan}`,
     );
@@ -158,7 +163,7 @@ export class SidebarController {
   /** After a settings change: shows the block if it now should be. */
   settingsChanged(): void {
     const { enabled, visibility } = this.settings();
-    if (!this.started || !enabled || this.visible) {
+    if (this.disposed || !this.started || !enabled || this.visible) {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !this.focused) {
@@ -178,6 +183,7 @@ export class SidebarController {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.cancelRemember();
   }
 
