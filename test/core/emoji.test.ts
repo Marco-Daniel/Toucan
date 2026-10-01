@@ -1,0 +1,87 @@
+import { describe, expect, it } from "vitest";
+import { emojiColor, emojiFor } from "../../src/core/emoji.ts";
+import { GLYPHS, type Hex } from "../../src/core/model.ts";
+
+const hex = (value: string) => value as Hex;
+
+describe("emojiColor", () => {
+  // The 0014 presets, plus a few common colors that are hard to classify.
+  it.each([
+    ["#f92824", "red"],
+    ["#a3161a", "red"],
+    ["#e0620b", "orange"],
+    ["#faa404", "orange"],
+    ["#fde246", "yellow"],
+    ["#8a9c05", "green"],
+    ["#56915e", "green"],
+    ["#14939c", "blue"],
+    ["#2c4a51", "black"],
+    ["#6241bd", "purple"],
+    ["#b59ae0", "purple"],
+    ["#70486c", "purple"],
+    ["#e8579b", "red"],
+    ["#f5a3c7", "red"],
+    ["#a7a8b3", "white"],
+    ["#101316", "black"],
+    ["#1b5e20", "green"],
+    ["#0d2a6b", "blue"],
+    ["#795548", "brown"],
+    ["#8b5a2b", "brown"],
+    ["#000000", "black"],
+    ["#ffffff", "white"],
+    ["#8c8c8c", "white"],
+    ["#6e6e6e", "black"],
+  ])("classifies %s as %s", (color, expected) => {
+    expect(emojiColor(hex(color))).toBe(expected);
+  });
+});
+
+describe("emojiFor", () => {
+  it("uses the glyph's shape where an emoji exists", () => {
+    expect(emojiFor(hex("#f92824"), "square")).toBe("🟥");
+    expect(emojiFor(hex("#f92824"), "circle")).toBe("🔴");
+    expect(emojiFor(hex("#f92824"), "heart")).toBe("❤️");
+  });
+
+  it("uses squares for star, so the color survives", () => {
+    expect(emojiFor(hex("#f92824"), "star")).toBe("🟥");
+    expect(emojiFor(hex("#14939c"), "star")).toBe("🟦");
+  });
+
+  it("uses circles for circle-like glyphs and squares for the rest", () => {
+    expect(emojiFor(hex("#14939c"), "double-circle")).toBe("🔵");
+    expect(emojiFor(hex("#14939c"), "check-circle")).toBe("🔵");
+    expect(emojiFor(hex("#14939c"), "bar")).toBe("🟦");
+    expect(emojiFor(hex("#14939c"), "pill")).toBe("🟦");
+  });
+
+  // One color per category, in EMOJI_COLORS order.
+  const CATEGORIES = [
+    "#f92824",
+    "#e0620b",
+    "#fde246",
+    "#56915e",
+    "#14939c",
+    "#6241bd",
+    "#795548",
+    "#000000",
+    "#ffffff",
+  ];
+
+  it.each([
+    ["square", "🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜"],
+    ["circle", "🔴 🟠 🟡 🟢 🔵 🟣 🟤 ⚫ ⚪"],
+    ["heart", "❤️ 🧡 💛 💚 💙 💜 🤎 🖤 🤍"],
+  ] as const)("has the full %s row", (glyph, row) => {
+    expect(CATEGORIES.map((color) => emojiFor(hex(color), glyph)).join(" ")).toBe(row);
+  });
+
+  it.each(GLYPHS)("returns a single emoji for every color category with %s", (glyph) => {
+    for (const color of ["#f92824", "#e0620b", "#fde246", "#56915e", "#14939c", "#6241bd"]) {
+      expect([...new Intl.Segmenter().segment(emojiFor(hex(color), glyph))]).toHaveLength(1);
+    }
+    for (const color of ["#795548", "#000000", "#ffffff"]) {
+      expect([...new Intl.Segmenter().segment(emojiFor(hex(color), glyph))]).toHaveLength(1);
+    }
+  });
+});

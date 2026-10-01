@@ -6,7 +6,7 @@
 
 ## Context and Problem
 
-VS Code 1.139 defaults the experimental `chat.agentsControl.enabled` setting to `"compact"`. That mode replaces the classic Command Center with an agent-status pill whose CSS forces a transparent background. Toucan's `commandCenter.background` then doesn't show; only the border and text colors do. With `"badge"` (or `"hidden"`) the classic Command Center is back and fully colored, and `"badge"` keeps the agent badge. toucan-ab confirmed all three modes in an isolated instance with screenshots and computed styles.
+VS Code 1.139 defaults the experimental `chat.agentsControl.enabled` setting to `"compact"`. That mode replaces the classic Command Center with an agent-status pill whose CSS forces a transparent background. Toucan's `commandCenter.background` then doesn't show; only the border and text colors do. With `"badge"` (or `"hidden"`) the classic Command Center is back and fully colored, and `"badge"` keeps the agent badge. The implementer confirmed all three modes in an isolated instance with screenshots and computed styles.
 
 This weakens 0002's main layer for anyone on the default, which very likely includes Marco.
 

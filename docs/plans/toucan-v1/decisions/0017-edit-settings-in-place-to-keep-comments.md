@@ -6,7 +6,7 @@
 
 ## Context and Problem
 
-Toucan writes two settings: `workbench.colorCustomizations` (0002, 0003) and `toucan.repos` (the commands). VS Code's `WorkspaceConfiguration.update()` replaces the whole value, so any comments inside those two objects are lost on the first write. toucan-2c reproduced it, and the README's own example has comments.
+Toucan writes two settings: `workbench.colorCustomizations` (0002, 0003) and `toucan.repos` (the commands). VS Code's `WorkspaceConfiguration.update()` replaces the whole value, so any comments inside those two objects are lost on the first write. The outside reviewer reproduced it, and the README's own example has comments.
 
 Editing the file directly brings back the problem from the focus coordinator review (H1): the path to the user settings file is guessed from `globalStorageUri`, and with profiles that guess can point at another profile's file.
 
@@ -18,7 +18,7 @@ Editing the file directly brings back the problem from the focus coordinator rev
 
 ## Decision Outcome
 
-Chosen: **edit in place when it's provably safe, otherwise fall back to `update()`.** Revised the same day after two high findings from toucan-2c (agreed by all three reviewers, approved by Marco): an equality check alone doesn't prove the file is this window's, and temp-then-rename breaks symlinked settings files.
+Chosen: **edit in place when it's provably safe, otherwise fall back to `update()`.** Revised the same day after two high findings from the outside reviewer (agreed by all three reviewers, approved by Marco): an equality check alone doesn't prove the file is this window's, and temp-then-rename breaks symlinked settings files.
 
 **Which file**
 - `workbench.colorCustomizations`: the user settings file guessed from `globalStorageUri` (as in the focus coordinator).
