@@ -18,7 +18,13 @@ import {
 import type { RepoConfig } from "./core/config.ts";
 import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "./core/entries.ts";
 import { glyphSvg, svgDataUri } from "./core/glyphs.ts";
-import { NO_COLOR, NO_COLOR_YET, clearConfirmation } from "./core/messages.ts";
+import {
+  CLEAR_CONFIRMATION,
+  NO_COLOR,
+  NO_COLOR_YET,
+  clearDetail,
+  saveFailed,
+} from "./core/messages.ts";
 import { DEFAULT_GLYPH, GLYPHS, type Glyph, type Hex } from "./core/model.ts";
 import { PRESETS } from "./core/presets.ts";
 import { COLOR_CUSTOMIZATIONS } from "./focus.ts";
@@ -189,8 +195,11 @@ async function clearColor(host: CommandHost, name: string): Promise<void> {
   // Only a bare color is cheap to set again; anything more was typed by hand.
   const handEdited = handEditedKeys(raw, name);
   if (handEdited.length > 0) {
-    const { message, detail } = clearConfirmation(handEdited);
-    const answer = await window.showWarningMessage(message, { modal: true, detail }, "Clear");
+    const answer = await window.showWarningMessage(
+      CLEAR_CONFIRMATION,
+      { modal: true, detail: clearDetail(handEdited) },
+      "Clear",
+    );
     if (answer !== "Clear") {
       return;
     }
@@ -330,6 +339,6 @@ async function writeRepos(host: CommandHost, update: SettingsUpdate): Promise<vo
     // Application-scoped, so VS Code keeps it in the default profile's file.
     await host.writer.write(configs.repos.key, update, "defaultProfile");
   } catch (error) {
-    void window.showErrorMessage(`Toucan couldn't save ${configs.repos.key}: ${String(error)}`);
+    void window.showErrorMessage(saveFailed(error));
   }
 }

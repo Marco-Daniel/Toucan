@@ -60,7 +60,7 @@ function create(
       return state.dialog ?? state.answer ?? true;
     },
     info: () => {},
-    warn: (message) => world.warnings.push(message),
+    failed: (error) => world.warnings.push(String(error)),
   });
   return { title, world };
 }
@@ -96,9 +96,7 @@ describe("TitleSetup, consent", () => {
     const { title, world } = create({ title: MINE, failTitle: true });
     expect(await title.settle()).toBeUndefined();
     expect(world.calls.at(-1)).toBe("record undefined");
-    expect(world.warnings).toEqual([
-      "Toucan couldn't change window.title: Error: settings.json is read-only",
-    ]);
+    expect(world.warnings).toEqual(["Error: settings.json is read-only"]);
   });
 
   it("records without asking when the title already has the variable", async () => {

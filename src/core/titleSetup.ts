@@ -29,8 +29,8 @@ export interface TitlePorts {
   /** The modal consent dialog; true when the user agreed. */
   ask(overridden: boolean): Promise<boolean>;
   info(message: string): void;
-  /** Logged and shown to the user. */
-  warn(message: string): void;
+  /** Changing window.title failed: logged and shown to the user. */
+  failed(error: unknown): void;
 }
 
 /**
@@ -63,7 +63,7 @@ export class TitleSetup {
         await this.askAndApply();
       } catch (error) {
         // The record was cleared again in askAndApply; just tell the user.
-        ports.warn(`Toucan couldn't change window.title: ${String(error)}`);
+        ports.failed(error);
       }
     } else if (step === "restore" && change) {
       await this.restore(change);

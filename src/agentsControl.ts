@@ -1,4 +1,5 @@
 import { ConfigurationTarget, window, workspace, type ExtensionContext } from "vscode";
+import { AGENTS_CONTROL_OFFER } from "./core/messages.ts";
 import type { Log } from "./log.ts";
 import { AGENTS_CONTROL, agentsControlAction } from "./core/agentsControl.ts";
 
@@ -48,11 +49,7 @@ export class AgentsControlOffer {
       return;
     }
 
-    const answer = await window.showInformationMessage(
-      `Toucan's color needs the classic search bar. Set ${AGENTS_CONTROL} to "badge"?`,
-      "Switch",
-      "Not now",
-    );
+    const answer = await window.showInformationMessage(AGENTS_CONTROL_OFFER, "Switch", "Not now");
     if (answer === "Switch") {
       await configuration.update(AGENTS_CONTROL, "badge", ConfigurationTarget.Global);
       this.log.info(`Set ${AGENTS_CONTROL} to "badge".`);

@@ -10,6 +10,7 @@ import {
 } from "vscode";
 import type { Log } from "./log.ts";
 import { emojiFor } from "./core/emoji.ts";
+import { titleChangeFailed } from "./core/messages.ts";
 import { TitleSetup, type TitlePorts } from "./core/titleSetup.ts";
 import { repoVariableValue, shouldLabel, type TitleChange } from "./core/windowTitle.ts";
 import { configs } from "./generated/meta.ts";
@@ -231,9 +232,9 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
       return answer === "Change Window Title";
     },
     info: (message) => log.info(message),
-    warn: (message) => {
-      log.warn(message);
-      void window.showWarningMessage(message);
+    failed: (error) => {
+      log.warn(titleChangeFailed(error));
+      void window.showWarningMessage(titleChangeFailed(error));
     },
   };
 }
