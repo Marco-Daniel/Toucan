@@ -21,6 +21,11 @@ const FILE = `{
 
 const VIEW = { "editor.background": "#101010", "commandCenter.background": "#aa0000" };
 
+/** The file's value, parsed independently of the code under test. */
+const parseSettingsForTest = (text: string): unknown =>
+  JSON.parse(text.replace(/\/\/.*$/gm, "").replace(/,(\s*[}\]])/g, "$1"));
+const commentsOf = (text: string) => text.match(/\/\/.*$/gm) ?? [];
+
 describe("planEdit", () => {
   it("edits only the changed keys and keeps every comment", () => {
     const plan = planEdit({
@@ -36,31 +41,59 @@ describe("planEdit", () => {
     expect(plan.kind).toBe("edit");
     if (plan.kind !== "edit") return;
     expect(plan.changed.toSorted()).toEqual(["commandCenter.background", "commandCenter.border"]);
-    // jsonc-parser keeps a trailing comment at the end of the object's last line.
-    expect(plan.text).toBe(`{
-  // my settings
-  "editor.fontSize": 13,
-  "${KEY}": {
-    // keep my editor color
-    "editor.background": "#101010",
-    "commandCenter.background": "#00bb00",
-    "commandCenter.border": "#111111", // Toucan's
-  },
-}
-`);
+    // Which line a trailing comment ends up on after an insert is jsonc-parser's
+    // choice; Toucan's contract is the values, every comment, and the indentation.
+    expect(parseSettingsForTest(plan.text)).toEqual({
+      "editor.fontSize": 13,
+      [KEY]: { ...VIEW, "commandCenter.background": "#00bb00", "commandCenter.border": "#111111" },
+    });
+    expect(commentsOf(plan.text)).toEqual([
+      "// my settings",
+      "// keep my editor color",
+      "// Toucan's",
+    ]);
+    expect(plan.text).toContain('\n    "commandCenter.border": "#111111"');
   });
 
-  it("clears Toucan's keys and keeps the user's keys and comments", () => {
+  it("clears Toucan's keys by whole lines, keeping the comments around them", () => {
+    const text = `{
+  "${KEY}": {
+    "editor.background": "#101010", // keep my editor color
+    // above Toucan's keys
+    "commandCenter.background": "#aa0000",
+    "commandCenter.border": "#111111"
+  }
+}
+`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { ...VIEW, "commandCenter.border": "#111111" },
+      desired: { "editor.background": "#101010" },
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{
+  "${KEY}": {
+    "editor.background": "#101010", // keep my editor color
+    // above Toucan's keys
+  }
+}
+`,
+      changed: ["commandCenter.background", "commandCenter.border"],
+    });
+  });
+
+  it("moves a removed line's trailing comment to the end of the line before", () => {
     const plan = planEdit({
       text: FILE,
       key: KEY,
       view: VIEW,
       desired: { "editor.background": "#101010" },
     });
-    expect(plan.kind).toBe("edit");
-    if (plan.kind !== "edit") return;
-    expect(plan.changed).toEqual(["commandCenter.background"]);
-    expect(plan.text).toBe(`{
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{
   // my settings
   "editor.fontSize": 13,
   "${KEY}": {
@@ -68,7 +101,90 @@ describe("planEdit", () => {
     "editor.background": "#101010", // Toucan's
   },
 }
-`);
+`,
+    });
+  });
+
+  it("keeps a removed line's comment on its own line when the line before ends in one", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000", // mine\n    "b": "#111111", // moved here\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    "a": "#000000", // mine\n    // moved here\n  },\n}\n`,
+    });
+  });
+
+  it("drops trailing spaces on the line before when it moves a comment there", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000",   \n    "b": "#111111", // moved here\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    "a": "#000000", // moved here\n  },\n}\n`,
+    });
+  });
+
+  it("leaves a property that shares its line to jsonc-parser, never removing its neighbor", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000", "b": "#111111"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
+    expect(parseSettingsForTest(plan.text)).toEqual({ [KEY]: { a: "#000000" } });
+  });
+
+  it("gives back the original text after applying and then clearing", () => {
+    const original = `{\r\n  "${KEY}": {\r\n    "editor.background": "#101010", // my editor color\r\n  },\r\n}\r\n`;
+    const user = { "editor.background": "#101010" };
+    const applied = {
+      ...user,
+      "commandCenter.background": "#aa0000",
+      "commandCenter.border": "#111111",
+    };
+    const apply = planEdit({ text: original, key: KEY, view: user, desired: applied });
+    expect(apply.kind).toBe("edit");
+    if (apply.kind !== "edit") return;
+    const clear = planEdit({ text: apply.text, key: KEY, view: applied, desired: user });
+    expect(clear).toMatchObject({ kind: "edit", text: original });
+  });
+
+  it("falls back rather than drop a comment it can't keep", () => {
+    // One line: Toucan's key doesn't have its lines to itself.
+    const text = `{ "${KEY}": { "a": "#000000", /* mine */ "b": "#111111" } }\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toEqual({ kind: "fallback", reason: "the in-place edit would drop a comment" });
+  });
+
+  it("lets comments inside a removed value go with it", () => {
+    const text = `{\n  "toucan.repos": {\n    // work\n    "webshop": {\n      "background": "#e0620b", // orange\n    },\n    "toucan": "#14939c", // mine\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: "toucan.repos",
+      view: { webshop: { background: "#e0620b" }, toucan: "#14939c" },
+      desired: { toucan: "#14939c" },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "toucan.repos": {\n    // work\n    "toucan": "#14939c", // mine\n  },\n}\n`,
+    });
   });
 
   it("falls back instead of writing an edit that doesn't parse back as intended", () => {

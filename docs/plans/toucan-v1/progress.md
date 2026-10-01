@@ -13,6 +13,16 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1: self-found comment loss (0017)
+- Found while checking tests against the project's test rules: jsonc-parser removes a property from the end of the previous value, so a trailing comment on the line before Toucan's keys, or a comment line above them, was deleted with them. Manager: fix within 0017 now.
+- Did:
+  - `removeLines` deletes a removed property's own lines. A trailing comment on a removed line moves to the end of the line before, or onto its own line when that line already ends in a `//` comment. A property that shares its line falls through to jsonc-parser.
+  - `keepsComments` post-check: every comment outside the changed values must survive, or the edit falls back.
+  - The full-text tests now pin Toucan's removal and the apply-then-clear round trip (CRLF), not jsonc-parser's comment placement after an insert.
+  - jsonc-parser's `getTokenValue()` includes whitespace before a comment, so comments are read by offset and length.
+  - bd70994 (earlier): the muted style's doc comment and enumDescription match L24.
+- Verified: all quality commands and check:vsix pass. 11 mutations proven red (own removal, the comment check and its exemption, the own-line branch, the moved comment, CRLF, trailing-space trim, the line-start guard, the line end).
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1: M1 temp file mode
 - Did: the rest of M1. The temp copy of settings.json is created with the original's mode (`writeFile(…, { mode })`), so it's never more readable than the original, even before the chmod.
 - Verified: all quality commands pass. Not mutation-testable: the final mode is the same either way, and the temp file only exists inside the call.

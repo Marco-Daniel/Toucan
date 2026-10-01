@@ -1,7 +1,17 @@
 import { isDeepStrictEqual } from "node:util";
 // The ESM build: the package's UMD main loads its modules with a dynamic
 // require that the bundler can't follow.
-import { applyEdits, modify, parse, type ParseError } from "jsonc-parser/lib/esm/main.js";
+import {
+  applyEdits,
+  createScanner,
+  findNodeAtLocation,
+  modify,
+  parse,
+  parseTree,
+  type Edit,
+  type JSONScanner,
+  type ParseError,
+} from "jsonc-parser/lib/esm/main.js";
 import { isRecord } from "./records.ts";
 
 /**
@@ -69,20 +79,149 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
 
   const formattingOptions = detectFormatting(text);
   let edited = text;
-  // Removals from the end first: removing a property before a trailing comma
-  // and comment can otherwise leave a stray comma behind.
+  // From the end first, so each edit leaves the offsets of the earlier ones alone.
   for (const property of changed.toReversed()) {
-    edited = applyEdits(
-      edited,
-      modify(edited, [key, property], next[property], { formattingOptions }),
-    );
+    const edits =
+      next[property] === undefined
+        ? (removeLines(edited, key, property) ??
+          modify(edited, [key, property], undefined, { formattingOptions }))
+        : modify(edited, [key, property], next[property], { formattingOptions });
+    edited = applyEdits(edited, edits);
   }
-  // Never trust an edit blindly: it must parse and hold exactly the result.
+  // Never trust an edit blindly: it must parse and hold exactly the result,
+  // and keep every comment outside the values it replaced or removed.
   const result = parseSettings(edited);
   if (!result || !isDeepStrictEqual(result[key], next)) {
     return { kind: "fallback", reason: "the in-place edit didn't produce the expected value" };
   }
+  if (!keepsComments(text, edited, key, changed)) {
+    return { kind: "fallback", reason: "the in-place edit would drop a comment" };
+  }
   return { kind: "edit", text: edited, changed };
+}
+
+/**
+ * jsonc-parser's `SyntaxKind` values. It's an ambient const enum, which
+ * `verbatimModuleSyntax` can't import.
+ */
+const SyntaxKind = {
+  CommaToken: 5,
+  LineCommentTrivia: 12,
+  BlockCommentTrivia: 13,
+  LineBreakTrivia: 14,
+  Trivia: 15,
+  EOF: 17,
+} as const;
+
+/**
+ * Removes a property by deleting its whole lines, so comments on the lines
+ * around it stay. jsonc-parser's own removal deletes everything from the end
+ * of the previous value, including a trailing comment there or comment lines
+ * above the property. A trailing comment on the removed line moves to the end
+ * of the line before. No comma changes are needed: the property's own comma
+ * goes with its lines, and a comma left on the previous property becomes a
+ * trailing comma, which settings files allow.
+ *
+ * `undefined` when the property doesn't have its lines to itself; the caller
+ * then uses jsonc-parser, and the comment check catches any loss.
+ */
+function removeLines(text: string, key: string, property: string): Edit[] | undefined {
+  const root = parseTree(text);
+  const node = root && findNodeAtLocation(root, [key, property])?.parent;
+  if (node?.type !== "property") {
+    return undefined;
+  }
+  const lineStart = text.lastIndexOf("\n", node.offset - 1) + 1;
+  if (text.slice(lineStart, node.offset).trim() !== "") {
+    return undefined;
+  }
+  // After the value: an optional comma, then an optional comment, then the line break.
+  const scanner = createScanner(text, false);
+  scanner.setPosition(node.offset + node.length);
+  let token = scanner.scan();
+  if (token === SyntaxKind.Trivia) {
+    token = scanner.scan();
+  }
+  if (token === SyntaxKind.CommaToken) {
+    token = scanner.scan();
+    if (token === SyntaxKind.Trivia) {
+      token = scanner.scan();
+    }
+  }
+  let comment = "";
+  if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
+    comment = tokenText(text, scanner);
+    token = scanner.scan();
+    if (token === SyntaxKind.Trivia) {
+      token = scanner.scan();
+    }
+  }
+  if (token !== SyntaxKind.LineBreakTrivia) {
+    return undefined;
+  }
+  const lineEnd = scanner.getTokenOffset() + scanner.getTokenLength();
+  const removal: Edit = { offset: lineStart, length: lineEnd - lineStart, content: "" };
+  if (comment === "") {
+    return [removal];
+  }
+  const previousBreak = lineStart - (text[lineStart - 2] === "\r" ? 2 : 1);
+  const previousStart = text.lastIndexOf("\n", previousBreak - 1) + 1;
+  const endsInLineComment = comments(text).some(
+    ({ offset, value }) =>
+      value.startsWith("//") && offset >= previousStart && offset < previousBreak,
+  );
+  if (endsInLineComment) {
+    // Appending would turn it into part of that comment: keep it on its own line.
+    const indent = text.slice(lineStart, node.offset);
+    const lineBreak = text.slice(scanner.getTokenOffset(), lineEnd);
+    return [{ ...removal, content: `${indent}${comment}${lineBreak}` }];
+  }
+  // The end of the line before, without its line break and trailing spaces.
+  let previousEnd = previousBreak;
+  while (text[previousEnd - 1] === " " || text[previousEnd - 1] === "\t") {
+    previousEnd--;
+  }
+  const move: Edit = {
+    offset: previousEnd,
+    length: previousBreak - previousEnd,
+    content: ` ${comment}`,
+  };
+  return [move, removal];
+}
+
+/**
+ * Whether `edited` still has every comment of `text` that isn't inside the
+ * value of a changed property (those go with the value they annotate).
+ */
+function keepsComments(text: string, edited: string, key: string, changed: string[]): boolean {
+  const root = parseTree(text);
+  const replaced = changed.flatMap((property) => {
+    const node = root && findNodeAtLocation(root, [key, property]);
+    return node ? [{ start: node.offset, end: node.offset + node.length }] : [];
+  });
+  const kept = comments(text)
+    .filter(({ offset }) => !replaced.some(({ start, end }) => offset >= start && offset < end))
+    .map(({ value }) => value);
+  const remaining = comments(edited).map(({ value }) => value);
+  for (const value of kept) {
+    const index = remaining.indexOf(value);
+    if (index === -1) {
+      return false;
+    }
+    remaining.splice(index, 1);
+  }
+  return true;
+}
+
+function comments(text: string): { offset: number; value: string }[] {
+  const scanner = createScanner(text, false);
+  const found: { offset: number; value: string }[] = [];
+  for (let token = scanner.scan(); token !== SyntaxKind.EOF; token = scanner.scan()) {
+    if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
+      found.push({ offset: scanner.getTokenOffset(), value: tokenText(text, scanner) });
+    }
+  }
+  return found;
 }
 
 /** Whether VS Code's view shows the edited properties (others may change concurrently). */
@@ -123,4 +262,10 @@ function detectFormatting(text: string): { insertSpaces: boolean; tabSize: numbe
   return indent.startsWith("\t")
     ? { insertSpaces: false, tabSize: 1 }
     : { insertSpaces: true, tabSize: indent.length };
+}
+
+/** The scanner's current token as written; `getTokenValue()` also includes whitespace before a comment. */
+function tokenText(text: string, scanner: JSONScanner): string {
+  const start = scanner.getTokenOffset();
+  return text.slice(start, start + scanner.getTokenLength());
 }
