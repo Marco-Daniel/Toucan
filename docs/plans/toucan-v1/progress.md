@@ -13,6 +13,13 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1: isolated VS Code pass
+- Run 1 (f830912, VS Code 1.139.1): all checks passed. Status label "Toucan: webshop, Beak Orange check circle"; focus apply/clear in about 200 ms; the contrast warning in Set Color (warning severity) and Pick Preset (Plumage Black marked, Beak Red not); Toggle registered from commands.ts; search emoji consent/apply/restore; the Agents offer naming `chat.agentsControl.enabled`. Finding (a), comments inside a repo entry lost on Set Color, is fixed in a996c47.
+- Run 2 (fcde45e, `--log marco-daniel.toucan:debug`):
+  - A comment trailing the line before Toucan's keys and a comment line above them survive two apply/clear cycles, byte for byte, back to the original block.
+  - Finding (b), the consent modal and the restore also running in an unfocused window: **a harness artifact, not a bug**. With CDP keyboard input sent into both windows, the second window's log showed "focused" and never "blurred", although it lost focus several times; CDP input leaves a renderer believing it's focused. In a clean relaunch with focus switched through the CLI only, the logs were correct (webshop "focused", toucan "blurred"), only the focused window showed the modal, and only it logged "Restored window.title." 0015's focused-window-only rule holds. For later harness runs: don't send CDP input to more than one window.
+- Cosmetic, left as is: while colors are applied, the user's trailing comment from the last property sits on Toucan's last key (where jsonc-parser's insert puts it). It returns to its line on clear.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1: comments inside repo entries (0017)
 - Found by the isolated VS Code pass: Set Color replaced the whole `toucan.repos` entry, so a comment inside an object entry was lost. Manager: fix now; toucan-2c: recurse generally.
 - Did: `planEdit` edits every changed path as deep as both sides stay objects (`changedPaths`), so Set Color changes only `background` inside the entry. Removals use the whole-line removal at any depth, and the comment check exempts only the changed values themselves. `changed` stays the top-level keys: `viewReflects` compares each whole entry by deep equality, so a nested edit is still recognized as reflected.
