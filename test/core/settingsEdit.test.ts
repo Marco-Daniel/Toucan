@@ -133,6 +133,34 @@ describe("planEdit", () => {
     });
   });
 
+  it("removes the first of two properties on one line without touching the other", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000", "b": "#111111"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { b: "#111111" },
+    });
+    // Not removed by whole lines (that would take "b" too); how jsonc-parser
+    // lays out the rest is its business, so the value is what's asserted.
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
+    expect(parseSettingsForTest(plan.text)).toEqual({ [KEY]: { b: "#111111" } });
+  });
+
+  it("appends new keys in the desired value's order", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000" },
+      desired: { a: "#000000", b: "#111111", c: "#222222" },
+    });
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
+    expect(plan.text.indexOf('"b"')).toBeLessThan(plan.text.indexOf('"c"'));
+  });
+
   it("leaves a property that shares its line to jsonc-parser, never removing its neighbor", () => {
     const text = `{\n  "${KEY}": {\n    "a": "#000000", "b": "#111111"\n  }\n}\n`;
     const plan = planEdit({

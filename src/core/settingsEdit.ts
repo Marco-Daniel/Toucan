@@ -81,8 +81,9 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
 
   const formattingOptions = detectFormatting(text);
   let edited = text;
-  // From the end first, so each edit leaves the offsets of the earlier ones alone.
-  for (const { path, value } of paths.toReversed()) {
+  // Each edit is planned on the text so far, so the order only decides where
+  // new keys land: appended in the desired value's order.
+  for (const { path, value } of paths) {
     const edits =
       value === undefined
         ? (removeLines(edited, path) ?? modify(edited, path, undefined, { formattingOptions }))
