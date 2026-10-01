@@ -16,6 +16,7 @@
 ## 2026-10-02 — toucan-ab (implementer), loop round 3
 - Context: blind review of 33b4d0c, 2 Low; judged independently, both accepted.
 - R3-1: the applied flag is recorded on the "already applied" path only when colorCustomizations is an object; a non-object value is never written over, so nothing was applied. Test: a string setting with colors defined, no write and no markApplied. Mutation-red.
+- R3-2: the default-profile test ends with a profile write on the same path, which must still be verified and reverted, not given up on. Removing the profile-only guard in `recordMiss` is now mutation-red.
 
 ## 2026-10-02 — toucan-ab (implementer), loop round 2
 - Context: blind review of 5b9dd0c, 2 Medium + 2 Low, with agreed refinements in the threads; judged independently, all four accepted.

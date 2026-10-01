@@ -436,7 +436,9 @@ describe("SettingsFileWriter", () => {
       // oxlint-disable-next-line no-await-in-loop -- the writes are sequential by design
       await writer.write(KEY, replace, "defaultProfile");
     }
-    expect(reasons(debugs)).toEqual([REVERTED, REVERTED, REVERTED]);
+    // The same path as the guessed profile file: its misses must not give that up either.
+    await writer.write(KEY, replace, "profile");
+    expect(reasons(debugs)).toEqual([REVERTED, REVERTED, REVERTED, REVERTED]);
   });
 
   it("still edits toucan.repos in place when both targets share a file given up on for colors", async () => {
