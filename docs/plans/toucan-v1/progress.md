@@ -16,6 +16,7 @@
 ## 2026-10-02 — toucan-ab (implementer), loop round 4
 - Context: blind review of 0af5358 (1 High, 1 Low); judged independently, both accepted. R4-1 was reproduced live before the fix: a folder named `[x](command:workbench.action.showCommands)` rendered a clickable command link in the Set Glyph and Clear Color toasts, trusted and in Restricted Mode; the Clear Color modal stayed plain text.
 - R4-1: the Set Glyph and Clear Color toasts and the Clear Color modal no longer include the folder name (`src/core/messages.ts`, "This folder …"). A guard test scans every `show*Message` call in src for an interpolated folder name. Mutation-red: putting the name back at any of the three sites, or into another message.
+- R4-2: the `update()` fallback recomputes the value from the view right before writing, and skips the write when the updater leaves the setting alone. `tryInPlace` now returns only the reason. Tests: a hand edit saved during the verify wait is kept, and a recomputed "leave alone" writes nothing. Mutation-red: writing the pre-attempt value, and falling back to it.
 
 ## 2026-10-02 — toucan-ab (implementer), loop round 3
 - Context: blind review of 33b4d0c, 2 Low; judged independently, both accepted.

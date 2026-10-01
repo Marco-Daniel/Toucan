@@ -116,6 +116,8 @@ async function refreshView(file: string): Promise<void> {
 }
 
 const replace = () => ({ value: NEXT });
+const isRecordForTest = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /** The fallback reasons the writer logged, in order. */
 const reasons = (debugs: string[]) =>
@@ -474,6 +476,73 @@ describe("SettingsFileWriter", () => {
     await writer.write(KEY, replace, "defaultProfile");
     expect(updates).toEqual([NEXT, NEXT]);
     expect(await readFile(file, "utf8")).toBe(AFTER);
+  });
+
+  it("falls back with a value recomputed after the verify wait, keeping an edit saved meanwhile", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const edited = { webshop: "#e0620b", other: "#654321" };
+    let view: unknown = VIEW;
+    const updates: unknown[] = [];
+    const writer = new SettingsFileWriter(
+      { profile: file, defaultProfile: file },
+      {
+        view: () => view,
+        update: async (_key, value) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      {
+        ...TIMING,
+        clock: fakeClock(async () => {
+          // VS Code missed Toucan's edit; then the user saves their own change.
+          await writeFile(file, BEFORE.replace("#123456", "#654321"));
+          view = edited;
+        }),
+      },
+    );
+    await writer.write(
+      KEY,
+      (current) => ({ value: { ...(current as object), webshop: "#14939c" } }),
+      "profile",
+    );
+    expect(updates).toEqual([{ webshop: "#14939c", other: "#654321" }]);
+  });
+
+  it("skips the fallback when the recomputed value leaves the setting alone", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    let view: unknown = VIEW;
+    const updates: unknown[] = [];
+    const writer = new SettingsFileWriter(
+      { profile: file, defaultProfile: file },
+      {
+        view: () => view,
+        update: async (_key, value) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      {
+        ...TIMING,
+        clock: fakeClock(async () => {
+          view = {}; // another window removed the entry meanwhile
+        }),
+      },
+    );
+    // Like Set Glyph: change the entry if it's still there, else leave it alone.
+    await writer.write(
+      KEY,
+      (current) =>
+        isRecordForTest(current) && "webshop" in current
+          ? { value: { ...current, webshop: "#14939c" } }
+          : undefined,
+      "profile",
+    );
+    expect(updates).toEqual([]);
   });
 
   it("doesn't count a miss when someone else changed the file meanwhile", async () => {

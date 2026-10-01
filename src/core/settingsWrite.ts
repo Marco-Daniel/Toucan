@@ -120,40 +120,42 @@ export class SettingsFileWriter {
     if (next === undefined) {
       return;
     }
-    const outcome = await this.tryInPlace(target, key, update, next.value);
-    if (outcome.reason === undefined) {
+    const reason = await this.tryInPlace(target, key, update, next.value);
+    if (reason === undefined) {
       return;
     }
-    this.ports.debug(`${key}: update() instead of an in-place edit (${outcome.reason})`);
-    await this.ports.update(key, outcome.desired);
+    this.ports.debug(`${key}: update() instead of an in-place edit (${reason})`);
+    // Recomputed from the view as it is now: the attempt can take seconds
+    // (the verify wait), and an older value would undo an edit made meanwhile.
+    const latest = update(this.ports.view(key));
+    if (latest === undefined) {
+      return;
+    }
+    await this.ports.update(key, latest.value);
   }
 
-  /**
-   * Edits the file in place if it safely can. Returns why it couldn't (or
-   * `undefined` when it did), with the latest value the fallback should write.
-   */
+  /** Edits the file in place if it safely can. Returns why it couldn't, or `undefined` when it did (or had nothing to do). */
   private async tryInPlace(
     target: SettingsTarget,
     key: string,
     update: SettingsUpdate,
     computed: Record<string, unknown> | undefined,
-  ): Promise<{ reason: string | undefined; desired: Record<string, unknown> | undefined }> {
+  ): Promise<string | undefined> {
     const file = this.files[target];
     let desired = computed;
-    const fallback = (reason: string) => ({ reason, desired });
     // Only the guess is ever given up on: both targets can resolve to the same
     // file, and the default profile's settings are always followed there.
     if (target === "profile" && this.unfollowed.has(file)) {
-      return fallback("VS Code didn't follow an earlier edit of this file");
+      return "VS Code didn't follow an earlier edit of this file";
     }
     if (await this.isDirty(file)) {
-      return fallback("the settings file has unsaved changes");
+      return "the settings file has unsaved changes";
     }
     let text: string;
     try {
       text = await readFile(file, "utf8");
     } catch {
-      return fallback("the settings file can't be read");
+      return "the settings file can't be read";
     }
 
     let plan = planEdit({ text, key, view: this.ports.view(key), desired });
@@ -161,49 +163,47 @@ export class SettingsFileWriter {
     const latest = await readFile(file, "utf8").catch(() => undefined);
     if (latest !== text) {
       if (latest === undefined) {
-        return fallback("the settings file disappeared");
+        return "the settings file disappeared";
       }
       text = latest;
       // The file moved on, and maybe the view with it: recompute from it.
       const recomputed = update(this.ports.view(key));
       if (recomputed === undefined) {
-        return { reason: undefined, desired };
+        return undefined;
       }
       desired = recomputed.value;
       plan = planEdit({ text, key, view: this.ports.view(key), desired });
     }
     if (plan.kind === "noop") {
-      return { reason: undefined, desired };
+      return undefined;
     }
     if (plan.kind === "fallback") {
-      return fallback(plan.reason);
+      return plan.reason;
     }
 
     try {
       await writeLikeVsCode(file, plan.text);
     } catch (error) {
       // E.g. a read-only file, or a rename blocked by another process.
-      return fallback(`couldn't write the settings file (${String(error)})`);
+      return `couldn't write the settings file (${String(error)})`;
     }
     if (await this.reflected(key, desired, plan.changed)) {
       this.misses.delete(file);
-      return { reason: undefined, desired };
+      return undefined;
     }
     // VS Code didn't follow: maybe slow, maybe not this window's file (0017 step 5).
     const now = await readFile(file, "utf8").catch(() => undefined);
     if (now !== plan.text) {
       // Someone else wrote meanwhile: no evidence either way about the guess.
-      return fallback("VS Code didn't pick up the edit, and the file changed since; left it");
+      return "VS Code didn't pick up the edit, and the file changed since; left it";
     }
     this.recordMiss(target, file);
     try {
       await writeLikeVsCode(file, text);
     } catch (error) {
-      return fallback(
-        `VS Code didn't pick up the edit, and reverting it failed (${String(error)})`,
-      );
+      return `VS Code didn't pick up the edit, and reverting it failed (${String(error)})`;
     }
-    return fallback("VS Code didn't pick up the edit; reverted it");
+    return "VS Code didn't pick up the edit; reverted it";
   }
 
   /** Only the `profile` file is a guess; the default profile's file is always followed. */
