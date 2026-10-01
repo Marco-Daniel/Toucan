@@ -533,8 +533,6 @@ describe("FocusCoordinator", () => {
   });
 
   it("never rejects, even when logging a failure throws", async () => {
-    const world = new World();
-    world.failWrites = true;
     const a = new FocusCoordinator(
       "A",
       {

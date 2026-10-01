@@ -117,10 +117,10 @@ export function settingsFiles(globalStoragePath: string): {
   };
 }
 
-function detectFormatting(text: string): { insertSpaces: boolean; tabSize: number; eol: string } {
-  const eol = text.includes("\r\n") ? "\r\n" : "\n";
+/** The file's indentation. Line endings need nothing: jsonc-parser reuses the file's own. */
+function detectFormatting(text: string): { insertSpaces: boolean; tabSize: number } {
   const indent = /^([ \t]+)\S/m.exec(text)?.[1] ?? "  ";
   return indent.startsWith("\t")
-    ? { insertSpaces: false, tabSize: 1, eol }
-    : { insertSpaces: true, tabSize: indent.length, eol };
+    ? { insertSpaces: false, tabSize: 1 }
+    : { insertSpaces: true, tabSize: indent.length };
 }

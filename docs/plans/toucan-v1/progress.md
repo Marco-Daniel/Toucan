@@ -13,6 +13,18 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1 (E): literal test expectations
+- Did:
+  - L29: config tests assert the issue messages literally.
+  - L31: the post-edit guard is driven by a duplicate key (the edit changes the first, the parser keeps the last), not by a jsonc-parser quirk.
+  - L32: planEdit tests compare full texts. The `eol` formatting option was dead (jsonc-parser takes line endings from the file), so it's removed, and a new CRLF object-insert test pins the behavior.
+  - L33: three derived sets (dark, light, saturated) written out in full; lightness is measured with culori's `parseHex`, not production code.
+  - L34: full nine-color rows for squares, circles and hearts.
+  - L35: the own-entry test uses an inherited `webshop` entry, so it can fail.
+  - L36: presets moved to `presets.test.ts` as literal (name, hex) pairs.
+  - L39: dead `World` setup removed; the gamut-mapping test asserts "not clamped, hue kept" instead of culori's exact output.
+- Verified: all quality commands pass. Mutations proven red: `Object.hasOwn`, swapped circle and heart emoji, a preset hex, a config message, the hover shift and the inactive alpha.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (D): wiring and small cleanups
 - Did:
   - L12 (and toucan-2c's L1 on 74840b9): fire-and-forget work in extension.ts goes through `background(what, task)`, which logs a failure instead of leaving an unhandled rejection. The search emoji's reassert timer catches too.

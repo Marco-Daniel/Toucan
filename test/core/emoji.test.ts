@@ -55,6 +55,27 @@ describe("emojiFor", () => {
     expect(emojiFor(hex("#14939c"), "pill")).toBe("🟦");
   });
 
+  // One color per category, in EMOJI_COLORS order.
+  const CATEGORIES = [
+    "#f92824",
+    "#e0620b",
+    "#fde246",
+    "#56915e",
+    "#14939c",
+    "#6241bd",
+    "#795548",
+    "#000000",
+    "#ffffff",
+  ];
+
+  it.each([
+    ["square", "🟥 🟧 🟨 🟩 🟦 🟪 🟫 ⬛ ⬜"],
+    ["circle", "🔴 🟠 🟡 🟢 🔵 🟣 🟤 ⚫ ⚪"],
+    ["heart", "❤️ 🧡 💛 💚 💙 💜 🤎 🖤 🤍"],
+  ] as const)("has the full %s row", (glyph, row) => {
+    expect(CATEGORIES.map((color) => emojiFor(hex(color), glyph)).join(" ")).toBe(row);
+  });
+
   it.each(GLYPHS)("returns a single emoji for every color category with %s", (glyph) => {
     for (const color of ["#f92824", "#e0620b", "#fde246", "#56915e", "#14939c", "#6241bd"]) {
       expect([...new Intl.Segmenter().segment(emojiFor(hex(color), glyph))]).toHaveLength(1);

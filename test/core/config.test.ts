@@ -10,8 +10,7 @@ describe("parseRepos", () => {
   it.each([[[]], ["#fff"], [42]])("reports a malformed setting %j", (raw) => {
     const { repos, issues } = parseRepos(raw);
     expect(repos.size).toBe(0);
-    expect(issues).toHaveLength(1);
-    expect(issues[0]?.repo).toBeUndefined();
+    expect(issues).toEqual([{ message: "toucan.repos must be an object keyed by folder name." }]);
   });
 
   it("reads a string as the background with the default glyph", () => {
@@ -98,8 +97,15 @@ describe("parseRepos", () => {
       },
     });
     expect(repos.get("r")).toEqual({ background: "#123456", overrides: {}, glyph: "square" });
-    expect(issues).toHaveLength(5);
-    expect(issues.every((issue) => issue.repo === "r")).toBe(true);
+    expect(issues).toEqual(
+      [
+        'glyph "triangle" is not one of square, bar, pill, circle, double-circle, heart, star, check-circle; using square.',
+        'sidebarBlock "sometimes" is not one of always, unfocused; ignored.',
+        'foreground "nope" is not a valid color; derived instead.',
+        "border 5 is not a valid color; derived instead.",
+        'Unknown key "debuggingBackground" ignored.',
+      ].map((message) => ({ repo: "r", message })),
+    );
   });
 
   it("does not treat inherited properties as entries", () => {

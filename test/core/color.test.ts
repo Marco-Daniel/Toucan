@@ -1,5 +1,8 @@
+import { converter, parseHex } from "culori/fn";
 import { describe, expect, it } from "vitest";
 import { NEUTRAL_GRAY, normalizeColor, validateColorInput } from "../../src/core/color.ts";
+
+const oklch = converter("oklch");
 
 describe("NEUTRAL_GRAY", () => {
   it("is mid gray", () => {
@@ -49,9 +52,12 @@ describe("normalizeColor", () => {
   );
 
   it("maps out-of-gamut colors into sRGB without shifting the hue", () => {
-    // Clamping each channel would give pure #ff0000.
-    expect(normalizeColor("oklch(0.7 0.4 30)")).toBe("#ff5843");
-    expect(normalizeColor("oklch(0.7 0.4 30 / 0.5)")).toBe("#ff584380");
+    const mapped = normalizeColor("oklch(0.7 0.4 30)");
+    // Clamping each channel would give pure #ff0000, a different hue.
+    expect(mapped).toMatch(/^#[0-9a-f]{6}$/);
+    expect(mapped).not.toBe("#ff0000");
+    expect(oklch(parseHex(mapped!))?.h).toBeCloseTo(30, 0);
+    expect(normalizeColor("oklch(0.7 0.4 30 / 0.5)")).toBe(`${mapped}80`);
   });
 
   it.each(["", "nope", "#ggg", "rgb(1, 2)"])("rejects %j", (input) => {

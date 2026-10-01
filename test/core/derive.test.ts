@@ -1,6 +1,5 @@
-import { converter, wcagContrast } from "culori/fn";
+import { converter, parseHex, wcagContrast } from "culori/fn";
 import { describe, expect, it } from "vitest";
-import { parseColor } from "../../src/core/color.ts";
 import { deriveColors } from "../../src/core/derive.ts";
 import { COMMAND_CENTER_KEYS, type ColorOverrides, type Hex } from "../../src/core/model.ts";
 
@@ -9,7 +8,7 @@ const toOklch = converter("oklch");
 const asHex = (value: string) => value as Hex;
 const derive = (background: string, overrides: Record<string, string> = {}) =>
   deriveColors(asHex(background), overrides as ColorOverrides);
-const lightness = (hex: string) => toOklch(parseColor(hex)!).l;
+const lightness = (hex: string) => toOklch(parseHex(hex))!.l;
 
 // Every preset from 0014, plus the extremes.
 const BACKGROUNDS = [
@@ -34,6 +33,53 @@ const BACKGROUNDS = [
 ];
 
 describe("deriveColors", () => {
+  it.each([
+    [
+      "dark",
+      "#2c4a51",
+      {
+        background: "#2c4a51",
+        foreground: "#ffffff",
+        activeBackground: "#3c5b62",
+        activeForeground: "#ffffff",
+        border: "#4d6c73",
+        activeBorder: "#4d6c73",
+        inactiveForeground: "#ffffff99",
+        inactiveBorder: "#4d6c7380",
+      },
+    ],
+    [
+      "light",
+      "#fde246",
+      {
+        background: "#fde246",
+        foreground: "#000000",
+        activeBackground: "#e9ce28",
+        activeForeground: "#000000",
+        border: "#d5bb00",
+        activeBorder: "#d5bb00",
+        inactiveForeground: "#00000099",
+        inactiveBorder: "#d5bb0080",
+      },
+    ],
+    [
+      "saturated",
+      "#f92824",
+      {
+        background: "#f92824",
+        foreground: "#000000",
+        activeBackground: "#e30003",
+        activeForeground: "#000000",
+        border: "#c90000",
+        activeBorder: "#c90000",
+        inactiveForeground: "#00000099",
+        inactiveBorder: "#c9000080",
+      },
+    ],
+  ])("derives the full set for a %s background", (_kind, background, expected) => {
+    expect(derive(background)).toEqual(expected);
+  });
+
   it.each(BACKGROUNDS)("derives a complete hex set for %s", (background) => {
     const colors = derive(background);
     expect(Object.keys(colors).toSorted()).toEqual([...COMMAND_CENTER_KEYS].toSorted());

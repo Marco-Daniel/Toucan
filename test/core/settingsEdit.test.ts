@@ -36,11 +36,18 @@ describe("planEdit", () => {
     expect(plan.kind).toBe("edit");
     if (plan.kind !== "edit") return;
     expect(plan.changed.toSorted()).toEqual(["commandCenter.background", "commandCenter.border"]);
-    expect(plan.text).toContain("// my settings");
-    expect(plan.text).toContain("// keep my editor color");
-    expect(plan.text).toContain('"commandCenter.background": "#00bb00"');
-    expect(plan.text).toContain('"commandCenter.border": "#111111"');
-    expect(plan.text).toContain('"editor.background": "#101010"');
+    // jsonc-parser keeps a trailing comment at the end of the object's last line.
+    expect(plan.text).toBe(`{
+  // my settings
+  "editor.fontSize": 13,
+  "${KEY}": {
+    // keep my editor color
+    "editor.background": "#101010",
+    "commandCenter.background": "#00bb00",
+    "commandCenter.border": "#111111", // Toucan's
+  },
+}
+`);
   });
 
   it("clears Toucan's keys and keeps the user's keys and comments", () => {
@@ -53,23 +60,26 @@ describe("planEdit", () => {
     expect(plan.kind).toBe("edit");
     if (plan.kind !== "edit") return;
     expect(plan.changed).toEqual(["commandCenter.background"]);
-    expect(plan.text).toContain("// my settings");
-    expect(plan.text).toContain("// keep my editor color");
-    expect(plan.text).toContain('"editor.background": "#101010"');
-    expect(plan.text).not.toContain("commandCenter");
+    expect(plan.text).toBe(`{
+  // my settings
+  "editor.fontSize": 13,
+  "${KEY}": {
+    // keep my editor color
+    "editor.background": "#101010", // Toucan's
+  },
+}
+`);
   });
 
   it("falls back instead of writing an edit that doesn't parse back as intended", () => {
-    // Trailing comma plus comment on the only property: a removal jsonc-parser can't do cleanly.
-    const text = `{\n  "${KEY}": {\n    "commandCenter.background": "#aa0000", // Toucan's\n  },\n}\n`;
-    const plan = planEdit({
-      text,
-      key: KEY,
-      view: { "commandCenter.background": "#aa0000" },
-      desired: undefined,
+    // A duplicate key: the edit changes the first "a", but the last one wins
+    // on parse, so the result can never hold the new value.
+    const text = `{\n  "${KEY}": {\n    "a": "#000000",\n    "a": "#000000"\n  }\n}\n`;
+    const plan = planEdit({ text, key: KEY, view: { a: "#000000" }, desired: { a: "#111111" } });
+    expect(plan).toEqual({
+      kind: "fallback",
+      reason: "the in-place edit didn't produce the expected value",
     });
-    // jsonc-parser leaves "{ , // Toucan's }" here; the re-parse check catches it.
-    expect(plan).toMatchObject({ kind: "fallback" });
   });
 
   it("is a no-op when nothing changes", () => {
@@ -107,7 +117,21 @@ describe("planEdit", () => {
     });
     expect(plan.kind).toBe("edit");
     if (plan.kind !== "edit") return;
-    expect(plan.text).toContain(`\t\t"b": "#111111"`);
+    expect(plan.text).toBe(
+      `{\r\n\t"${KEY}": {\r\n\t\t"a": "#000000",\r\n\t\t"b": "#111111"\r\n\t}\r\n}\r\n`,
+    );
+  });
+
+  it("writes a new object value with the file's CRLF line endings", () => {
+    const text = `{\r\n  "toucan.repos": {\r\n    "a": "#000000"\r\n  }\r\n}\r\n`;
+    const plan = planEdit({
+      text,
+      key: "toucan.repos",
+      view: { a: "#000000" },
+      desired: { a: { background: "#000000", glyph: "star" } },
+    });
+    expect(plan.kind).toBe("edit");
+    if (plan.kind !== "edit") return;
     expect(plan.text.replaceAll("\r\n", "")).not.toContain("\n");
   });
 
@@ -123,9 +147,9 @@ describe("planEdit", () => {
     expect(plan.kind).toBe("edit");
     if (plan.kind !== "edit") return;
     expect(plan.changed).toEqual(["webshop"]);
-    expect(plan.text).toContain("// work");
-    expect(plan.text).toContain("// mine");
-    expect(plan.text).toContain('"glyph": "star"');
+    expect(plan.text).toBe(
+      `{\n  "toucan.repos": {\n    // work\n    "webshop": {\n      "background": "#e0620b",\n      "glyph": "star"\n    },\n    "toucan": { "background": "#14939c" } // mine\n  }\n}\n`,
+    );
   });
 });
 

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "../../src/core/entries.ts";
 import type { Hex } from "../../src/core/model.ts";
-import { PRESETS } from "../../src/core/presets.ts";
-import { normalizeColor } from "../../src/core/color.ts";
 
 const RED = "#ff0000" as Hex;
 
@@ -78,16 +76,6 @@ describe("withoutRepo", () => {
   });
 });
 
-describe("PRESETS", () => {
-  it("has the 16 colors from 0014 as normalized hex", () => {
-    expect(PRESETS).toHaveLength(16);
-    for (const { hex } of PRESETS) {
-      expect(normalizeColor(hex)).toBe(hex);
-    }
-    expect(new Set(PRESETS.map(({ name }) => name)).size).toBe(16);
-  });
-});
-
 describe("handEditedKeys", () => {
   it("lists every field beyond the background", () => {
     const raw = { webshop: { background: "#000", glyph: "heart", foreground: "#fff" } };
@@ -100,7 +88,9 @@ describe("handEditedKeys", () => {
   });
 
   it("ignores repos that aren't own entries", () => {
-    expect(handEditedKeys({}, "constructor")).toEqual([]);
+    // An inherited entry that would otherwise list "glyph".
+    const raw: unknown = Object.create({ webshop: { background: "#000", glyph: "x" } });
+    expect(handEditedKeys(raw, "webshop")).toEqual([]);
     expect(handEditedKeys(undefined, "webshop")).toEqual([]);
   });
 });
