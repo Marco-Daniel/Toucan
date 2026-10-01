@@ -244,9 +244,11 @@ async function writeLikeVsCode(file: string, text: string): Promise<void> {
   }
   const temporary = join(dirname(file), `.${randomUUID()}.toucan.tmp`);
   try {
-    await writeFile(temporary, text);
-    // writeFile's mode is masked by the umask; chmod sets it exactly.
-    await chmod(temporary, link.mode & 0o777);
+    const mode = link.mode & 0o777;
+    // Created with the original's mode, so the copy is never more readable
+    // than settings.json; the umask can narrow it, so chmod then sets it exactly.
+    await writeFile(temporary, text, { mode });
+    await chmod(temporary, mode);
     await rename(temporary, file);
   } catch (error) {
     // Never leave a copy of the user's settings behind.

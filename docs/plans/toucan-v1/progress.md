@@ -13,6 +13,10 @@
 
 -->
 
+## 2026-10-02 — toucan-ab (implementer), loop round 1: M1 temp file mode
+- Did: the rest of M1. The temp copy of settings.json is created with the original's mode (`writeFile(…, { mode })`), so it's never more readable than the original, even before the chmod.
+- Verified: all quality commands pass. Not mutation-testable: the final mode is the same either way, and the temp file only exists inside the call.
+
 ## 2026-10-02 — toucan-ab (implementer), loop round 1 (F): docs and notices
 - Did:
   - L28: `THIRD_PARTY_NOTICES.md` with the culori and jsonc-parser MIT licenses and the Codicons CC BY 4.0 attribution. It ships in the VSIX (.vscodeignore) and is in check:vsix's expected list. The icon waits for the Marketplace.
