@@ -124,6 +124,7 @@
                       "toucan",
                       "sun",
                       "leaf",
+                      "drop",
                       "moon",
                       "alien",
                       "ghost",
@@ -241,67 +242,74 @@
           "fontCharacter": "\\E006"
         }
       },
+      "toucan-drop": {
+        "description": "Toucan drop glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E007"
+        }
+      },
       "toucan-moon": {
         "description": "Toucan moon glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E007"
+          "fontCharacter": "\\E008"
         }
       },
       "toucan-alien": {
         "description": "Toucan alien glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E008"
+          "fontCharacter": "\\E009"
         }
       },
       "toucan-ghost": {
         "description": "Toucan ghost glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E009"
+          "fontCharacter": "\\E00A"
         }
       },
       "toucan-robot": {
         "description": "Toucan robot glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E00A"
+          "fontCharacter": "\\E00B"
         }
       },
       "toucan-cat": {
         "description": "Toucan cat glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E00B"
+          "fontCharacter": "\\E00C"
         }
       },
       "toucan-bolt": {
         "description": "Toucan bolt glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E00C"
+          "fontCharacter": "\\E00D"
         }
       },
       "toucan-heart": {
         "description": "Toucan heart glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E00D"
+          "fontCharacter": "\\E00E"
         }
       },
       "toucan-star": {
         "description": "Toucan star glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E00E"
+          "fontCharacter": "\\E00F"
         }
       },
       "toucan-rocket": {
         "description": "Toucan rocket glyph",
         "default": {
           "fontPath": "./media/toucan-icons.woff",
-          "fontCharacter": "\\E00F"
+          "fontCharacter": "\\E010"
         }
       }
     },

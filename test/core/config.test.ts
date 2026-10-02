@@ -99,7 +99,7 @@ describe("parseRepos", () => {
     expect(repos.get("r")).toEqual({ background: "#123456", overrides: {}, glyph: "square" });
     expect(issues).toEqual(
       [
-        'glyph "triangle" is not one of square, bar, pill, circle, toucan, sun, leaf, moon, alien, ghost, robot, cat, bolt, heart, star, rocket; using square.',
+        'glyph "triangle" is not one of square, bar, pill, circle, toucan, sun, leaf, drop, moon, alien, ghost, robot, cat, bolt, heart, star, rocket; using square.',
         'sidebarBlock "sometimes" is not one of always, unfocused; ignored.',
         'foreground "nope" is not a valid color; derived instead.',
         "border 5 is not a valid color; derived instead.",

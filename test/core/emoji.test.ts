@@ -59,6 +59,7 @@ describe("emojiFor", () => {
       toucan: "🟦",
       sun: "🟦",
       leaf: "🟦",
+      drop: "🟦",
       moon: "🟦",
       alien: "🟦",
       ghost: "🟦",

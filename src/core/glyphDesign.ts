@@ -72,6 +72,39 @@ function pinSun(disc: number, from: number, to: number, half: number, rays = 8):
   return [ngon(8, 8, disc, 12), ...pins];
 }
 
+/**
+ * A leaf blade from `base` to `tip`, `n` segments a side. Its half-width
+ * follows sin(πt)^`taper`, so the tip is pointier than the base with a taper
+ * below 1.
+ */
+function blade(base: Point, tip: Point, halfWidth: number, taper: number, n = 12): Point[] {
+  const [bx, by] = base;
+  const length = Math.hypot(tip[0] - bx, tip[1] - by);
+  const [ux, uy] = [(tip[0] - bx) / length, (tip[1] - by) / length];
+  const side = (sign: number): Point[] =>
+    Array.from({ length: n - 1 }, (_, i) => {
+      const t = (i + 1) / n;
+      const w = halfWidth * Math.sin(Math.PI * t) ** taper * sign;
+      return [
+        round2(bx + ux * length * t - uy * w),
+        round2(by + uy * length * t + ux * w),
+      ] as const;
+    });
+  return [base, ...side(1), tip, ...side(-1).toReversed()];
+}
+
+/** A straight strip from `a` to `b`, `half` wide on either side. */
+function strip(a: Point, b: Point, half: number): Point[] {
+  const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const [nx, ny] = [(-(b[1] - a[1]) / length) * half, ((b[0] - a[0]) / length) * half];
+  return [
+    [round2(a[0] + nx), round2(a[1] + ny)],
+    [round2(b[0] + nx), round2(b[1] + ny)],
+    [round2(b[0] - nx), round2(b[1] - ny)],
+    [round2(a[0] - nx), round2(a[1] - ny)],
+  ];
+}
+
 const shape = (width: number, fills: string[], holes: (string | Point[])[] = []) => ({
   width,
   fills: fills.map(points),
@@ -95,7 +128,13 @@ export const GLYPH_DESIGNS: Record<Glyph, GlyphDesign> = {
     ["7.35,0.9 7.75,0.9 8.05,5.7 7.65,5.7", ngon(5.2, 3.6, 0.9, 8)],
   ),
   sun: { width: 16, fills: pinSun(2.8, 5.0, 7.9, 0.2), holes: [], softening: SUN_SOFTENING },
-  leaf: shape(16, ["1.5,14.5 3,10 6,5 10.5,2 14.5,1.5 14,6 11,11 6,13.5"]),
+  // A pointed blade on a short stem (0007).
+  leaf: {
+    ...shape(16, []),
+    fills: [blade([3.6, 12.4], [14.3, 1.7], 3.6, 0.8), strip([1.2, 14.8], [4.6, 11.4], 0.25)],
+  },
+  // The sheet's drop (0007), its tip and bottom 0.1 in, so the softened outline stays in the box.
+  drop: shape(16, ["8,0.9 12.4,7.5 12.9,11 11,14.4 8,15.2 5,14.4 3.1,11 3.6,7.5"]),
   moon: { ...shape(16, []), fills: [ngon(8, 8, 6.8)], holes: [ngon(11.4, 5.4, 5.8)] },
   alien: shape(
     16,

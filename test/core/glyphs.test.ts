@@ -36,24 +36,25 @@ describe("FONT_CODEPOINTS", () => {
       "e004 toucan",
       "e005 sun",
       "e006 leaf",
-      "e007 moon",
-      "e008 alien",
-      "e009 ghost",
-      "e00a robot",
-      "e00b cat",
-      "e00c bolt",
-      "e00d heart",
-      "e00e star",
-      "e00f rocket",
+      "e007 drop",
+      "e008 moon",
+      "e009 alien",
+      "e00a ghost",
+      "e00b robot",
+      "e00c cat",
+      "e00d bolt",
+      "e00e heart",
+      "e00f star",
+      "e010 rocket",
     ]);
   });
 });
 
 describe("glyph groups", () => {
-  it("are the four groups of four, covering GLYPHS in order", () => {
+  it("are the four themed groups, covering GLYPHS in order", () => {
     expect(GLYPH_GROUPS.map(({ label, glyphs }) => `${label}: ${glyphs.join(" ")}`)).toEqual([
       "Shapes: square bar pill circle",
-      "Toucan's world: toucan sun leaf moon",
+      "Toucan's world: toucan sun leaf drop moon",
       "Characters: alien ghost robot cat",
       "Fun & dev: bolt heart star rocket",
     ]);
@@ -76,6 +77,7 @@ describe("glyph groups", () => {
       "toucan",
       "sun *",
       "leaf",
+      "drop",
       "moon",
       "-- Characters",
       "alien",
@@ -179,6 +181,29 @@ describe("glyph shapes", () => {
       [
         [11.4, 5.4],
         [14.6, 2],
+      ],
+    ],
+    [
+      "leaf",
+      [
+        [9, 7],
+        [2.3, 13.7],
+      ],
+      [
+        [1.2, 12],
+        [5, 14.6],
+        [14.8, 14.8],
+      ],
+    ],
+    [
+      "drop",
+      [
+        [8, 11],
+        [8, 3],
+      ],
+      [
+        [3, 3],
+        [13, 3],
       ],
     ],
     [

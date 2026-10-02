@@ -2,12 +2,12 @@
 
 ## Goal
 
-Give every repo a glyph that is both a second cue next to color and a bit of personality. Today there are eight glyphs: three from Toucan's own icon font (square, bar, pill) and five built-in codicons (circle, double-circle, heart, star, check-circle). After this change there are 16, all drawn by Toucan in one style and served from Toucan's own font, in four themed groups of four:
+Give every repo a glyph that is both a second cue next to color and a bit of personality. Today there are eight glyphs: three from Toucan's own icon font (square, bar, pill) and five built-in codicons (circle, double-circle, heart, star, check-circle). After this change there are 17 (the planned 16 plus a water drop, → [0007](decisions/0007-redraw-the-leaf-and-add-a-water-drop.md)), all drawn by Toucan in one style and served from Toucan's own font, in four themed groups:
 
 | Group          | Glyphs                       |
 | -------------- | ---------------------------- |
 | Shapes         | square, bar, pill, circle    |
-| Toucan's world | toucan, sun, leaf, moon      |
+| Toucan's world | toucan, sun, leaf, drop, moon |
 | Characters     | alien, ghost, robot, cat     |
 | Fun & dev      | bolt, heart, star, rocket    |
 

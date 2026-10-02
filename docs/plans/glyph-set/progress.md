@@ -4,6 +4,11 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-10-02 — The implementer, leaf and drop (0007)
+- Did: Marco's changes after seeing the set. The leaf is redrawn as a pointed blade on a short stem (variant A of three), and the candidate sheet's water drop is added to Toucan's world, which now has five glyphs (17 in all). The drop's tip and bottom sit 0.1 in, so its softened outline stays inside the box. Its codepoint is e007 in group order (moon and the glyphs after it move up; only pill, square and bar have shipped). The manifest, emoji (drop → squares), tests, README, plan and decision 0007 are updated.
+- Verified: all checks pass; new probes for the leaf (blade and stem ink, clear beside the stem) and the drop.
+- Next: Round 1 from the blind reviewer, including the bounds finding for bar, sun and toucan.
+
 ## 2026-10-02 — The implementer, glyph set
 - Did:
   - `src/core/glyphDesign.ts` holds the reference sheet's geometry (fills, holes, softening per glyph), ported from `assets/glyph-sheet.py`. `pnpm font` bakes each design into one plain filled path with `clipper-lib` (a devDependency, build time only): fills grown by half their softening with round joins and united, holes grown by half the lighter hole softening and subtracted. Outlines and holes come out with opposite winding, so they read the same under nonzero in SVG and in the font. The paths go to the generated `src/generated/glyphPaths.ts`; the swatches, the sidebar block, `media/icons` and the font all draw from them.

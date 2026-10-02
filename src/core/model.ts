@@ -20,7 +20,7 @@ export type CommandCenterKey = (typeof COMMAND_CENTER_KEYS)[number];
 export type CommandCenterColors = Record<CommandCenterKey, Hex>;
 export type ColorOverrides = Partial<Omit<CommandCenterColors, "background">>;
 
-/** Curated status bar glyphs, in group order (glyph-set plan, 0002). */
+/** Curated status bar glyphs, in group order (glyph-set plan, 0002 and 0007). */
 export const GLYPHS = [
   "square",
   "bar",
@@ -29,6 +29,7 @@ export const GLYPHS = [
   "toucan",
   "sun",
   "leaf",
+  "drop",
   "moon",
   "alien",
   "ghost",
@@ -46,10 +47,10 @@ export const DEFAULT_GLYPH: Glyph = "square";
 /** Glyphs earlier versions offered (glyph-set plan, 0003): they read as square, with a warning. */
 export const RETIRED_GLYPHS = ["double-circle", "check-circle"] as const;
 
-/** The four themed groups Set Glyph shows, together covering GLYPHS in order. */
+/** The themed groups Set Glyph shows, together covering GLYPHS in order (glyph-set 0002, 0007). */
 export const GLYPH_GROUPS: readonly { label: string; glyphs: readonly Glyph[] }[] = [
   { label: "Shapes", glyphs: ["square", "bar", "pill", "circle"] },
-  { label: "Toucan's world", glyphs: ["toucan", "sun", "leaf", "moon"] },
+  { label: "Toucan's world", glyphs: ["toucan", "sun", "leaf", "drop", "moon"] },
   { label: "Characters", glyphs: ["alien", "ghost", "robot", "cat"] },
   { label: "Fun & dev", glyphs: ["bolt", "heart", "star", "rocket"] },
 ];

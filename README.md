@@ -33,7 +33,7 @@ Click the status bar item to set a color, hover it for the other actions, or run
 
 - **Toucan: Set Color for This Repo**: type any CSS color, with a live preview on the status bar.
 - **Toucan: Pick Preset Color**: one of 16 toucan-themed colors.
-- **Toucan: Set Glyph**: the status bar shape, one of 16 in Toucan's own style, in four groups: shapes (square, bar, pill, circle), Toucan's world (toucan, sun, leaf, moon), characters (alien, ghost, robot, cat) and fun & dev (bolt, heart, star, rocket).
+- **Toucan: Set Glyph**: the status bar shape, one of 17 in Toucan's own style, in four groups: shapes (square, bar, pill, circle), Toucan's world (toucan, sun, leaf, drop, moon), characters (alien, ghost, robot, cat) and fun & dev (bolt, heart, star, rocket).
 - **Toucan: Clear Color**: removes this repo's entry, asking first if it holds more than a color.
 - **Toucan: Toggle Sidebar Block**: shows or hides the sidebar block, offering to turn it on.
 
