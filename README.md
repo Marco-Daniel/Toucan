@@ -106,10 +106,12 @@ Toucan keeps its docs in its own qmd index, `toucan`, so it never touches your o
 
 One-time setup:
 
-1. Install it globally: `npm i -g @tobilu/qmd` (2.8 or newer). It has native dependencies and downloads about 2 GB of models on first use, which is why it isn't a devDependency. Install it under the Node version your editor and Claude Code use (with nvm, the one that's active there), so `qmd` is on their `PATH`. If npm skips the install scripts, the prebuilt binaries usually work; otherwise reinstall with `--allow-scripts`.
-2. Start a Claude Code session here. A session-start hook registers Toucan's two collections in the `toucan` index, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and builds the keyword index in the background. Then run `pnpm docs:index` once for semantic search: it also refreshes the embeddings (downloading qmd's models on first use). It's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
-
-The first search, usually made by an agent, downloads qmd's models (about 2 GB, one-time); that's expected and well worth it. `pnpm docs:index` adds full embeddings.
+1. Install qmd 2.8 or newer: `npm i -g @tobilu/qmd`. Do this under the Node version your editor and Claude Code use (with nvm, run it while that version is active), so `qmd` is on their `PATH`.
+2. If npm says it skipped install scripts, try qmd anyway: the prebuilt binaries usually work. If they don't, reinstall with `--allow-scripts=` followed by the packages npm lists in its warning, comma-separated (for qmd 2.8.3 that was `npm i -g @tobilu/qmd --allow-scripts=node-llama-cpp,tree-sitter-go,tree-sitter-python,tree-sitter-rust,tree-sitter-typescript,tree-sitter-javascript`).
+3. Check it: `qmd --version` prints 2.8 or newer, and `command -v qmd` prints its path.
+4. Start a Claude Code session here. A session-start hook registers Toucan's two collections, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and builds the keyword index in the background.
+5. The first search, usually made by an agent, downloads qmd's models (about 2 GB, one-time); that's expected and well worth it.
+6. Run `pnpm docs:index` once for full embeddings (semantic search). It's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
 
 After that, a hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
 
