@@ -20,7 +20,7 @@ The periodic backstop for the CLAUDE.md rule that a change updates every doc tha
 
 The docs are README.md, GROUNDING.md, .claude/CLAUDE.md, `docs/adr/` and `docs/plans/`. Leave out generated text: the README's settings table (`check:generated` keeps it in sync) and the ADR log's own mechanics (`test/adr.test.ts` checks numbering, the index and citations).
 
-- **Diff run, names:** for each changed name (a path, an old path, a script, a setting key, a command id or title, an ADR, a symbol), find where the docs mention it.
+- **Diff run, names:** for each changed name (a path, an old path, a script, a setting key, a command id, an ADR, a symbol), find where the docs mention it. For a retitled command (`commands.retitled`), search its old title as well as its id. For a changed setting (`settings.changed`), search its key and its old default and enum values, from `git diff <since> HEAD -- package.json`.
 - **Diff run, behaviour:** a change can make a doc false without renaming anything (a branch made unconditional, a default flipped). For each modified or renamed file under `src/` and `scripts/`, and for `package.json`, read its diff: `git diff <since> HEAD -M -- <path>`. State each behaviour change in one line ("choosing _Not now_ no longer stops the prompt", say), and search the docs for that sentence as well as for the user-facing strings, titles and setting keys the hunks touch. Skip pure refactors, and say how many files you skipped that way.
 - How to search, for a name or a behaviour:
   - qmd, always on Toucan's own index: the `qmd` MCP server (it runs `qmd --index toucan`), with `toucan-docs` for `docs/` and `toucan-guides` for README.md and GROUNDING.md, a `lex` line with the exact name or string and a `vec` line for what it does (for a behaviour change, its one-line statement);
@@ -31,7 +31,7 @@ The docs are README.md, GROUNDING.md, .claude/CLAUDE.md, `docs/adr/` and `docs/p
 ## 3. Check each mention against the code
 
 - A path: does it exist (`git ls-files`)? If it moved, where to?
-- A `pnpm` script, a setting key or a command id: is it in package.json, and does the doc describe it as it is?
+- A `pnpm` script, a setting key or a command id: is it in package.json, and does the doc describe it as it is now (a command's title, a setting's default, options and scope)?
 - A symbol: does it exist (`git grep`), and in the file the doc names?
 - An ADR: does its status still match what the doc says about it?
 - A behaviour: read the code the doc describes; don't guess from names.
