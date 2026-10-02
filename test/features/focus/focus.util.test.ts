@@ -573,6 +573,24 @@ describe("FocusCoordinator", () => {
     expect(world.background).toBe("#aa0000");
   });
 
+  it("logs a new failure streak after a write succeeded in between", async () => {
+    const world = new World();
+    let background = "#aa0000";
+    const a = world.window("A", () => background);
+    world.failWrites = true;
+    a.setFocused(true);
+    await settle();
+    world.failWrites = false;
+    a.refresh();
+    await settle();
+    expect(world.background).toBe("#aa0000");
+    world.failWrites = true;
+    background = "#00aa00";
+    a.refresh();
+    await settle();
+    expect(world.warnings).toHaveLength(2);
+  });
+
   it("clears on dispose only while it owns the colors", async () => {
     const world = new World();
     const a = world.window("A", "#aa0000");

@@ -296,45 +296,54 @@ describe("SettingsFileWriter", () => {
     expect(updates).toEqual([{ other: "#654321", webshop: "#14939c" }]);
   });
 
-  it("falls back to update() and leaves no temp file when the write fails", async () => {
-    const file = join(dir, "settings.json");
-    await writeFile(file, BEFORE);
-    await refreshView(file);
-    await chmod(dir, 0o555); // the temp file can't be created next to settings.json
-    const { writer, updates, debugs } = setup(file);
-    await writer.write(KEY, replace, "profile");
-    await chmod(dir, 0o755);
-    expect(updates).toEqual([NEXT]);
-    expect(reasons(debugs)).toEqual([
-      expect.stringMatching(/^couldn't write the settings file \(Error: EACCES/),
-    ]);
-    expect(await readFile(file, "utf8")).toBe(BEFORE);
-    expect(await readdir(dir)).toEqual(["settings.json"]);
-  });
+  // Both tests make a folder read-only to force EACCES; root ignores that, so they'd fail falsely.
+  const asRoot = process.getuid?.() === 0;
 
-  it("says so when reverting an edit VS Code missed fails, and uses update()", async () => {
-    const file = join(dir, "settings.json");
-    await writeFile(file, BEFORE);
-    // The edit lands; then, while the writer waits for VS Code, the folder
-    // turns read-only, so the revert's temp file can't be created.
-    const { writer, updates, debugs } = setup(file, {
-      view: "stale",
-      onSleep: () => chmod(dir, 0o555),
-    });
-    try {
+  it.skipIf(asRoot)(
+    "falls back to update() and leaves no temp file when the write fails",
+    async () => {
+      const file = join(dir, "settings.json");
+      await writeFile(file, BEFORE);
+      await refreshView(file);
+      await chmod(dir, 0o555); // the temp file can't be created next to settings.json
+      const { writer, updates, debugs } = setup(file);
       await writer.write(KEY, replace, "profile");
-    } finally {
       await chmod(dir, 0o755);
-    }
-    expect(updates).toEqual([NEXT]);
-    expect(reasons(debugs)).toEqual([
-      expect.stringMatching(
-        /^VS Code didn't pick up the edit, and reverting it failed \(Error: EACCES/,
-      ),
-    ]);
-    expect(await readFile(file, "utf8")).toBe(AFTER);
-    expect(await readdir(dir)).toEqual(["settings.json"]);
-  });
+      expect(updates).toEqual([NEXT]);
+      expect(reasons(debugs)).toEqual([
+        expect.stringMatching(/^couldn't write the settings file \(Error: EACCES/),
+      ]);
+      expect(await readFile(file, "utf8")).toBe(BEFORE);
+      expect(await readdir(dir)).toEqual(["settings.json"]);
+    },
+  );
+
+  it.skipIf(asRoot)(
+    "says so when reverting an edit VS Code missed fails, and uses update()",
+    async () => {
+      const file = join(dir, "settings.json");
+      await writeFile(file, BEFORE);
+      // The edit lands; then, while the writer waits for VS Code, the folder
+      // turns read-only, so the revert's temp file can't be created.
+      const { writer, updates, debugs } = setup(file, {
+        view: "stale",
+        onSleep: () => chmod(dir, 0o555),
+      });
+      try {
+        await writer.write(KEY, replace, "profile");
+      } finally {
+        await chmod(dir, 0o755);
+      }
+      expect(updates).toEqual([NEXT]);
+      expect(reasons(debugs)).toEqual([
+        expect.stringMatching(
+          /^VS Code didn't pick up the edit, and reverting it failed \(Error: EACCES/,
+        ),
+      ]);
+      expect(await readFile(file, "utf8")).toBe(AFTER);
+      expect(await readdir(dir)).toEqual(["settings.json"]);
+    },
+  );
 
   // Needs a rename that fails after the temp file exists: an immutable target
   // (chflags) does that on macOS without root; Linux has no equivalent.
@@ -362,6 +371,19 @@ describe("SettingsFileWriter", () => {
     const { writer, updates } = setup(file);
     await writer.write(KEY, replace, "profile");
     expect(updates).toEqual([NEXT]);
+  });
+
+  // Paths that can't be resolved are compared as given, so a missing settings
+  // file is only "open" when that same path is.
+  it.each([
+    { open: "settings.json", reason: "the settings file has unsaved changes" },
+    { open: "other.json", reason: "the settings file can't be read" },
+  ])("compares a missing settings file with the open $open as given", async ({ open, reason }) => {
+    const file = join(dir, "settings.json");
+    fileCache.set(file, VIEW);
+    const { writer, debugs } = setup(file, { dirty: [join(dir, open)] });
+    await writer.write(KEY, replace, "profile");
+    expect(reasons(debugs)).toEqual([reason]);
   });
 
   it("uses update() when the settings file disappears while planning", async () => {
