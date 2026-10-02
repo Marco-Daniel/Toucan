@@ -86,12 +86,12 @@ export class FocusCoordinator {
     this.ports.debug(focused ? "focused" : "blurred");
     if (focused) {
       this.cancel("blur");
-      this.enqueue(() => this.takeOver());
+      this.post(() => this.takeOver());
     } else {
       this.cancel("verify");
       this.blurTimer = setTimeout(() => {
         this.blurTimer = undefined;
-        this.enqueue(() => this.clearIfOwner());
+        this.post(() => this.clearIfOwner());
       }, BLUR_DEBOUNCE_MS);
     }
   }
@@ -99,7 +99,7 @@ export class FocusCoordinator {
   /** Re-applies after a `toucan.*` change. Unfocused windows never write. */
   refresh(): void {
     if (this.focused) {
-      this.enqueue(() => this.takeOver());
+      this.post(() => this.takeOver());
     }
   }
 
@@ -112,7 +112,7 @@ export class FocusCoordinator {
    */
   customizationsChanged(): void {
     if (this.focused) {
-      this.enqueue(() => this.verify());
+      this.post(() => this.verify());
     }
   }
 
@@ -145,7 +145,7 @@ export class FocusCoordinator {
     this.cancel("verify");
     this.verifyTimer = setTimeout(() => {
       this.verifyTimer = undefined;
-      this.enqueue(() => this.verify());
+      this.post(() => this.verify());
     }, VERIFY_DELAY_MS);
   }
 
@@ -243,6 +243,16 @@ export class FocusCoordinator {
     } else {
       this.verifyTimer = undefined;
     }
+  }
+
+  /**
+   * Queues a task from a sync event handler or timer, which has no caller to
+   * await it. The queue owns the promise: enqueue logs every failure and never
+   * rejects, and dispose waits behind it.
+   */
+  private post(task: () => Promise<void>): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- no caller to await (see above); the queue never rejects
+    this.enqueue(task);
   }
 
   /** Runs tasks one at a time, so this window's own writes never interleave. */

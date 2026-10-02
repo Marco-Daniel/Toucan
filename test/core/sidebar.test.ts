@@ -9,7 +9,8 @@ import {
 /**
  * A fake secondary sidebar: reveal and close feed visibility back like VS Code
  * does, unless `silentClose` or `silentReveal` suppress that event. With
- * `holdReveals`, each reveal stays pending until `release()`.
+ * `holdReveals`, each reveal stays pending until `release()`; with
+ * `failReveals`, each reveal rejects. Warnings land in `state.warnings`.
  */
 function setup(
   initial: Partial<SidebarSettings> & {
@@ -17,18 +18,34 @@ function setup(
     silentClose?: boolean;
     silentReveal?: boolean;
     holdReveals?: boolean;
+    failReveals?: boolean;
   } = {},
 ) {
-  const { closed: initiallyClosed, silentClose, silentReveal, holdReveals, ...rest } = initial;
+  const {
+    closed: initiallyClosed,
+    silentClose,
+    silentReveal,
+    holdReveals,
+    failReveals,
+    ...rest
+  } = initial;
   const held: (() => void)[] = [];
   const release = () => held.splice(0).forEach((resolve) => resolve());
   const settings: SidebarSettings = { enabled: true, visibility: "always", ...rest };
-  const state = { closed: initiallyClosed ?? false, reveals: 0, closes: 0 };
+  const state = {
+    closed: initiallyClosed ?? false,
+    reveals: 0,
+    closes: 0,
+    warnings: [] as string[],
+  };
   let controller!: SidebarController;
   controller = new SidebarController(
     {
       reveal: async () => {
         state.reveals++;
+        if (failReveals) {
+          throw new Error("view not registered");
+        }
         if (holdReveals) {
           await new Promise<void>((resolve) => held.push(resolve));
         }
@@ -46,6 +63,7 @@ function setup(
       writeClosed: async (closed) => {
         state.closed = closed;
       },
+      warn: (message) => state.warnings.push(message),
       debug: () => {},
     },
     () => settings,
@@ -327,5 +345,14 @@ describe("resolveSidebarSettings", () => {
     expect(
       resolveSidebarSettings({ enabled: true, style: "loud", visibility: "sometimes", repo: {} }),
     ).toEqual({ enabled: true, visibility: "always", style: "full" });
+  });
+});
+
+describe("SidebarController, failures", () => {
+  it("logs a reveal that fails instead of leaving it unhandled", async () => {
+    const { controller, state } = setup({ failReveals: true });
+    controller.start(true);
+    await settle();
+    expect(state.warnings).toEqual(["Revealing the block failed: Error: view not registered"]);
   });
 });

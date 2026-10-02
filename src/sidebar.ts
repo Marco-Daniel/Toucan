@@ -49,6 +49,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         writeClosed: async (closed) => {
           await context.workspaceState.update(CLOSED_KEY, closed || undefined);
         },
+        warn: (message) => log.warn(`[sidebar] ${message}`),
         debug: (message) => log.debug(`[sidebar] ${message}`),
       },
       () => this.settings(),
