@@ -11,6 +11,8 @@ import type { CommandCenterColors } from "./core/model.ts";
 export const COLOR_CUSTOMIZATIONS = "workbench.colorCustomizations";
 /** globalState (per profile): Toucan has applied a color here at least once (0008). */
 const APPLIED_KEY = "commandCenter.applied";
+/** Debug lines name the window by the start of its id. */
+const SHORT_ID_LENGTH = 8;
 
 /**
  * Wires the focus coordinator to VS Code: the owner file in global storage
@@ -64,7 +66,7 @@ function ownerFilePorts(
       log.warn(message);
     },
     debug(message) {
-      log.debug(`[${id.slice(0, 8)}] ${message}`);
+      log.debug(`[${id.slice(0, SHORT_ID_LENGTH)}] ${message}`);
     },
   };
 }

@@ -1,4 +1,4 @@
-import { isTranslucent, normalizeColor, opaque, parseColor, toHex } from "./color.ts";
+import { CHANNEL_MAX, isTranslucent, normalizeColor, opaque, parseColor, toHex } from "./color.ts";
 import {
   COMMAND_CENTER_KEYS,
   DEFAULT_GLYPH,
@@ -141,7 +141,7 @@ function parseBackground(value: string, report: (message: string) => void): Hex 
     report(`background "${value}" is not a valid color.`);
     return undefined;
   }
-  if (color.alpha !== undefined && Math.round(color.alpha * 255) === 0) {
+  if (color.alpha !== undefined && Math.round(color.alpha * CHANNEL_MAX) === 0) {
     report(`background "${value}" is fully transparent.`);
     return undefined;
   }

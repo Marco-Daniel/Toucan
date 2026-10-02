@@ -4,6 +4,8 @@ import type { CommandCenterColors, Glyph, Hex, SidebarStyle } from "./model.ts";
 
 /** Fill alpha of the `muted` style (0013). */
 export const MUTED_ALPHA = 0.25;
+/** Height of the glyph in the sidebar block, in px. */
+const GLYPH_PX = 64;
 
 export interface SidebarBlockContent {
   name: string;
@@ -55,7 +57,7 @@ svg { max-width: 60%; height: auto; }
 </style>
 </head>
 <body>
-${glyphSvg(glyph, ink, 64)}
+${glyphSvg(glyph, ink, GLYPH_PX)}
 <div class="name">${escapeHtml(name)}</div>
 </body>
 </html>`;

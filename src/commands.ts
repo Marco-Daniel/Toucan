@@ -288,8 +288,11 @@ function withRepo(
   };
 }
 
+/** A quick pick swatch is drawn 16 px high. */
+const SWATCH_PX = 16;
+
 function swatch(glyph: Glyph, hex: Hex): Uri {
-  return Uri.parse(svgDataUri(glyphSvg(glyph, hex, 16)));
+  return Uri.parse(svgDataUri(glyphSvg(glyph, hex, SWATCH_PX)));
 }
 
 /** The status bar background to check picked colors against (0018). */

@@ -49,6 +49,11 @@ export interface Clock {
 
 /** Consecutive missed edits before a guessed settings file counts as not this window's. */
 export const MISSES_BEFORE_UNFOLLOWED = 2;
+/** Defaults for how long, and how often, a write is checked to have landed. */
+const VERIFY_TIMEOUT_MS = 4000;
+const VERIFY_POLL_MS = 100;
+/** The permission bits of a file mode: rwx for owner, group and others. */
+const PERMISSION_BITS = 0o777;
 
 const realClock: Clock = {
   now: () => Date.now(),
@@ -89,8 +94,8 @@ export class SettingsFileWriter {
   ) {
     this.files = files;
     this.ports = ports;
-    this.verifyTimeoutMs = options.verifyTimeoutMs ?? 4000;
-    this.verifyPollMs = options.verifyPollMs ?? 100;
+    this.verifyTimeoutMs = options.verifyTimeoutMs ?? VERIFY_TIMEOUT_MS;
+    this.verifyPollMs = options.verifyPollMs ?? VERIFY_POLL_MS;
     this.clock = options.clock ?? realClock;
   }
 
@@ -266,7 +271,7 @@ async function writeLikeVsCode(file: string, text: string): Promise<void> {
   }
   const temporary = join(dirname(file), `.${randomUUID()}.toucan.tmp`);
   try {
-    const mode = link.mode & 0o777;
+    const mode = link.mode & PERMISSION_BITS;
     // Created with the original's mode, so the copy is never more readable
     // than settings.json; the umask can narrow it, so chmod then sets it exactly.
     await writeFile(temporary, text, { mode });

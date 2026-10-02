@@ -14,6 +14,12 @@ import {
 } from "jsonc-parser/lib/esm/main.js";
 import { isRecord } from "./records.ts";
 
+const CRLF = "\r\n";
+/** `globalStorage/<extension id>`, under a profile's folder. */
+const STORAGE_SEGMENTS = 2;
+/** `profiles/<profile id>`, under the user folder. */
+const PROFILE_SEGMENTS = 2;
+
 /**
  * Plans an in-place edit of one setting in the user settings file, keeping
  * comments and formatting (0017). The adapter does the file I/O.
@@ -177,7 +183,7 @@ function removeLines(text: string, path: string[]): Edit[] | undefined {
   if (comment === "") {
     return [removal];
   }
-  const previousBreak = lineStart - (text[lineStart - 2] === "\r" ? 2 : 1);
+  const previousBreak = lineStart - (text[lineStart - CRLF.length] === "\r" ? CRLF.length : 1);
   const previousStart = text.lastIndexOf("\n", previousBreak - 1) + 1;
   const endsInLineComment = comments(text).some(
     ({ offset, value }) =>
@@ -282,9 +288,9 @@ export function settingsFiles(globalStoragePath: string): {
   const separator =
     globalStoragePath.includes("\\") && !globalStoragePath.includes("/") ? "\\" : "/";
   const parts = globalStoragePath.split(separator);
-  const profileDir = parts.slice(0, -2);
-  const isProfile = profileDir.at(-2) === "profiles";
-  const userDir = isProfile ? profileDir.slice(0, -2) : profileDir;
+  const profileDir = parts.slice(0, -STORAGE_SEGMENTS);
+  const isProfile = profileDir.at(-PROFILE_SEGMENTS) === "profiles";
+  const userDir = isProfile ? profileDir.slice(0, -PROFILE_SEGMENTS) : profileDir;
   return {
     profile: [...profileDir, "settings.json"].join(separator),
     defaultProfile: [...userDir, "settings.json"].join(separator),

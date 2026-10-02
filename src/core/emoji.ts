@@ -36,10 +36,14 @@ const HUES: Record<Chromatic, number> = {
 export const ACHROMATIC_CHROMA = 0.045;
 /** Gray at or above this OKLCH lightness maps to white, below to black. */
 export const WHITE_LIGHTNESS = 0.6;
+const BROWN_HUE_FROM = 35;
+const BROWN_HUE_TO = 100;
 /** Dark colors in this OKLCH hue band (orange to yellow) map to brown. */
-export const BROWN_HUES = [35, 100] as const;
+export const BROWN_HUES = [BROWN_HUE_FROM, BROWN_HUE_TO] as const;
 /** Lightness below which a color in the brown hue band is brown. */
 export const BROWN_LIGHTNESS = 0.55;
+/** Hue is an angle: distances wrap around at 360°. */
+const FULL_CIRCLE_DEG = 360;
 
 const SQUARES: Record<EmojiColor, string> = {
   red: "🟥",
@@ -108,7 +112,7 @@ function nearestHue(hue: number): Chromatic {
   let bestDistance = Infinity;
   for (const name of CHROMATICS) {
     const target = HUES[name];
-    const distance = Math.min(Math.abs(hue - target), 360 - Math.abs(hue - target));
+    const distance = Math.min(Math.abs(hue - target), FULL_CIRCLE_DEG - Math.abs(hue - target));
     if (distance < bestDistance) {
       best = name;
       bestDistance = distance;

@@ -74,9 +74,12 @@ export function parseColor(input: string): Color | undefined {
   return parse(input.trim());
 }
 
+/** The largest 8-bit channel value: `ff` in hex. */
+export const CHANNEL_MAX = 255;
+
 /** Whether the alpha survives as something other than `ff` in hex. */
 export function isTranslucent(color: Color): boolean {
-  return color.alpha !== undefined && Math.round(color.alpha * 255) < 255;
+  return color.alpha !== undefined && Math.round(color.alpha * CHANNEL_MAX) < CHANNEL_MAX;
 }
 
 /** The same color without its alpha channel. */

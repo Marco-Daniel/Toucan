@@ -11,8 +11,10 @@ import { isRecord } from "./records.ts";
  * longer delay saves writes on brief app switches and widens the race margin.
  */
 export const BLUR_DEBOUNCE_MS = 1000;
+/** How much longer than the blur debounce a focused window waits before checking. */
+const VERIFY_MARGIN_MS = 250;
 /** Delay before a focused window checks that its colors survived (self-heal). */
-export const VERIFY_DELAY_MS = BLUR_DEBOUNCE_MS + 250;
+export const VERIFY_DELAY_MS = BLUR_DEBOUNCE_MS + VERIFY_MARGIN_MS;
 
 /** Everything the coordinator touches outside itself, so tests can fake it. */
 export interface FocusPorts {
