@@ -20,13 +20,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Regenerates the generated files and fails on any change, including new
+      # untracked files. package.yml runs the same script.
       - name: Check generated files are up to date
-        run: |
-          pnpm gen
-          pnpm font
-          git diff --exit-code src/generated README.md media
-          # Also fail on new files the generators created but nobody committed.
-          test -z "$(git status --porcelain src/generated README.md media)"
+        run: pnpm check:generated
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
