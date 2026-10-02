@@ -13,6 +13,7 @@ import type { ActiveRepo } from "../../core/repo.adapter.ts";
 import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
+import { logFailure } from "../../shared/async/logFailure.util.ts";
 
 const WINDOW_TITLE = "window.title";
 /** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
@@ -146,7 +147,7 @@ export class SearchEmoji implements Disposable {
       run: () => {
         // A .catch, not tryCatch: a timer has no caller to await the assert.
         this.assert().catch((error: unknown) => {
-          this.log.warn(`Couldn't set the search emoji: ${String(error)}`);
+          logFailure({ log: this.log, what: "Setting the search emoji", error });
         });
       },
     });

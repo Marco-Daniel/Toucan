@@ -5,6 +5,7 @@ import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
 import { errorText, tryCatch, tryCatchSync } from "../../shared/async/tryCatch.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
+import { logFailure } from "../../shared/async/logFailure.util.ts";
 
 /**
  * Delay before an unfocused window clears the Command Center colors. Switching
@@ -261,7 +262,7 @@ export class FocusCoordinator {
       const [, error] = await tryCatch(() => task());
       if (error !== null) {
         // Logging can fail during shutdown; the queue must keep going.
-        tryCatchSync(() => this.ports.warn(`Focus handling failed: ${errorText(error)}`));
+        tryCatchSync(() => logFailure({ log: this.ports, what: "Focus handling", error }));
       }
     });
   }

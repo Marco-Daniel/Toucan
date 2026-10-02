@@ -3,6 +3,7 @@ import { SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "../../shared/model/model.c
 import type { SidebarStyle, SidebarVisibility } from "../../shared/model/model.types.ts";
 import { isOneOf } from "../../shared/guards/oneOf.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
+import { logFailure } from "../../shared/async/logFailure.util.ts";
 
 /** How long a user close must last before it's remembered (see `visibilityChanged`). */
 export const REMEMBER_CLOSE_DELAY_MS = 1500;
@@ -232,16 +233,7 @@ export class SidebarController {
   private async settle({ what, task }: HandOffArgs): Promise<void> {
     const [, error] = await tryCatch(task);
     if (error !== null) {
-      this.ports.warn(failure({ what, error }));
+      logFailure({ log: this.ports, what, error });
     }
   }
-}
-
-interface FailureArgs {
-  what: string;
-  error: unknown;
-}
-
-function failure({ what, error }: FailureArgs): string {
-  return `${what} failed: ${String(error)}`;
 }

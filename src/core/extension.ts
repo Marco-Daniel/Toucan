@@ -14,7 +14,8 @@ import { SearchEmoji } from "../features/searchEmoji/searchEmoji.adapter.ts";
 import { createSettingsWriter } from "../features/settings/settings.adapter.ts";
 import { SidebarBlock } from "../features/sidebar/sidebar.adapter.ts";
 import { StatusBarIndicator } from "../features/statusBar/statusBar.adapter.ts";
-import { errorText, tryCatch } from "../shared/async/tryCatch.util.ts";
+import { tryCatch } from "../shared/async/tryCatch.util.ts";
+import { logFailure } from "../shared/async/logFailure.util.ts";
 
 let coordinator: FocusCoordinator | undefined;
 
@@ -29,7 +30,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   /** Fire-and-forget work: a failure is logged instead of becoming an unhandled rejection. */
   const background = ({ what, task }: BackgroundArgs) => {
     // A .catch, not tryCatch: nothing here awaits, the task runs on by itself.
-    task.catch((error: unknown) => log.warn(`${what} failed: ${String(error)}`));
+    task.catch((error: unknown) => logFailure({ log, what, error }));
   };
   const reporter = new IssueReporter({ log, setting: configs.repos.key });
   const indicator = new StatusBarIndicator();
@@ -118,7 +119,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const [, sidebarError] = await tryCatch(() => sidebar.refresh());
   if (sidebarError !== null) {
     // Keep the rest of Toucan running if the sidebar's context key fails.
-    log.warn(`Sidebar block setup failed: ${errorText(sidebarError)}`);
+    logFailure({ log, what: "Sidebar block setup", error: sidebarError });
   }
   sidebar.controller.start(window.state.focused);
   offerAgentsControl(window.state.focused);
