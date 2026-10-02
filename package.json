@@ -282,6 +282,11 @@
     "ui",
     "workspace"
   ],
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#56915e",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.138.0"
   },

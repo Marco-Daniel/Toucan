@@ -9,6 +9,7 @@ const EXPECTED = [
   "THIRD_PARTY_NOTICES.md",
   "dist/extension.cjs",
   "dist/extension.cjs.map",
+  "media/icon.png",
   "media/toucan-icons.woff",
   "package.json",
 ];
