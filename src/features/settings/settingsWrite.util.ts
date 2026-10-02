@@ -1,18 +1,10 @@
 import { randomUUID } from "node:crypto";
-import {
-  chmod,
-  lstat,
-  readFile,
-  realpath,
-  rename,
-  stat,
-  unlink,
-  writeFile,
-} from "node:fs/promises";
+import { lstat, readFile, realpath, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { createLock } from "../../shared/async/lock.util.ts";
 import { planEdit, viewReflects } from "./settingsEdit.util.ts";
 import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
+import { writeAtomically } from "../../shared/fs/atomicWrite.util.ts";
 
 export type SettingsTarget = "profile" | "defaultProfile";
 
@@ -293,31 +285,14 @@ async function writeLikeVsCode({ file, text }: WriteLikeVsCodeArgs): Promise<voi
     await writeFile(file, text);
     return;
   }
-  const temporary = join(dirname(file), `.${randomUUID()}.toucan.tmp`);
-  const [, error] = await tryCatch(() =>
-    replaceVia({ temporary, file, text, mode: link.mode & PERMISSION_BITS }),
-  );
-  if (error !== null) {
-    // Never leave a copy of the user's settings behind.
-    await tryCatch(() => unlink(temporary));
-    throw error;
-  }
-}
-
-interface ReplaceViaArgs {
-  temporary: string;
-  file: string;
-  text: string;
-  mode: number;
-}
-
-/** Writes `text` to `temporary`, then renames it over `file`. */
-async function replaceVia({ temporary, file, text, mode }: ReplaceViaArgs): Promise<void> {
-  // Created with the original's mode, so the copy is never more readable
-  // than settings.json; the umask can narrow it, so chmod then sets it exactly.
-  await writeFile(temporary, text, { mode });
-  await chmod(temporary, mode);
-  await rename(temporary, file);
+  // The original's mode, so the copy is never more readable than settings.json;
+  // a failed write leaves no copy of the user's settings behind.
+  await writeAtomically({
+    file,
+    temporary: join(dirname(file), `.${randomUUID()}.toucan.tmp`),
+    text,
+    mode: link.mode & PERMISSION_BITS,
+  });
 }
 
 /** The real path, or the path itself when it can't be resolved (it may not exist). */

@@ -1,8 +1,9 @@
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { FocusPorts } from "./focus.util.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
+import { writeAtomically } from "../../shared/fs/atomicWrite.util.ts";
 
 interface CreateOwnerFileArgs {
   directory: string;
@@ -34,16 +35,11 @@ export function createOwnerFile({
     },
     async writeOwner(owner) {
       await mkdir(directory, { recursive: true });
-      // Write then rename, so a reader never sees a half-written file.
-      const temporary = join(directory, `owner.${id}.tmp`);
-      const [, error] = await tryCatch(() =>
-        writeFile(temporary, JSON.stringify({ window: owner })).then(() => rename(temporary, file)),
-      );
-      if (error !== null) {
-        // Best effort: the temp file may not exist; the write's error is the one to report.
-        await tryCatch(() => unlink(temporary));
-        throw error;
-      }
+      await writeAtomically({
+        file,
+        temporary: join(directory, `owner.${id}.tmp`),
+        text: JSON.stringify({ window: owner }),
+      });
     },
   };
 }
