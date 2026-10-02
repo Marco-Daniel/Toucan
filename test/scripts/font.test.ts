@@ -35,8 +35,13 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+interface InkArgs {
+  svg: string;
+  fontFiles?: string[];
+}
+
 /** Opaque-pixel mask of an SVG rendered at its own size. */
-function ink(svg: string, fontFiles: string[] = []): { width: number; mask: boolean[] } {
+function ink({ svg, fontFiles = [] }: InkArgs): { width: number; mask: boolean[] } {
   const image = new Resvg(svg, { font: { fontFiles, loadSystemFonts: false } }).render();
   // `pixels` copies the whole buffer on every access: read it once.
   const { pixels, width, height } = image;
@@ -77,8 +82,8 @@ function fontGlyph(glyph: Glyph): string {
 
 describe("the icon font", () => {
   it.each(GLYPHS)("draws %s like its SVG, holes included", (glyph) => {
-    const expected = ink(swatchGlyph(glyph));
-    const actual = ink(fontGlyph(glyph), [fontFile]);
+    const expected = ink({ svg: swatchGlyph(glyph) });
+    const actual = ink({ svg: fontGlyph(glyph), fontFiles: [fontFile] });
     let both = 0;
     let either = 0;
     for (let i = 0; i < expected.mask.length; i++) {

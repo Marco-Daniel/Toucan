@@ -12,7 +12,7 @@ let dir: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "toucan-run-"));
   // Only the fake qmd, and the lock in this test's dir.
-  vi.stubEnv("PATH", fakeQmd(dir, { collections: "'toucan-docs (qmd://toucan-docs/)'" }));
+  vi.stubEnv("PATH", fakeQmd({ dir, collections: "'toucan-docs (qmd://toucan-docs/)'" }));
   vi.stubEnv("HOME", dir);
   vi.stubEnv("XDG_CACHE_HOME", dir);
 });

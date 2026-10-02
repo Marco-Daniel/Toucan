@@ -13,7 +13,14 @@ import { vi } from "vitest";
 
 export const SYSTEM_PATH = "/usr/bin:/bin";
 
-export function fakeQmd(dir: string, { collections = "", failAdd = false, tag = "" } = {}): string {
+interface FakeQmdArgs {
+  dir: string;
+  collections?: string;
+  failAdd?: boolean;
+  tag?: string;
+}
+
+export function fakeQmd({ dir, collections = "", failAdd = false, tag = "" }: FakeQmdArgs): string {
   const bin = join(dir, "bin");
   const log = join(dir, "qmd.log");
   mkdirSync(bin, { recursive: true });

@@ -66,19 +66,19 @@ function fakeClock(onSleep: () => Promise<void> = async () => {}): Clock {
 
 const TIMING = { verifyTimeoutMs: 4000, verifyPollMs: 100 };
 
+interface SetupArgs {
+  file: string;
+  view?: "follows" | "stale";
+  dirty?: string[];
+  onSleep?: () => Promise<void>;
+}
+
 /**
  * A writer for `file`. `view: "follows"` behaves like VS Code picking up the
  * file during the first poll interval; `"stale"` never does (the file isn't
  * this window's). `onSleep` runs during each poll interval. Records update().
  */
-function setup(
-  file: string,
-  {
-    view = "follows",
-    dirty = [],
-    onSleep,
-  }: { view?: "follows" | "stale"; dirty?: string[]; onSleep?: () => Promise<void> } = {},
-) {
+function setup({ file, view = "follows", dirty = [], onSleep }: SetupArgs) {
   const updates: unknown[] = [];
   const debugs: string[] = [];
   const sleeps: number[] = [];
@@ -149,7 +149,7 @@ describe("SettingsFileWriter", () => {
     await chmod(file, 0o640);
     const inode = (await stat(file)).ino;
     await refreshView(file);
-    const { writer, updates } = setup(file);
+    const { writer, updates } = setup({ file });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(file, "utf8")).toBe(AFTER);
     expect((await stat(file)).mode & 0o777).toBe(0o640);
@@ -161,7 +161,7 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     await writeFile(file, entry("#e0620b"));
     await refreshView(file);
-    const { writer, updates } = setup(file);
+    const { writer, updates } = setup({ file });
     await writer.write({
       key: KEY,
       update: () => ({ value: { webshop: { background: "#101316", glyph: "heart" } } }),
@@ -178,7 +178,7 @@ describe("SettingsFileWriter", () => {
     await symlink(target, file);
     const inode = (await stat(target)).ino;
     await refreshView(file);
-    const { writer, updates } = setup(file);
+    const { writer, updates } = setup({ file });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect((await lstat(file)).isSymbolicLink()).toBe(true);
     expect(await readFile(target, "utf8")).toBe(AFTER);
@@ -192,7 +192,7 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     await link(file, other);
     await refreshView(file);
-    const { writer } = setup(file);
+    const { writer } = setup({ file });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect((await stat(file)).nlink).toBe(2);
     expect(await readFile(other, "utf8")).toBe(AFTER);
@@ -201,7 +201,7 @@ describe("SettingsFileWriter", () => {
   it("reverts the edit and uses update() when VS Code never picks it up", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
-    const { writer, updates, sleeps } = setup(file, { view: "stale" });
+    const { writer, updates, sleeps } = setup({ file, view: "stale" });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(file, "utf8")).toBe(BEFORE);
     expect(updates).toEqual([NEXT]);
@@ -212,7 +212,8 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
     let edited: string | undefined;
-    const { writer, updates } = setup(file, {
+    const { writer, updates } = setup({
+      file,
       view: "stale",
       onSleep: async () => {
         // Mid-verify, right after Toucan's edit landed.
@@ -234,7 +235,7 @@ describe("SettingsFileWriter", () => {
     await refreshView(file);
     // VS Code follows the file, so an in-place edit would stick: only the
     // dirty check keeps the file unchanged here.
-    const { writer, updates } = setup(file, { dirty: [target] });
+    const { writer, updates } = setup({ file, dirty: [target] });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(target, "utf8")).toBe(BEFORE);
     expect(updates).toEqual([NEXT]);
@@ -243,7 +244,7 @@ describe("SettingsFileWriter", () => {
   it("uses update() when the setting isn't in the file", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, '{\n  "editor.fontSize": 13,\n}\n');
-    const { writer, updates } = setup(file);
+    const { writer, updates } = setup({ file });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(file, "utf8")).toBe('{\n  "editor.fontSize": 13,\n}\n');
     expect(updates).toEqual([NEXT]);
@@ -254,7 +255,7 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const inode = (await stat(file)).ino;
     await refreshView(file);
-    const { writer, updates } = setup(file);
+    const { writer, updates } = setup({ file });
     await writer.write({ key: KEY, update: () => undefined, target: "profile" });
     await writer.write({ key: KEY, update: () => ({ value: VIEW }), target: "profile" });
     expect(await readFile(file, "utf8")).toBe(BEFORE);
@@ -306,7 +307,7 @@ describe("SettingsFileWriter", () => {
       await writeFile(file, BEFORE);
       await refreshView(file);
       await chmod(dir, 0o555); // the temp file can't be created next to settings.json
-      const { writer, updates, debugs } = setup(file);
+      const { writer, updates, debugs } = setup({ file });
       await writer.write({ key: KEY, update: replace, target: "profile" });
       await chmod(dir, 0o755);
       expect(updates).toEqual([NEXT]);
@@ -325,7 +326,8 @@ describe("SettingsFileWriter", () => {
       await writeFile(file, BEFORE);
       // The edit lands; then, while the writer waits for VS Code, the folder
       // turns read-only, so the revert's temp file can't be created.
-      const { writer, updates, debugs } = setup(file, {
+      const { writer, updates, debugs } = setup({
+        file,
         view: "stale",
         onSleep: () => chmod(dir, 0o555),
       });
@@ -355,7 +357,7 @@ describe("SettingsFileWriter", () => {
       await refreshView(file);
       execFileSync("chflags", ["uchg", file]);
       try {
-        const { writer, updates } = setup(file);
+        const { writer, updates } = setup({ file });
         await writer.write({ key: KEY, update: replace, target: "profile" });
         expect(updates).toEqual([NEXT]);
         expect(await readdir(dir)).toEqual(["settings.json"]);
@@ -368,7 +370,7 @@ describe("SettingsFileWriter", () => {
   it("uses update() when the settings file doesn't exist", async () => {
     const file = join(dir, "settings.json");
     fileCache.set(file, VIEW);
-    const { writer, updates } = setup(file);
+    const { writer, updates } = setup({ file });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(updates).toEqual([NEXT]);
   });
@@ -381,7 +383,7 @@ describe("SettingsFileWriter", () => {
   ])("compares a missing settings file with the open $open as given", async ({ open, reason }) => {
     const file = join(dir, "settings.json");
     fileCache.set(file, VIEW);
-    const { writer, debugs } = setup(file, { dirty: [join(dir, open)] });
+    const { writer, debugs } = setup({ file, dirty: [join(dir, open)] });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(reasons(debugs)).toEqual([reason]);
   });
@@ -474,7 +476,7 @@ describe("SettingsFileWriter", () => {
   it("goes straight to update() for a guessed file VS Code missed twice in a row", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
-    const { writer, updates, debugs } = setup(file, { view: "stale" });
+    const { writer, updates, debugs } = setup({ file, view: "stale" });
     for (let i = 0; i < 3; i++) {
       await writer.write({ key: KEY, update: replace, target: "profile" });
     }
@@ -486,7 +488,7 @@ describe("SettingsFileWriter", () => {
   it("never gives up on the default profile's file, which VS Code always follows", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
-    const { writer, debugs } = setup(file, { view: "stale" });
+    const { writer, debugs } = setup({ file, view: "stale" });
     for (let i = 0; i < 3; i++) {
       await writer.write({ key: KEY, update: replace, target: "defaultProfile" });
     }
@@ -601,7 +603,8 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
     let interfere = true;
-    const { writer, debugs } = setup(file, {
+    const { writer, debugs } = setup({
+      file,
       view: "stale",
       onSleep: async () => {
         if (interfere) {
@@ -642,18 +645,22 @@ describe("SettingsFileWriter", () => {
         }),
       },
     });
+    interface WriteArgs {
+      value: Record<string, unknown>;
+      follow: boolean;
+    }
     // VS Code is in sync before each write; `follow` says whether it picks up the edit in time.
-    const write = async (value: Record<string, unknown>, follow: boolean) => {
+    const write = async ({ value, follow }: WriteArgs) => {
       await refreshView(file);
       follows = follow;
       await writer.write({ key: KEY, update: () => ({ value }), target: "profile" });
     };
-    await write(NEXT, false); // a slow pickup: missed once
-    await write(NEXT, true);
+    await write({ value: NEXT, follow: false }); // a slow pickup: missed once
+    await write({ value: NEXT, follow: true });
     expect(await readFile(file, "utf8")).toBe(AFTER);
     expect(updates).toEqual([NEXT]);
-    await write(VIEW, false); // missed once again, not twice in a row
-    await write(VIEW, true);
+    await write({ value: VIEW, follow: false }); // missed once again, not twice in a row
+    await write({ value: VIEW, follow: true });
     expect(await readFile(file, "utf8")).toBe(BEFORE);
     expect(updates).toEqual([NEXT, VIEW]);
   });
@@ -662,7 +669,7 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
     await refreshView(file);
-    const { writer, updates } = setup(file);
+    const { writer, updates } = setup({ file });
     await Promise.all([
       writer.write({
         key: KEY,

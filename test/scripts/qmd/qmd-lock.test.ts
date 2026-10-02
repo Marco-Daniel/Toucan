@@ -35,7 +35,12 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-function age(path: string, ms: number): void {
+interface AgeArgs {
+  path: string;
+  ms: number;
+}
+
+function age({ path, ms }: AgeArgs): void {
   const then = new Date(Date.now() - ms);
   utimesSync(path, then, then);
 }
@@ -54,15 +59,15 @@ describe("the qmd lock", () => {
 
   it("takes over a lock older than ten minutes, never a fresher one", () => {
     const lock = takeLock()!;
-    age(lock, 9 * 60_000);
+    age({ path: lock, ms: 9 * 60_000 });
     expect(takeLock()).toBeUndefined();
-    age(lock, 11 * 60_000);
+    age({ path: lock, ms: 11 * 60_000 });
     expect(takeLock()).toBe(lock);
   });
 
   it("lets a long job keep its lock fresh", () => {
     const lock = takeLock()!;
-    age(lock, 30 * 60_000);
+    age({ path: lock, ms: 30 * 60_000 });
     touchLock(lock);
     expect(takeLock()).toBeUndefined();
   });

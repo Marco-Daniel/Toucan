@@ -52,7 +52,7 @@ const steps = (log: string) => log.trim().split("\n");
 
 describe("the docs bootstrap hook", () => {
   it("returns at once and leaves the work to a detached worker", async () => {
-    expect(start(fakeQmd(dir))).toMatchObject({ status: 0, stdout: "", stderr: "" });
+    expect(start(fakeQmd({ dir }))).toMatchObject({ status: 0, stdout: "", stderr: "" });
     // Done means the last update has ended and the lock is let go.
     await until(() => read().includes("update end") && !existsSync(lock));
     const log = steps(read());
@@ -63,7 +63,7 @@ describe("the docs bootstrap hook", () => {
 
 describe("the docs bootstrap worker", () => {
   it("registers Toucan's collections and builds the keyword index when there are none", () => {
-    expect(work(fakeQmd(dir))).toMatchObject({ status: 0, stdout: "", stderr: "" });
+    expect(work(fakeQmd({ dir }))).toMatchObject({ status: 0, stdout: "", stderr: "" });
     const log = steps(read());
     expect(log.slice(0, 4)).toEqual([
       "version",
@@ -78,13 +78,14 @@ describe("the docs bootstrap worker", () => {
   });
 
   it("finishes registering when only some of the collections are there", () => {
-    work(fakeQmd(dir, { collections: "'toucan-docs (qmd://toucan-docs/)'" }));
+    work(fakeQmd({ dir, collections: "'toucan-docs (qmd://toucan-docs/)'" }));
     expect(steps(read()).filter((step) => step === "collection add")).toHaveLength(2);
   });
 
   it("does nothing more once all of Toucan's collections are registered", () => {
     work(
-      fakeQmd(dir, {
+      fakeQmd({
+        dir,
         collections: "'toucan-docs (qmd://toucan-docs/)' 'toucan-guides (qmd://toucan-guides/)'",
       }),
     );
@@ -92,7 +93,7 @@ describe("the docs bootstrap worker", () => {
   });
 
   it("stops at the first qmd command that fails", () => {
-    work(fakeQmd(dir, { failAdd: true }));
+    work(fakeQmd({ dir, failAdd: true }));
     const log = steps(read());
     expect(log.filter((step) => step === "collection add")).toHaveLength(1);
     expect(log.some((step) => step.startsWith("update"))).toBe(false);
@@ -107,7 +108,7 @@ describe("the docs bootstrap worker", () => {
 
   it("waits for a qmd job that's already running, then registers", async () => {
     writeCacheFile({ dir, name: "toucan.lock", text: "" });
-    const exited = startWorker({ script: HOOK, env: env(fakeQmd(dir)) });
+    const exited = startWorker({ script: HOOK, env: env(fakeQmd({ dir })) });
     // Longer than the worker takes to start and find the lock taken: one that
     // didn't wait would be gone by now, with nothing registered.
     await new Promise((resolve) => setTimeout(resolve, 1000));
