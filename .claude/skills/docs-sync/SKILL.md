@@ -10,10 +10,11 @@ The periodic backstop for the CLAUDE.md rule that a change updates every doc tha
 
 ## 1. Range
 
-1. `git fetch --tags origin`. If that fails (offline), say so once and use the local tags.
-2. Note the **start commit**: `git rev-parse HEAD`. The run covers everything up to it, and the tag later moves here, not to whatever is on main by then.
-3. Run `node scripts/docs-sync.mts` (or `--since <ref>` to compare from another ref). It prints JSON: the changed, renamed and removed files, `pnpm` scripts, setting keys, commands, ADR status changes and exported symbols since `docs-sync/last`.
-4. **Full sweep** instead of the diff when the user passed `--full`, or when the helper answers `"full": true` (no tag yet, or a shallow clone that can't reach it). Say which, and why.
+1. `git fetch --tags --force origin main`. `--force` takes the tag as another clone last moved it; without it git keeps a stale local `docs-sync/last` and the run diffs from an older one. If the fetch fails, say so once with git's error and carry on from the local refs; call it offline only when `git ls-remote origin` fails too.
+2. Run from main as it is on origin: `git switch main && git merge --ff-only origin/main` (skip the merge when the fetch failed). If that fails (local commits on main, uncommitted changes), stop and tell the user: the tag must only ever point at a commit that is on main.
+3. Note the **start commit**: `git rev-parse HEAD`. The run covers everything up to it, and the tag later moves here, not to whatever is on main by then.
+4. Run `node scripts/docs-sync.mts` (or `--since <ref>` to compare from another ref). It prints JSON: the changed, renamed and removed files, `pnpm` scripts, setting keys, commands, ADR status changes and exported symbols since `docs-sync/last`.
+5. **Full sweep** instead of the diff when the user passed `--full`, or when the helper answers `"full": true` (no tag yet, or a shallow clone that can't reach it). Say which, and why.
 
 ## 2. Find the mentions
 
