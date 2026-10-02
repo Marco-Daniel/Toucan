@@ -7,7 +7,7 @@
 
 ## Quality Control
 
-- `pnpm lint` — oxlint
+- `pnpm lint` — oxlint, type-aware; every finding is an error
 - `pnpm format:check` — oxfmt
 - `pnpm typecheck` — TypeScript 7 (`tsc --noEmit`)
 - `pnpm test` — vitest

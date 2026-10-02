@@ -86,7 +86,7 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 
 | Command                | What it does                                                                        |
 | ---------------------- | ----------------------------------------------------------------------------------- |
-| `pnpm lint`            | Lint with oxlint                                                                    |
+| `pnpm lint`            | Lint with oxlint, with type information; any finding fails                          |
 | `pnpm format:check`    | Check formatting with oxfmt (`pnpm format` to fix)                                  |
 | `pnpm typecheck`       | Typecheck with TypeScript 7                                                         |
 | `pnpm test`            | Run the unit tests with vitest                                                      |
@@ -97,6 +97,8 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 | `pnpm check:generated` | Regenerate everything above and fail if anything changed (CI runs this)             |
 | `pnpm package`         | Build and package a VSIX                                                            |
 | `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (see below)         |
+
+`pnpm install` also sets up a pre-push hook (husky) that runs `typecheck`, `lint`, `format:check` and `test`. It's set up per checkout, so run `pnpm install` in a new worktree before pushing from it. `HUSKY=0` skips it; CI skips it and runs the full set itself.
 
 ### Docs search with qmd
 

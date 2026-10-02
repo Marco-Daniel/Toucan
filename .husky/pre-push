@@ -1,0 +1,8 @@
+# The fast checks before a push; CI runs the full set. Skipped in CI, and
+# with HUSKY=0 (husky's own switch). Uses corepack when pnpm isn't on PATH.
+[ -n "$CI" ] && exit 0
+if command -v pnpm >/dev/null 2>&1; then pnpm="pnpm"; else pnpm="corepack pnpm"; fi
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+for check in typecheck lint format:check test; do
+  $pnpm "$check" </dev/null || exit 1
+done
