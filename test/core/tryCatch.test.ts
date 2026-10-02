@@ -43,7 +43,6 @@ describe("tryCatchSync", () => {
 
   it("never reports a throw of null as success", () => {
     const [, error] = tryCatchSync(() => {
-      // oxlint-disable-next-line no-throw-literal -- the case under test
       throw null;
     });
     expect(error).toEqual(new Error("null was thrown"));

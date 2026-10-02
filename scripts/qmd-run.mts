@@ -82,7 +82,6 @@ const MAX_ROUNDS = 5;
 async function waitForLock(waitMs: number): Promise<string | undefined> {
   let lock = takeLock();
   for (let waited = 0; !lock && waited < waitMs; waited += 250) {
-    // oxlint-disable-next-line no-await-in-loop -- polling is sequential by nature
     await new Promise((resolve) => setTimeout(resolve, 250));
     lock = takeLock();
   }
@@ -110,7 +109,6 @@ export async function exclusive(
     // False when the job isn't ready or a pending note is stuck: no more rounds.
     let again = false;
     try {
-      // oxlint-disable-next-line no-await-in-loop -- one round at a time, under the lock
       if (round > 0 || (await job(lock))) {
         again = drainPending();
       }

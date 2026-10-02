@@ -1,7 +1,7 @@
 import { wcagContrast } from "culori/fn";
 import { fromHex, normalizeColor } from "./color.ts";
 import { isRecord } from "./records.ts";
-import type { Hex } from "./model.ts";
+import { asHex, type Hex } from "./model.ts";
 import { PRESETS } from "./presets.ts";
 
 /** Below this WCAG contrast against the status bar, a color may be hard to see (0018). */
@@ -11,8 +11,8 @@ export type ThemeKind = "light" | "dark" | "highContrast";
 
 /** Representative status bar backgrounds: Default Light Modern and Dark Modern. */
 const KIND_DEFAULTS: Record<"light" | "dark", Hex> = {
-  light: "#f8f8f8" as Hex,
-  dark: "#181818" as Hex,
+  light: asHex("#f8f8f8"),
+  dark: asHex("#181818"),
 };
 
 /**

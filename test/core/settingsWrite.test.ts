@@ -422,7 +422,6 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const { writer, updates, debugs } = setup(file, { view: "stale" });
     for (let i = 0; i < 3; i++) {
-      // oxlint-disable-next-line no-await-in-loop -- the writes are sequential by design
       await writer.write(KEY, replace, "profile");
     }
     expect(updates).toEqual([NEXT, NEXT, NEXT]);
@@ -435,7 +434,6 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const { writer, debugs } = setup(file, { view: "stale" });
     for (let i = 0; i < 3; i++) {
-      // oxlint-disable-next-line no-await-in-loop -- the writes are sequential by design
       await writer.write(KEY, replace, "defaultProfile");
     }
     // The same path as the guessed profile file: its misses must not give that up either.

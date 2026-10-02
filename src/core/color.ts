@@ -25,7 +25,7 @@ import {
   useMode,
   type Color,
 } from "culori/fn";
-import type { Hex } from "./model.ts";
+import { asHex, type Hex } from "./model.ts";
 
 // The color spaces CSS Color 4 can express, so `parse` accepts any CSS color
 // string (the same set culori's `css` entry registers).
@@ -89,7 +89,7 @@ export function opaque(color: Color): Color {
 export function toHex(color: Color): Hex {
   // In-gamut colors skip the OKLCH round trip, which can introduce rounding errors.
   const srgb = displayable(color) ? color : toSrgbGamut(color);
-  return (isTranslucent(srgb) ? formatHex8(srgb) : formatHex(srgb)) as Hex;
+  return asHex(isTranslucent(srgb) ? formatHex8(srgb) : formatHex(srgb));
 }
 
 /** The background a preview starts from before the repo has a color. */

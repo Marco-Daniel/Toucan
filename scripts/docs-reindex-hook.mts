@@ -10,6 +10,7 @@
 // stays pending for the session-start bootstrap.
 import { spawn } from "node:child_process";
 import { text } from "node:stream/consumers";
+import { isRecord } from "../src/core/records.ts";
 import { isIndexedDoc } from "./qmd-docs.mts";
 import { markPending } from "./qmd-lock.mts";
 import { exclusive, hasQmd, registeredNames } from "./qmd-run.mts";
@@ -20,8 +21,9 @@ if (process.argv[2] === "--worker") {
   const root = process.env["CLAUDE_PROJECT_DIR"];
   let file: unknown;
   try {
-    file = (JSON.parse(await text(process.stdin)) as { tool_input?: { file_path?: unknown } })
-      .tool_input?.file_path;
+    const input: unknown = JSON.parse(await text(process.stdin));
+    const tool = isRecord(input) ? input["tool_input"] : undefined;
+    file = isRecord(tool) ? tool["file_path"] : undefined;
   } catch {
     // Not hook input: nothing to do.
   }

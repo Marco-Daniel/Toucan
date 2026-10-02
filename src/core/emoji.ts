@@ -22,6 +22,7 @@ type Chromatic = Exclude<EmojiColor, "brown" | "black" | "white">;
  * 🟥🟧🟨🟩🟦🟪 (the set VS Code shows on macOS). Other emoji fonts differ a little,
  * so borderline hues such as teal (~203) may read differently there.
  */
+const CHROMATICS: readonly Chromatic[] = ["red", "orange", "yellow", "green", "blue", "purple"];
 const HUES: Record<Chromatic, number> = {
   red: 30,
   orange: 61,
@@ -105,7 +106,8 @@ export function emojiFor(hex: Hex, glyph: Glyph): string {
 function nearestHue(hue: number): Chromatic {
   let best: Chromatic = "red";
   let bestDistance = Infinity;
-  for (const [name, target] of Object.entries(HUES) as [Chromatic, number][]) {
+  for (const name of CHROMATICS) {
+    const target = HUES[name];
     const distance = Math.min(Math.abs(hue - target), 360 - Math.abs(hue - target));
     if (distance < bestDistance) {
       best = name;

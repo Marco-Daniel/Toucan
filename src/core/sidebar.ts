@@ -35,7 +35,7 @@ export function resolveSidebarSettings(input: {
 }
 
 function oneOf<T extends string>(options: readonly T[], value: unknown): T | undefined {
-  return (options as readonly unknown[]).includes(value) ? (value as T) : undefined;
+  return options.find((option) => option === value);
 }
 
 export interface SidebarPorts {
@@ -215,7 +215,7 @@ export class SidebarController {
   private async settle(what: string, task: Promise<void>): Promise<void> {
     const [, error] = await tryCatch(task);
     if (error !== null) {
-      this.ports.warn(`${what} failed: ${String(error)}`);
+      this.ports.warn(failure(what, error));
     }
   }
 
@@ -225,4 +225,8 @@ export class SidebarController {
       this.rememberTimer = undefined;
     }
   }
+}
+
+function failure(what: string, error: unknown): string {
+  return `${what} failed: ${String(error)}`;
 }

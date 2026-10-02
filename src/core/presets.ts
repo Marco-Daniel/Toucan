@@ -1,4 +1,4 @@
-import type { Hex } from "./model.ts";
+import { asHex, type Hex } from "./model.ts";
 
 export interface Preset {
   name: string;
@@ -25,4 +25,4 @@ export const PRESETS: readonly Preset[] = (
     ["Silver", "#a7a8b3"],
     ["Plumage Black", "#101316"],
   ] as const
-).map(([name, hex]) => ({ name, hex: hex as Hex }));
+).map(([name, hex]) => ({ name, hex: asHex(hex) }));

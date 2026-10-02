@@ -42,7 +42,6 @@ const ran = await exclusive(
       }
       for (const args of commands) {
         console.log(`qmd ${args.join(" ")}`);
-        // oxlint-disable-next-line no-await-in-loop -- qmd commands run in order
         if (!(await run(args))) {
           console.error(
             `qmd ${args.slice(QMD_INDEX.length, QMD_INDEX.length + 2).join(" ")} failed; stopping.`,

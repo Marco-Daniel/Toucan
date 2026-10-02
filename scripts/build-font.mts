@@ -6,14 +6,14 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { GLYPH_DESIGNS } from "../src/core/glyphDesign.ts";
 import { FONT_CODEPOINTS, shapeSvg } from "../src/core/glyphFont.ts";
-import { GLYPHS, type Hex } from "../src/core/model.ts";
+import { GLYPHS, asHex } from "../src/core/model.ts";
 import { bakeGlyph } from "./bake-glyphs.mts";
 import { buildFont } from "./font.mts";
 
 const ROOT = new URL("../", import.meta.url);
 const MEDIA = new URL("media/", ROOT);
 const ICONS = new URL("icons/", MEDIA);
-const BLACK = "#000000" as Hex;
+const BLACK = asHex("#000000");
 
 const paths = GLYPHS.map((glyph) => {
   const { width } = GLYPH_DESIGNS[glyph];

@@ -48,13 +48,18 @@ export function takeLock(): string | undefined {
   return create(lock) ? lock : undefined;
 }
 
+/** Whether a file system error says the file isn't there. */
+function isMissing(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
 /** Keeps a held lock fresh. One that's gone (removed by hand, say) stays gone. */
 export function touchLock(lock: string): void {
   const now = new Date();
   try {
     utimesSync(lock, now, now);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+    if (!isMissing(error)) {
       throw error;
     }
   }
@@ -85,6 +90,6 @@ export function takePending(): "taken" | "none" | "stuck" {
     rmSync(cache("toucan.pending"));
     return "taken";
   } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "ENOENT" ? "none" : "stuck";
+    return isMissing(error) ? "none" : "stuck";
   }
 }
