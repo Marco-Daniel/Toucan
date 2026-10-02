@@ -98,6 +98,23 @@ describe("exclusive", () => {
     expect(ran).toBe(false);
   });
 
+  it("gives up on a held lock at once unless asked to wait", async () => {
+    takeLock();
+    vi.useFakeTimers();
+    try {
+      let result: boolean | undefined;
+      const done = exclusive({ job: () => true }).then((value) => {
+        result = value;
+      });
+      // No time passes: a default wait would still be polling here.
+      await vi.advanceTimersByTimeAsync(0);
+      expect(result).toBe(false);
+      await done;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("waits for the lock when asked to, then runs", async () => {
     const held = takeLock()!;
     let ran = false;
