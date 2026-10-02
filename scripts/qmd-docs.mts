@@ -1,4 +1,4 @@
-// Toucan's docs in qmd (optional local search): which collections exist, and
+// Toucan's docs in qmd (the docs search for working on Toucan): which collections exist, and
 // the qmd commands that bring Toucan's qmd index in line with them. Toucan
 // uses its own named qmd index (`--index toucan`) and never reads or writes
 // the default one: qmd's `update` and `embed` act on every collection in an
@@ -42,6 +42,11 @@ export const DOCS_COLLECTIONS: readonly DocsCollection[] = [
     },
   },
 ];
+
+/** The Toucan collection names in `qmd collection list` output (each starts a line). */
+export function parseCollectionList(output: string): Set<string> {
+  return new Set([...output.matchAll(/^(toucan-[\w-]+) \(qmd:\/\//gm)].map((match) => match[1]!));
+}
 
 /** A collection as qmd has it registered. */
 export interface Registered {

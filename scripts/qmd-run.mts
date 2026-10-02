@@ -1,10 +1,17 @@
-// Running qmd for Toucan's scripts: the repo root, calls on Toucan's own index
-// and what is registered there now. Shared by `pnpm docs:index` and the
-// session-start hook, so both plan with the same state.
+// Running qmd for Toucan's scripts: the repo root, calls on Toucan's own index,
+// what is registered there now, and running jobs one at a time. Shared by
+// `pnpm docs:index` and the hooks, so all of them plan and lock the same way.
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { DOCS_COLLECTIONS, QMD_INDEX, parseCollectionShow, type IndexState } from "./qmd-docs.mts";
+import {
+  DOCS_COLLECTIONS,
+  QMD_INDEX,
+  parseCollectionList,
+  parseCollectionShow,
+  type IndexState,
+} from "./qmd-docs.mts";
+import { isPending, releaseLock, takeLock, takePending, type Lock } from "./qmd-lock.mts";
 
 /** The repo root at runtime (qmd stores real paths), so no path is committed. */
 export const ROOT = realpathSync(fileURLToPath(new URL("..", import.meta.url)));
@@ -18,9 +25,15 @@ export function hasQmd(): boolean {
   return !qmd(["--version"]).error;
 }
 
-/** Whether Toucan's index has any of its collections registered. */
-export function isRegistered(): boolean {
-  return /^toucan-/m.test(qmd([...QMD_INDEX, "collection", "list"]).stdout ?? "");
+/** Toucan's collections registered in its index. */
+export function registeredNames(): Set<string> {
+  return parseCollectionList(qmd([...QMD_INDEX, "collection", "list"]).stdout ?? "");
+}
+
+/** Whether every one of Toucan's collections is registered. */
+export function allRegistered(): boolean {
+  const names = registeredNames();
+  return DOCS_COLLECTIONS.every(({ name }) => names.has(name));
 }
 
 /** What Toucan's index holds now, for planIndex. */
@@ -47,4 +60,36 @@ export function currentState(force: boolean): IndexState {
             .map((entry) => entry.name),
     force,
   };
+}
+
+/** Re-indexes Toucan's index for each pending edit, until none are left. */
+export function drainPending(dir: string): void {
+  while (takePending(dir)) {
+    qmd([...QMD_INDEX, "update"]);
+  }
+}
+
+/**
+ * Runs `job` under the lock, then re-indexes for edits made meanwhile, if
+ * `job` says the index is ready for that. After letting go of the lock it
+ * checks once more, so an edit made just before the release isn't lost.
+ * Does nothing when another job holds the lock: that job picks up the edits.
+ */
+export function exclusive(job: () => boolean, release: (lock: Lock) => void = releaseLock): void {
+  let lock = takeLock();
+  let first = true;
+  while (lock) {
+    const { dir } = lock;
+    try {
+      if (first ? job() : true) {
+        drainPending(dir);
+      } else {
+        takePending(dir);
+      }
+    } finally {
+      release(lock);
+    }
+    first = false;
+    lock = isPending(dir) ? takeLock() : undefined;
+  }
 }

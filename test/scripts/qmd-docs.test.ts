@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DOCS_COLLECTIONS,
   isIndexedDoc,
+  parseCollectionList,
   parseCollectionShow,
   planIndex,
   type IndexState,
@@ -173,6 +174,21 @@ describe(".mcp.json", () => {
     expect(config).toEqual({
       mcpServers: { qmd: { type: "stdio", command: "qmd", args: ["--index", "toucan", "mcp"] } },
     });
+  });
+});
+
+describe("parseCollectionList", () => {
+  it("finds Toucan's collections, each at the start of its line", () => {
+    const output = [
+      "Collections (4):",
+      "",
+      "toucan-docs (qmd://toucan-docs/)",
+      "  Pattern:  **/*.md",
+      "not-toucan-guides (qmd://not-toucan-guides/)",
+      "  toucan-indented (qmd://toucan-indented/)",
+      "notes (qmd://notes/)",
+    ].join("\n");
+    expect([...parseCollectionList(output)]).toEqual(["toucan-docs"]);
   });
 });
 
