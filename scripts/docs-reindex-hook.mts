@@ -6,7 +6,8 @@
 //
 // The edit is noted as pending, then a detached worker re-indexes under the
 // shared lock until no edit is pending. If another job holds the lock, that
-// job picks the edit up.
+// job picks the edit up; if the collections aren't registered yet, the edit
+// stays pending for the session-start bootstrap.
 import { spawn } from "node:child_process";
 import { text } from "node:stream/consumers";
 import { isIndexedDoc } from "./qmd-docs.mts";
@@ -14,7 +15,7 @@ import { markPending } from "./qmd-lock.mts";
 import { exclusive, hasQmd, registeredNames } from "./qmd-run.mts";
 
 if (process.argv[2] === "--worker") {
-  exclusive(() => hasQmd() && registeredNames().size > 0);
+  await exclusive(() => hasQmd() && registeredNames().size > 0);
 } else {
   const root = process.env.CLAUDE_PROJECT_DIR;
   let file: unknown;

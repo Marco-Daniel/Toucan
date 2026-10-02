@@ -1,6 +1,4 @@
 import {
-  chmodSync,
-  lchmodSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -16,7 +14,6 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   isPending,
-  lockFolder,
   markPending,
   releaseLock,
   takeLock,
@@ -24,153 +21,86 @@ import {
   touchLock,
 } from "../../scripts/qmd-lock.mts";
 
-const realTmp = tmpdir();
+const saved = process.env.XDG_CACHE_HOME;
+let dir: string;
+let cache: string;
 
-/** A pid no process has: well above any pid_max. */
-const DEAD_PID = 2 ** 30;
+beforeEach(() => {
+  dir = mkdtempSync(join(tmpdir(), "toucan-lock-"));
+  // qmd's cache, and so the lock, in this test's dir: never the real one.
+  process.env.XDG_CACHE_HOME = dir;
+  cache = join(dir, "qmd");
+});
+afterEach(() => {
+  process.env.XDG_CACHE_HOME = saved;
+  rmSync(dir, { recursive: true, force: true });
+});
 
 function age(path: string, ms: number): void {
   const then = new Date(Date.now() - ms);
   utimesSync(path, then, then);
 }
-let dir: string;
-let folder: string;
-
-beforeEach(() => {
-  dir = mkdtempSync(join(realTmp, "toucan-lock-"));
-  // os.tmpdir() reads TMPDIR on each call: the lock folder lands in this test's dir.
-  process.env.TMPDIR = dir;
-  folder = join(dir, `toucan-qmd-${process.getuid!()}`);
-});
-afterEach(() => {
-  process.env.TMPDIR = realTmp;
-  rmSync(dir, { recursive: true, force: true });
-});
 
 describe("the qmd lock", () => {
-  it("lives in a private folder of this user's", () => {
-    expect(lockFolder()).toBe(folder);
-    expect(lstatSync(folder).mode & 0o777).toBe(0o700);
+  it("lives in qmd's cache folder, next to Toucan's index", () => {
+    expect(takeLock()).toBe(join(cache, "toucan.lock"));
   });
 
   it("is held by one job at a time", () => {
-    const first = takeLock();
-    expect(first).toBeDefined();
+    const lock = takeLock()!;
     expect(takeLock()).toBeUndefined();
-    releaseLock(first!);
-    expect(takeLock()).toBeDefined();
+    releaseLock(lock);
+    expect(takeLock()).toBe(lock);
   });
 
-  it("only lets its owner release it", () => {
-    const mine = takeLock()!;
-    writeFileSync(join(folder, "lock"), "someone else");
-    releaseLock(mine);
-    expect(readFileSync(join(folder, "lock"), "utf8")).toBe("someone else");
-  });
-
-  it("takes over a lock at once when its owner has exited", () => {
-    mkdirSync(folder, { mode: 0o700 });
-    writeFileSync(join(folder, "lock"), `${DEAD_PID}-gone`);
-    const lock = takeLock();
-    expect(lock).toBeDefined();
-    expect(readFileSync(join(folder, "lock"), "utf8")).toBe(lock!.token);
-  });
-
-  it("never takes over a running owner's lock, however long its job takes", () => {
-    mkdirSync(folder, { mode: 0o700 });
-    writeFileSync(join(folder, "lock"), `${process.pid}-running`);
-    age(join(folder, "lock"), 50 * 60_000);
+  it("takes over a lock older than ten minutes, never a fresher one", () => {
+    const lock = takeLock()!;
+    age(lock, 9 * 60_000);
     expect(takeLock()).toBeUndefined();
-  });
-
-  it("takes over a running owner's lock after an hour, in case its pid was reused", () => {
-    mkdirSync(folder, { mode: 0o700 });
-    writeFileSync(join(folder, "lock"), `${process.pid}-reused`);
-    age(join(folder, "lock"), 61 * 60_000);
-    expect(takeLock()).toBeDefined();
-  });
-
-  it("judges a lock without an owner pid by age alone", () => {
-    mkdirSync(folder, { mode: 0o700 });
-    writeFileSync(join(folder, "lock"), "no pid");
-    age(join(folder, "lock"), 4 * 60_000);
-    expect(takeLock()).toBeUndefined();
-    age(join(folder, "lock"), 6 * 60_000);
-    expect(takeLock()).toBeDefined();
-  });
-
-  it("puts back a lock that another job took over while it was deciding", () => {
-    mkdirSync(folder, { mode: 0o700 });
-    writeFileSync(join(folder, "lock"), `${DEAD_PID}-gone`);
-    const lock = takeLock(() => {
-      // The other job: moves the stale lock away and takes its own.
-      rmSync(join(folder, "lock"));
-      writeFileSync(join(folder, "lock"), `${process.pid}-other`);
-    });
-    expect(lock).toBeUndefined();
-    expect(readFileSync(join(folder, "lock"), "utf8")).toBe(`${process.pid}-other`);
+    age(lock, 11 * 60_000);
+    expect(takeLock()).toBe(lock);
   });
 
   it("lets a long job keep its lock fresh", () => {
     const lock = takeLock()!;
-    age(join(folder, "lock"), 30 * 60_000);
+    age(lock, 30 * 60_000);
     touchLock(lock);
-    expect(Date.now() - lstatSync(join(folder, "lock")).mtimeMs).toBeLessThan(60_000);
+    expect(takeLock()).toBeUndefined();
   });
 
   it("notes pending edits until they're taken", () => {
-    markPending();
-    expect(isPending(folder)).toBe(true);
-    expect(takePending(folder)).toBe(true);
-    expect([isPending(folder), takePending(folder)]).toEqual([false, false]);
+    expect(markPending()).toBe(true);
+    expect(isPending()).toBe(true);
+    expect(takePending()).toBe(true);
+    expect([isPending(), takePending()]).toEqual([false, false]);
   });
 });
 
-describe("the lock folder, against tampering", () => {
-  it("isn't used when it's a symlink", () => {
-    const elsewhere = join(dir, "elsewhere");
-    mkdirSync(elsewhere, { mode: 0o700 });
-    symlinkSync(elsewhere, folder);
-    expect(lockFolder()).toBeUndefined();
-    expect(takeLock()).toBeUndefined();
-    markPending();
-    expect(existsSync(join(elsewhere, "pending"))).toBe(false);
-  });
+/** Plants a symlink at one of the lock files; returns the file it points to. */
+function plant(name: string): string {
+  mkdirSync(cache, { recursive: true });
+  const victim = join(dir, "victim");
+  writeFileSync(victim, "keep me");
+  symlinkSync(victim, join(cache, name));
+  return victim;
+}
 
-  // A symlink's own mode is 0777 on Linux, so only macOS can make one look private.
-  it.skipIf(process.platform !== "darwin")(
-    "isn't used when it's a symlink that looks private",
-    () => {
-      const elsewhere = join(dir, "elsewhere");
-      mkdirSync(elsewhere, { mode: 0o700 });
-      symlinkSync(elsewhere, folder);
-      lchmodSync(folder, 0o700);
-      expect(lockFolder()).toBeUndefined();
-    },
-  );
-
-  it("isn't used when others can get in", () => {
-    mkdirSync(folder, { mode: 0o700 });
-    chmodSync(folder, 0o755);
-    expect(lockFolder()).toBeUndefined();
-    expect(takeLock()).toBeUndefined();
-  });
-
-  it("never writes through a symlink planted at the pending note", () => {
-    lockFolder();
-    const victim = join(dir, "victim");
-    writeFileSync(victim, "keep me");
-    symlinkSync(victim, join(folder, "pending"));
-    markPending();
+describe("the lock files, against planted symlinks", () => {
+  it("never writes through a symlink at the pending note", () => {
+    const victim = plant("toucan.pending");
+    expect(markPending()).toBe(false);
     expect(readFileSync(victim, "utf8")).toBe("keep me");
   });
 
-  it("never writes through a symlink planted at the lock", () => {
-    lockFolder();
-    const victim = join(dir, "victim");
-    writeFileSync(victim, "keep me");
-    symlinkSync(victim, join(folder, "lock"));
+  it("never writes through a symlink at the lock", () => {
+    const victim = plant("toucan.lock");
     expect(takeLock()).toBeUndefined();
     expect(readFileSync(victim, "utf8")).toBe("keep me");
+  });
+
+  it("removes only the link, never its target, when taking the pending note", () => {
+    const victim = plant("toucan.pending");
+    expect(takePending()).toBe(true);
+    expect([existsSync(victim), lstatSync(victim).isFile()]).toEqual([true, true]);
   });
 });

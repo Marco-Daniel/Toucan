@@ -1,195 +1,71 @@
 // One qmd job at a time for Toucan's scripts: concurrent writes to the same
-// qmd database fail. All of them share one well-known, per-user folder in the
-// OS temp dir, which must be a real folder owned by this user and closed to
-// everyone else; if it isn't (someone planted a symlink, say), nothing runs.
-// Files in it are opened without following symlinks.
-import { randomUUID } from "node:crypto";
+// qmd database fail. The lock and the pending note live in qmd's own per-user
+// cache folder, next to Toucan's index, and are created exclusively, which
+// never follows a symlink. A lock older than STALE_MS was left by a job that
+// died; long jobs refresh theirs.
 import {
   closeSync,
   constants,
-  linkSync,
-  lstatSync,
+  existsSync,
   mkdirSync,
   openSync,
-  readFileSync,
-  renameSync,
   rmSync,
+  statSync,
   utimesSync,
-  writeSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
-/** A lock whose owner can't be checked counts as left behind after this. */
-const STALE_MS = 5 * 60_000;
-/** Even a live owner's lock counts as left behind after this (its pid may have been reused). */
-const MAX_AGE_MS = 60 * 60_000;
-const { O_CREAT, O_EXCL, O_NOFOLLOW, O_WRONLY, O_RDONLY } = constants;
+const STALE_MS = 10 * 60_000;
 
-/** The shared folder, or undefined when it can't be trusted. */
-export function lockFolder(): string | undefined {
-  const uid = process.getuid?.() ?? 0;
-  const dir = join(tmpdir(), `toucan-qmd-${uid}`);
-  try {
-    mkdirSync(dir, { mode: 0o700 });
-  } catch {
-    // Already there: checked below.
-  }
-  try {
-    const stat = lstatSync(dir);
-    const own = stat.isDirectory() && stat.uid === uid && (stat.mode & 0o077) === 0;
-    return own ? dir : undefined;
-  } catch {
-    return undefined;
-  }
+/** qmd's cache folder, resolved the way qmd resolves it. */
+function cache(name: string): string {
+  const dir = join(process.env.XDG_CACHE_HOME || join(homedir(), ".cache"), "qmd");
+  mkdirSync(dir, { recursive: true });
+  return join(dir, name);
 }
 
-function read(path: string): string | undefined {
+function create(path: string): boolean {
   try {
-    const fd = openSync(path, O_RDONLY | O_NOFOLLOW);
-    try {
-      return readFileSync(fd, "utf8");
-    } finally {
-      closeSync(fd);
-    }
-  } catch {
-    return undefined;
-  }
-}
-
-/** Creates `path` holding `text`, failing if anything (a symlink included) is already there. */
-function create(path: string, text: string): boolean {
-  try {
-    const fd = openSync(path, O_CREAT | O_EXCL | O_WRONLY | O_NOFOLLOW, 0o600);
-    try {
-      writeSync(fd, text);
-    } finally {
-      closeSync(fd);
-    }
+    const { O_CREAT, O_EXCL, O_WRONLY } = constants;
+    closeSync(openSync(path, O_CREAT | O_EXCL | O_WRONLY, 0o600));
     return true;
   } catch {
     return false;
   }
 }
 
-/** A held lock: release it with the token. */
-export interface Lock {
-  dir: string;
-  token: string;
-}
-
-/** Whether the process that wrote `token` (`<pid>-<uuid>`) is still running; undefined without a pid. */
-function ownerAlive(token: string | undefined): boolean | undefined {
-  const pid = Number(token?.split("-")[0]);
-  if (!Number.isInteger(pid) || pid <= 0) {
-    return undefined;
-  }
+/** Takes the lock (replacing a stale one) and returns its path, or undefined if held. */
+export function takeLock(): string | undefined {
+  const lock = cache("toucan.lock");
   try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "EPERM";
-  }
-}
-
-/**
- * Whether a held lock was left by a job that's gone: its owner process has
- * exited, or it's older than an hour (in case the pid was reused). A lock
- * without an owner pid goes stale after STALE_MS.
- */
-function isStale(token: string | undefined, mtimeMs: number): boolean {
-  const age = Date.now() - mtimeMs;
-  const alive = ownerAlive(token);
-  return alive === undefined ? age > STALE_MS : !alive || age > MAX_AGE_MS;
-}
-
-/**
- * Takes the lock, taking over a stale one; undefined when another job holds
- * it. `beforeTakeover` runs between judging a lock stale and moving it, so
- * tests can replay a race.
- */
-export function takeLock(beforeTakeover?: () => void): Lock | undefined {
-  const dir = lockFolder();
-  if (!dir) {
-    return undefined;
-  }
-  const lock = join(dir, "lock");
-  const token = `${process.pid}-${randomUUID()}`;
-  if (create(lock, token)) {
-    return { dir, token };
-  }
-  let judged;
-  try {
-    judged = lstatSync(lock);
-  } catch {
-    // Released in the meantime.
-    return create(lock, token) ? { dir, token } : undefined;
-  }
-  if (!judged.isFile() || !isStale(read(lock), judged.mtimeMs)) {
-    return undefined;
-  }
-  beforeTakeover?.();
-  // Move it aside atomically, then make sure it's the very lock judged stale.
-  const aside = join(dir, `lock.${token}`);
-  try {
-    renameSync(lock, aside);
-  } catch {
-    return undefined;
-  }
-  const moved = lstatSync(aside);
-  if (moved.ino !== judged.ino || moved.mtimeMs !== judged.mtimeMs) {
-    // Another job took it over in between: put its lock back.
-    try {
-      linkSync(aside, lock);
-      rmSync(aside);
-    } catch {
-      // A third job holds the lock now; leave the moved one where it is.
+    if (Date.now() - statSync(lock).mtimeMs > STALE_MS) {
+      rmSync(lock);
     }
-    return undefined;
+  } catch {
+    // Not there: free.
   }
-  rmSync(aside);
-  return create(lock, token) ? { dir, token } : undefined;
+  return create(lock) ? lock : undefined;
 }
 
-/** Marks a held lock as still in use, for jobs that run long. */
-export function touchLock({ dir, token }: Lock): void {
-  const lock = join(dir, "lock");
-  if (read(lock) === token) {
-    const now = new Date();
-    utimesSync(lock, now, now);
-  }
+export function touchLock(lock: string): void {
+  const now = new Date();
+  utimesSync(lock, now, now);
 }
 
-/** Releases the lock if it's still ours. */
-export function releaseLock({ dir, token }: Lock): void {
-  const lock = join(dir, "lock");
-  if (read(lock) === token) {
-    rmSync(lock, { force: true });
-  }
+export function releaseLock(lock: string): void {
+  rmSync(lock, { force: true });
 }
 
-/** Notes an edit made while a job may be running, so it goes round once more. */
-export function markPending(): void {
-  const dir = lockFolder();
-  if (dir) {
-    create(join(dir, "pending"), "");
-  }
-}
+/** Notes an edit, so a running job goes round once more. */
+export const markPending = (): boolean => create(cache("toucan.pending"));
+export const isPending = (): boolean => existsSync(cache("toucan.pending"));
 
 /** Takes the pending note, if there is one. */
-export function takePending(dir: string): boolean {
+export function takePending(): boolean {
   try {
-    rmSync(join(dir, "pending"));
+    rmSync(cache("toucan.pending"));
     return true;
-  } catch {
-    return false;
-  }
-}
-
-/** Whether an edit is pending, without taking it. */
-export function isPending(dir: string): boolean {
-  try {
-    return lstatSync(join(dir, "pending")).isFile();
   } catch {
     return false;
   }

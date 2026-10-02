@@ -11,7 +11,7 @@ import {
   parseCollectionShow,
   type IndexState,
 } from "./qmd-docs.mts";
-import { isPending, releaseLock, takeLock, takePending, type Lock } from "./qmd-lock.mts";
+import { isPending, releaseLock, takeLock, takePending } from "./qmd-lock.mts";
 
 /** The repo root at runtime (qmd stores real paths), so no path is committed. */
 export const ROOT = realpathSync(fileURLToPath(new URL("..", import.meta.url)));
@@ -63,33 +63,53 @@ export function currentState(force: boolean): IndexState {
 }
 
 /** Re-indexes Toucan's index for each pending edit, until none are left. */
-export function drainPending(dir: string): void {
-  while (takePending(dir)) {
+export function drainPending(): void {
+  while (takePending()) {
     qmd([...QMD_INDEX, "update"]);
   }
 }
 
-/**
- * Runs `job` under the lock, then re-indexes for edits made meanwhile, if
- * `job` says the index is ready for that. After letting go of the lock it
- * checks once more, so an edit made just before the release isn't lost.
- * Does nothing when another job holds the lock: that job picks up the edits.
- */
-export function exclusive(job: () => boolean, release: (lock: Lock) => void = releaseLock): void {
+/** Takes the lock, waiting up to `waitMs` for another job to let go of it. */
+async function waitForLock(waitMs: number): Promise<string | undefined> {
   let lock = takeLock();
+  for (let waited = 0; !lock && waited < waitMs; waited += 250) {
+    // oxlint-disable-next-line no-await-in-loop -- polling is sequential by nature
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    lock = takeLock();
+  }
+  return lock;
+}
+
+/**
+ * Runs `job` under the lock, then re-indexes for edits made meanwhile. A job
+ * that returns false (qmd or the collections aren't ready) leaves the pending
+ * edits for a later job. After letting go of the lock it checks once more, so
+ * an edit made just before the release isn't lost. Returns false, without
+ * running `job`, when the lock stays held for `waitMs`: the job holding it
+ * picks the edits up.
+ */
+export async function exclusive(
+  job: (lock: string) => boolean | Promise<boolean>,
+  { waitMs = 0, release = releaseLock }: { waitMs?: number; release?: (lock: string) => void } = {},
+): Promise<boolean> {
+  let lock = await waitForLock(waitMs);
+  if (!lock) {
+    return false;
+  }
   let first = true;
   while (lock) {
-    const { dir } = lock;
+    let ready = true;
     try {
-      if (first ? job() : true) {
-        drainPending(dir);
-      } else {
-        takePending(dir);
+      // oxlint-disable-next-line no-await-in-loop -- one round at a time, under the lock
+      ready = first ? await job(lock) : true;
+      if (ready) {
+        drainPending();
       }
     } finally {
       release(lock);
     }
     first = false;
-    lock = isPending(dir) ? takeLock() : undefined;
+    lock = ready && isPending() ? takeLock() : undefined;
   }
+  return true;
 }
