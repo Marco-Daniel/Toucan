@@ -121,6 +121,11 @@ const SyntaxKind = {
   EOF: 17,
 } as const;
 
+/** The next token's kind as a plain number, comparable with the values above. */
+function scan(scanner: JSONScanner): number {
+  return scanner.scan();
+}
+
 /**
  * Removes a property by deleting its whole lines, so comments on the lines
  * around it stay. jsonc-parser's own removal deletes everything from the end
@@ -146,22 +151,22 @@ function removeLines(text: string, path: string[]): Edit[] | undefined {
   // After the value: an optional comma, then an optional comment, then the line break.
   const scanner = createScanner(text, false);
   scanner.setPosition(node.offset + node.length);
-  let token = scanner.scan();
+  let token = scan(scanner);
   if (token === SyntaxKind.Trivia) {
-    token = scanner.scan();
+    token = scan(scanner);
   }
   if (token === SyntaxKind.CommaToken) {
-    token = scanner.scan();
+    token = scan(scanner);
     if (token === SyntaxKind.Trivia) {
-      token = scanner.scan();
+      token = scan(scanner);
     }
   }
   let comment = "";
   if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
     comment = tokenText(text, scanner);
-    token = scanner.scan();
+    token = scan(scanner);
     if (token === SyntaxKind.Trivia) {
-      token = scanner.scan();
+      token = scan(scanner);
     }
   }
   if (token !== SyntaxKind.LineBreakTrivia) {
@@ -224,7 +229,7 @@ function keepsComments(text: string, edited: string, paths: string[][]): boolean
 function comments(text: string): { offset: number; value: string }[] {
   const scanner = createScanner(text, false);
   const found: { offset: number; value: string }[] = [];
-  for (let token = scanner.scan(); token !== SyntaxKind.EOF; token = scanner.scan()) {
+  for (let token = scan(scanner); token !== SyntaxKind.EOF; token = scan(scanner)) {
     if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
       found.push({ offset: scanner.getTokenOffset(), value: tokenText(text, scanner) });
     }
