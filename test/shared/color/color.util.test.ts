@@ -2,9 +2,11 @@ import { converter, parseHex } from "culori/fn";
 import { describe, expect, it } from "vitest";
 import {
   NEUTRAL_GRAY,
+  fromHex,
   normalizeColor,
   validateColorInput,
 } from "../../../src/shared/color/color.util.ts";
+import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const oklch = converter("oklch");
 
@@ -87,5 +89,11 @@ describe("validateColorInput", () => {
       kind: "invalid",
       message: "Use an opaque color; the background can't be translucent.",
     });
+  });
+});
+
+describe("fromHex", () => {
+  it("throws on a value that isn't a color, rather than guessing one", () => {
+    expect(() => fromHex("not a color" as Hex)).toThrow("Not a color: not a color");
   });
 });

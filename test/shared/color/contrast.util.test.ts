@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  LOW_CONTRAST_WARNING,
   activeThemeName,
   lowContrast,
   presetName,
@@ -91,6 +92,13 @@ describe("activeThemeName", () => {
     expect(
       activeThemeName({ kind: "dark", autoDetect: true, ...themes, preferredDark: 42 }),
     ).toBeUndefined();
+  });
+});
+
+describe("LOW_CONTRAST_WARNING", () => {
+  // Both pickers show it as is (0018): a guess at the status bar, so no ratio.
+  it("says the color may be hard to see, without a measured ratio", () => {
+    expect(LOW_CONTRAST_WARNING).toBe("May be hard to see on the status bar.");
   });
 });
 
