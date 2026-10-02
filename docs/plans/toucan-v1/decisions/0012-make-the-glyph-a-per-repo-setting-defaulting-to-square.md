@@ -1,6 +1,6 @@
 # 0012. Make the glyph a per-repo setting, defaulting to square
 
-- Status: Accepted
+- Status: Accepted; the glyph list is superseded by the glyph-set plan (16 glyphs in Toucan's own font, [glyph-set 0002](../../glyph-set/decisions/0002-curate-sixteen-glyphs-in-four-themed-groups.md))
 - Date: 2026-10-01
 - Deciders: Marco
 

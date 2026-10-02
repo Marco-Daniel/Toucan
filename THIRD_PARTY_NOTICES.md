@@ -53,9 +53,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-## Codicons
-
-https://github.com/microsoft/vscode-codicons
-
-The circle, double-circle, heart, star and check-circle glyph shapes are Codicons by Microsoft, used under the Creative Commons Attribution 4.0 International license (https://creativecommons.org/licenses/by/4.0/). Toucan draws their paths in its own color swatches and sidebar block.
