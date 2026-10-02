@@ -589,6 +589,30 @@ describe("FocusCoordinator", () => {
     expect(world.background).toBe("#0000bb");
   });
 
+  it("logs a task that fails outside its own error handling", async () => {
+    const warnings: string[] = [];
+    const a = new FocusCoordinator(
+      "A",
+      {
+        hasApplied: () => true,
+        markApplied: async () => {},
+        // dispose() reads the owner before clearing; nothing in that task catches this.
+        readOwner: async () => {
+          throw new Error("owner file locked");
+        },
+        writeOwner: async () => {},
+        readCustomizations: () => undefined,
+        readCustomizationsFromDisk: async () => undefined,
+        writeCustomizations: async () => {},
+        warn: (message) => warnings.push(message),
+        debug: () => {},
+      },
+      () => undefined,
+    );
+    await a.dispose();
+    expect(warnings).toEqual(["Focus handling failed: Error: owner file locked"]);
+  });
+
   it("never rejects, even when logging a failure throws", async () => {
     const a = new FocusCoordinator(
       "A",
