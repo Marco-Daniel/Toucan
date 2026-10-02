@@ -1,8 +1,10 @@
 // Toucan's docs in qmd (optional local search): which collections exist, and
-// the qmd commands that bring the global qmd config in line with them. qmd's
-// config is shared with other projects, so everything here only ever names
-// `toucan-*` collections. No qmd calls in this module: the CLI scripts run
-// what it plans.
+// the qmd commands that bring Toucan's qmd index in line with them. Toucan
+// uses its own named qmd index (`--index toucan`) and never reads or writes
+// the default one: qmd's `update` and `embed` act on every collection in an
+// index, so sharing one would re-index and prune other projects' collections.
+// Collection names stay `toucan-*` as a second guard. No qmd calls in this
+// module: the CLI scripts run what it plans.
 import { matchesGlob, relative } from "node:path";
 
 export interface DocsCollection {
@@ -15,6 +17,9 @@ export interface DocsCollection {
   /** Context per path inside the collection; "" is the collection itself. */
   contexts: Record<string, string>;
 }
+
+/** The arguments that select Toucan's own qmd index; every qmd call starts with them. */
+export const QMD_INDEX = ["--index", "toucan"] as const;
 
 export const DOCS_COLLECTIONS: readonly DocsCollection[] = [
   {
@@ -75,8 +80,21 @@ function absolute(root: string, dir: string): string {
   return dir === "." ? root : `${root}/${dir}`;
 }
 
-/** The qmd commands that register or update Toucan's collections, then re-index and embed. */
-export function planIndex(state: IndexState): IndexPlan {
+/**
+ * The qmd commands that register or update Toucan's collections, then
+ * re-index, and embed unless `embed` is false (keyword search only: no model
+ * download).
+ */
+export function planIndex(state: IndexState, { embed = true } = {}): IndexPlan {
+  const { commands, notes } = planCollections(state);
+  if (embed) {
+    commands.push(["embed"]);
+  }
+  const index: readonly string[] = QMD_INDEX;
+  return { commands: commands.map((args) => index.concat(args)), notes };
+}
+
+function planCollections(state: IndexState): IndexPlan {
   const commands: string[][] = [];
   const notes: string[] = [];
   for (const { name, dir, mask, contexts } of DOCS_COLLECTIONS) {
@@ -108,7 +126,7 @@ export function planIndex(state: IndexState): IndexPlan {
       }
     }
   }
-  commands.push(["update"], ["embed"]);
+  commands.push(["update"]);
   return { commands, notes };
 }
 
