@@ -41,7 +41,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   });
   coordinator = focus;
 
-  const sidebar = new SidebarBlock(context, log, () => repo);
+  const sidebar = new SidebarBlock({ context, log, repo: () => repo });
   const agentsControl = new AgentsControlOffer(context, log);
   const searchEmoji = new SearchEmoji(context, log, () => repo);
   // Only a window that colors the Command Center asks (0016).

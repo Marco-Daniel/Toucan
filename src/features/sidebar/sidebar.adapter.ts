@@ -14,6 +14,13 @@ import type { ActiveRepo } from "../../core/repo.adapter.ts";
 /** workspaceState key for "the user closed the block here" (0013). */
 const CLOSED_KEY = "sidebarBlock.closed";
 
+interface SidebarBlockArgs {
+  context: ExtensionContext;
+  log: Log;
+  /** This window's repo, read fresh on every refresh. */
+  repo: () => ActiveRepo | undefined;
+}
+
 /**
  * The opt-in sidebar block (0006, 0013): renders the repo color in a webview
  * without scripts and lets `SidebarController` decide when it's shown.
@@ -27,12 +34,12 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   private readonly log: Log;
   private readonly repo: () => ActiveRepo | undefined;
 
-  constructor(context: ExtensionContext, log: Log, repo: () => ActiveRepo | undefined) {
+  constructor({ context, log, repo }: SidebarBlockArgs) {
     this.context = context;
     this.log = log;
     this.repo = repo;
-    this.controller = new SidebarController(
-      {
+    this.controller = new SidebarController({
+      ports: {
         reveal: async () => {
           await vscodeCommands.executeCommand(`${SIDEBAR_VIEW_ID}.focus`, { preserveFocus: true });
         },
@@ -46,8 +53,8 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         warn: (message) => log.warn(`[sidebar] ${message}`),
         debug: (message) => log.debug(`[sidebar] ${message}`),
       },
-      () => this.settings(),
-    );
+      settings: () => this.settings(),
+    });
     this.disposables.push(window.registerWebviewViewProvider(SIDEBAR_VIEW_ID, this));
   }
 

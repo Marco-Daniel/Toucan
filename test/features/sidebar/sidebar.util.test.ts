@@ -49,8 +49,8 @@ function setup(
     warnings: [] as string[],
   };
   let controller!: SidebarController;
-  controller = new SidebarController(
-    {
+  controller = new SidebarController({
+    ports: {
       reveal: async () => {
         state.reveals++;
         if (failReveals) {
@@ -88,8 +88,8 @@ function setup(
       warn: (message) => state.warnings.push(message),
       debug: () => {},
     },
-    () => settings,
-  );
+    settings: () => settings,
+  });
   return { controller, settings, state, release };
 }
 

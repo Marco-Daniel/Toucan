@@ -22,15 +22,20 @@ export function resolveSidebarSettings(input: {
   visibility: unknown;
   repo: { sidebarBlock?: SidebarVisibility } | undefined;
 }): SidebarSettings & { style: SidebarStyle } {
-  const general = oneOf(SIDEBAR_VISIBILITIES, input.visibility) ?? "always";
+  const general = oneOf({ options: SIDEBAR_VISIBILITIES, value: input.visibility }) ?? "always";
   return {
     enabled: input.repo !== undefined && input.enabled === true,
     visibility: input.repo?.sidebarBlock ?? general,
-    style: oneOf(SIDEBAR_STYLES, input.style) ?? "full",
+    style: oneOf({ options: SIDEBAR_STYLES, value: input.style }) ?? "full",
   };
 }
 
-function oneOf<T extends string>(options: readonly T[], value: unknown): T | undefined {
+interface OneOfArgs<T> {
+  options: readonly T[];
+  value: unknown;
+}
+
+function oneOf<T extends string>({ options, value }: OneOfArgs<T>): T | undefined {
   return options.find((option) => option === value);
 }
 
@@ -44,6 +49,18 @@ export interface SidebarPorts {
   writeClosed(closed: boolean): Promise<void>;
   warn(message: string): void;
   debug(message: string): void;
+}
+
+/** Background work started from an event or timer, and what to call it in a warning. */
+interface HandOffArgs {
+  what: string;
+  task: () => Promise<void>;
+}
+
+interface SidebarControllerArgs {
+  ports: SidebarPorts;
+  /** The block's effective settings, read fresh on every change. */
+  settings: () => SidebarSettings;
 }
 
 /**
@@ -73,7 +90,7 @@ export class SidebarController {
   private readonly ports: SidebarPorts;
   private readonly settings: () => SidebarSettings;
 
-  constructor(ports: SidebarPorts, settings: () => SidebarSettings) {
+  constructor({ ports, settings }: SidebarControllerArgs) {
     this.ports = ports;
     this.settings = settings;
   }
@@ -87,7 +104,10 @@ export class SidebarController {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !focused) {
-      this.post("Revealing the block", () => this.reveal(visibility === "unfocused"));
+      this.post({
+        what: "Revealing the block",
+        task: () => this.reveal(visibility === "unfocused"),
+      });
     }
   }
 
@@ -109,13 +129,13 @@ export class SidebarController {
       if (this.visible) {
         this.openedByToucan = false;
       } else {
-        this.post("Revealing the block", () => this.reveal(true));
+        this.post({ what: "Revealing the block", task: () => this.reveal(true) });
       }
     } else if (this.openedByToucan && this.visible) {
       this.openedByToucan = false;
       this.closingByToucan = true; // cleared by its visibility event or the next focus change
       this.ports.debug("closing the bar Toucan opened");
-      this.post("Closing the bar", () => this.ports.closeBar());
+      this.post({ what: "Closing the bar", task: () => this.ports.closeBar() });
     } else {
       this.openedByToucan = false;
     }
@@ -135,7 +155,7 @@ export class SidebarController {
       // Only the user's own open forgets their close, not Toucan's reveal.
       if (!this.revealing && this.ports.readClosed()) {
         this.ports.debug("block opened; forgetting the remembered close");
-        this.post("Forgetting the close", () => this.ports.writeClosed(false));
+        this.post({ what: "Forgetting the close", task: () => this.ports.writeClosed(false) });
       }
       return;
     }
@@ -152,7 +172,7 @@ export class SidebarController {
         this.rememberTimer = undefined;
         if (!this.visible) {
           this.ports.debug("user closed the block; remembering");
-          this.post("Remembering the close", () => this.ports.writeClosed(true));
+          this.post({ what: "Remembering the close", task: () => this.ports.writeClosed(true) });
         }
       }, REMEMBER_CLOSE_DELAY_MS);
     }
@@ -165,7 +185,10 @@ export class SidebarController {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !this.focused) {
-      this.post("Revealing the block", () => this.reveal(visibility === "unfocused"));
+      this.post({
+        what: "Revealing the block",
+        task: () => this.reveal(visibility === "unfocused"),
+      });
     }
   }
 
@@ -203,15 +226,15 @@ export class SidebarController {
    * Finishes work started by a sync event handler or timer, which has no
    * caller to await it: a failure is logged, never left unhandled.
    */
-  private post(what: string, task: () => Promise<void>): void {
+  private post({ what, task }: HandOffArgs): void {
     // oxlint-disable-next-line typescript/no-floating-promises -- no caller to await (see above); settle never rejects
-    this.settle(what, task);
+    this.settle({ what, task });
   }
 
-  private async settle(what: string, task: () => Promise<void>): Promise<void> {
+  private async settle({ what, task }: HandOffArgs): Promise<void> {
     const [, error] = await tryCatch(task);
     if (error !== null) {
-      this.ports.warn(failure(what, error));
+      this.ports.warn(failure({ what, error }));
     }
   }
 
@@ -223,6 +246,11 @@ export class SidebarController {
   }
 }
 
-function failure(what: string, error: unknown): string {
+interface FailureArgs {
+  what: string;
+  error: unknown;
+}
+
+function failure({ what, error }: FailureArgs): string {
   return `${what} failed: ${String(error)}`;
 }
