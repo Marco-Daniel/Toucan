@@ -356,15 +356,19 @@ describe("viewReflects", () => {
   it("checks only the changed properties", () => {
     const desired = { a: 1, b: 2 };
     expect(
-      viewReflects({ a: 1, b: 2, other: "changed by someone else" }, desired, ["a", "b"]),
+      viewReflects({
+        view: { a: 1, b: 2, other: "changed by someone else" },
+        desired,
+        changed: ["a", "b"],
+      }),
     ).toBe(true);
-    expect(viewReflects({ a: 1, b: 3 }, desired, ["a", "b"])).toBe(false);
+    expect(viewReflects({ view: { a: 1, b: 3 }, desired, changed: ["a", "b"] })).toBe(false);
   });
 
   it("treats removed properties as reflected when they're gone", () => {
-    expect(viewReflects({}, undefined, ["a"])).toBe(true);
-    expect(viewReflects(undefined, undefined, ["a"])).toBe(true);
-    expect(viewReflects({ a: 1 }, undefined, ["a"])).toBe(false);
+    expect(viewReflects({ view: {}, desired: undefined, changed: ["a"] })).toBe(true);
+    expect(viewReflects({ view: undefined, desired: undefined, changed: ["a"] })).toBe(true);
+    expect(viewReflects({ view: { a: 1 }, desired: undefined, changed: ["a"] })).toBe(false);
   });
 });
 
@@ -432,21 +436,21 @@ describe("planEdit, clearing every key", () => {
 
 describe("settingInText", () => {
   it("reads the setting from commented JSON", () => {
-    expect(settingInText(`{\n  // c\n  "${KEY}": { "a": 1 },\n}`, KEY)).toEqual({
+    expect(settingInText({ text: `{\n  // c\n  "${KEY}": { "a": 1 },\n}`, key: KEY })).toEqual({
       value: { a: 1 },
     });
   });
 
   it("reports an absent key as an undefined value", () => {
-    expect(settingInText("{}", KEY)).toEqual({ value: undefined });
+    expect(settingInText({ text: "{}", key: KEY })).toEqual({ value: undefined });
   });
 
   it("gives nothing for text that doesn't parse", () => {
-    expect(settingInText("{ oops", KEY)).toBeUndefined();
+    expect(settingInText({ text: "{ oops", key: KEY })).toBeUndefined();
   });
 
   it("gives nothing for a file that isn't an object", () => {
-    expect(settingInText(`["${KEY}"]`, KEY)).toBeUndefined();
-    expect(settingInText("null", KEY)).toBeUndefined();
+    expect(settingInText({ text: `["${KEY}"]`, key: KEY })).toBeUndefined();
+    expect(settingInText({ text: "null", key: KEY })).toBeUndefined();
   });
 });

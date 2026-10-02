@@ -54,7 +54,7 @@ interface WriteReposArgs {
 export async function writeRepos({ host, update }: WriteReposArgs): Promise<void> {
   // Application-scoped, so VS Code keeps it in the default profile's file.
   const [, error] = await tryCatch(() =>
-    host.writer.write(configs.repos.key, update, "defaultProfile"),
+    host.writer.write({ key: configs.repos.key, update, target: "defaultProfile" }),
   );
   if (error !== null) {
     notify({ level: "error", message: saveFailed(error) });

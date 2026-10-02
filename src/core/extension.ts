@@ -29,7 +29,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const indicator = new StatusBarIndicator();
   let repo: ActiveRepo | undefined;
 
-  const writer = createSettingsWriter(context.globalStorageUri.fsPath, log);
+  const writer = createSettingsWriter({ globalStoragePath: context.globalStorageUri.fsPath, log });
   const focus = startFocusCoordinator({
     context,
     log,

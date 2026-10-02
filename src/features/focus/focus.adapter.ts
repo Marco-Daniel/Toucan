@@ -64,7 +64,7 @@ function ownerFilePorts({ context, id, log, writer }: OwnerFilePortsArgs): Focus
       // A guess at this window's settings file, only used to notice a stale
       // view. It can be another profile's file, so it's never written back.
       const [text] = await tryCatch(() => readFile(settingsFile, "utf8"));
-      return text === null ? undefined : settingInText(text, COLOR_CUSTOMIZATIONS);
+      return text === null ? undefined : settingInText({ text, key: COLOR_CUSTOMIZATIONS });
     },
     hasApplied() {
       return context.globalState.get<boolean>(APPLIED_KEY, false);
@@ -74,7 +74,7 @@ function ownerFilePorts({ context, id, log, writer }: OwnerFilePortsArgs): Focus
     },
     async writeCustomizations(update) {
       // Run inside the writer's lock; keeps comments when it safely can (0017).
-      await writer.write(COLOR_CUSTOMIZATIONS, update, "profile");
+      await writer.write({ key: COLOR_CUSTOMIZATIONS, update, target: "profile" });
     },
     warn(message) {
       log.warn(message);

@@ -24,12 +24,17 @@ export type SettingsUpdate = (
   current: unknown,
 ) => { value: Record<string, unknown> | undefined } | undefined;
 
+interface UpdateArgs {
+  key: string;
+  value: Record<string, unknown> | undefined;
+}
+
 /** What the writer needs from VS Code. */
 export interface SettingsWritePorts {
   /** VS Code's view of the user value (`inspect(key).globalValue`). */
   view(key: string): unknown;
   /** VS Code's own write (`update(key, value, Global)`): always right, drops comments. */
-  update(key: string, value: Record<string, unknown> | undefined): Promise<void>;
+  update(args: UpdateArgs): Promise<void>;
   /** File system paths of the documents open with unsaved changes. */
   dirtyFiles(): string[];
   debug(message: string): void;
@@ -61,6 +66,36 @@ const realClock: Clock = {
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 };
 
+interface SettingsFileWriterArgs {
+  files: Record<SettingsTarget, string>;
+  ports: SettingsWritePorts;
+  options?: SettingsWriteOptions;
+}
+
+interface WriteArgs {
+  key: string;
+  update: SettingsUpdate;
+  target: SettingsTarget;
+}
+
+interface TryInPlaceArgs {
+  target: SettingsTarget;
+  key: string;
+  update: SettingsUpdate;
+  computed: Record<string, unknown> | undefined;
+}
+
+interface RecordMissArgs {
+  target: SettingsTarget;
+  file: string;
+}
+
+interface ReflectedArgs {
+  key: string;
+  desired: Record<string, unknown> | undefined;
+  changed: readonly string[];
+}
+
 /**
  * Writes one of Toucan's two settings, keeping comments when it can (0017).
  * It edits the user settings file in place only when the setting is in the
@@ -88,11 +123,7 @@ export class SettingsFileWriter {
   /** Consecutive missed edits per guessed file; one slow pickup isn't enough. */
   private readonly misses = new Map<string, number>();
 
-  constructor(
-    files: Record<SettingsTarget, string>,
-    ports: SettingsWritePorts,
-    options: SettingsWriteOptions = {},
-  ) {
+  constructor({ files, ports, options = {} }: SettingsFileWriterArgs) {
     this.files = files;
     this.ports = ports;
     this.verifyTimeoutMs = options.verifyTimeoutMs ?? VERIFY_TIMEOUT_MS;
@@ -110,15 +141,11 @@ export class SettingsFileWriter {
    * `defaultProfile` for application-scoped ones (toucan.repos), which VS Code
    * keeps in the default profile's file.
    */
-  write(key: string, update: SettingsUpdate, target: SettingsTarget): Promise<void> {
-    return this.lock(() => this.writeNow(key, update, target));
+  write({ key, update, target }: WriteArgs): Promise<void> {
+    return this.lock(() => this.writeNow({ key, update, target }));
   }
 
-  private async writeNow(
-    key: string,
-    update: SettingsUpdate,
-    target: SettingsTarget,
-  ): Promise<void> {
+  private async writeNow({ key, update, target }: WriteArgs): Promise<void> {
     // Computed here, inside the lock, from the settings as they are now: a
     // value computed earlier (before a dialog, or while waiting for the lock)
     // could undo another window's change in the meantime.
@@ -126,7 +153,7 @@ export class SettingsFileWriter {
     if (next === undefined) {
       return;
     }
-    const reason = await this.tryInPlace(target, key, update, next.value);
+    const reason = await this.tryInPlace({ target, key, update, computed: next.value });
     if (reason === undefined) {
       return;
     }
@@ -137,16 +164,16 @@ export class SettingsFileWriter {
     if (latest === undefined) {
       return;
     }
-    await this.ports.update(key, latest.value);
+    await this.ports.update({ key, value: latest.value });
   }
 
   /** Edits the file in place if it safely can. Returns why it couldn't, or `undefined` when it did (or had nothing to do). */
-  private async tryInPlace(
-    target: SettingsTarget,
-    key: string,
-    update: SettingsUpdate,
-    computed: Record<string, unknown> | undefined,
-  ): Promise<string | undefined> {
+  private async tryInPlace({
+    target,
+    key,
+    update,
+    computed,
+  }: TryInPlaceArgs): Promise<string | undefined> {
     const file = this.files[target];
     let desired = computed;
     // Only the guess is ever given up on: both targets can resolve to the same
@@ -186,12 +213,12 @@ export class SettingsFileWriter {
       return plan.reason;
     }
 
-    const [, writeError] = await tryCatch(() => writeLikeVsCode(file, plan.text));
+    const [, writeError] = await tryCatch(() => writeLikeVsCode({ file, text: plan.text }));
     if (writeError !== null) {
       // E.g. a read-only file, or a rename blocked by another process.
       return `couldn't write the settings file (${errorText(writeError)})`;
     }
-    if (await this.reflected(key, desired, plan.changed)) {
+    if (await this.reflected({ key, desired, changed: plan.changed })) {
       this.misses.delete(file);
       return undefined;
     }
@@ -201,8 +228,8 @@ export class SettingsFileWriter {
       // Someone else wrote meanwhile: no evidence either way about the guess.
       return "VS Code didn't pick up the edit, and the file changed since; left it";
     }
-    this.recordMiss(target, file);
-    const [, revertError] = await tryCatch(() => writeLikeVsCode(file, text));
+    this.recordMiss({ target, file });
+    const [, revertError] = await tryCatch(() => writeLikeVsCode({ file, text }));
     if (revertError !== null) {
       return `VS Code didn't pick up the edit, and reverting it failed (${errorText(revertError)})`;
     }
@@ -210,7 +237,7 @@ export class SettingsFileWriter {
   }
 
   /** Only the `profile` file is a guess; the default profile's file is always followed. */
-  private recordMiss(target: SettingsTarget, file: string): void {
+  private recordMiss({ target, file }: RecordMissArgs): void {
     if (target !== "profile") {
       return;
     }
@@ -221,20 +248,16 @@ export class SettingsFileWriter {
     }
   }
 
-  private async reflected(
-    key: string,
-    desired: Record<string, unknown> | undefined,
-    changed: readonly string[],
-  ): Promise<boolean> {
+  private async reflected({ key, desired, changed }: ReflectedArgs): Promise<boolean> {
     const deadline = this.clock.now() + this.verifyTimeoutMs;
     while (this.clock.now() < deadline) {
-      if (viewReflects(this.ports.view(key), desired, changed)) {
+      if (viewReflects({ view: this.ports.view(key), desired, changed })) {
         return true;
       }
       // oxlint-disable-next-line no-await-in-loop -- polling is sequential by nature
       await this.clock.sleep(this.verifyPollMs);
     }
-    return viewReflects(this.ports.view(key), desired, changed);
+    return viewReflects({ view: this.ports.view(key), desired, changed });
   }
 
   /** Open with unsaved edits, compared by real path (a symlink may be open under its target). */
@@ -243,6 +266,11 @@ export class SettingsFileWriter {
     const paths = await Promise.all(this.ports.dirtyFiles().map(realOrSame));
     return paths.includes(real);
   }
+}
+
+interface WriteLikeVsCodeArgs {
+  file: string;
+  text: string;
 }
 
 /**
@@ -259,7 +287,7 @@ export class SettingsFileWriter {
  * `save()` saves the whole buffer, including unsaved edits the user has open
  * in settings.json, which Toucan must never do.
  */
-async function writeLikeVsCode(file: string, text: string): Promise<void> {
+async function writeLikeVsCode({ file, text }: WriteLikeVsCodeArgs): Promise<void> {
   const link = await lstat(file);
   if (link.isSymbolicLink() || (await stat(file)).nlink > 1) {
     await writeFile(file, text);
@@ -267,7 +295,7 @@ async function writeLikeVsCode(file: string, text: string): Promise<void> {
   }
   const temporary = join(dirname(file), `.${randomUUID()}.toucan.tmp`);
   const [, error] = await tryCatch(() =>
-    replaceVia(temporary, file, text, link.mode & PERMISSION_BITS),
+    replaceVia({ temporary, file, text, mode: link.mode & PERMISSION_BITS }),
   );
   if (error !== null) {
     // Never leave a copy of the user's settings behind.
@@ -276,13 +304,15 @@ async function writeLikeVsCode(file: string, text: string): Promise<void> {
   }
 }
 
+interface ReplaceViaArgs {
+  temporary: string;
+  file: string;
+  text: string;
+  mode: number;
+}
+
 /** Writes `text` to `temporary`, then renames it over `file`. */
-async function replaceVia(
-  temporary: string,
-  file: string,
-  text: string,
-  mode: number,
-): Promise<void> {
+async function replaceVia({ temporary, file, text, mode }: ReplaceViaArgs): Promise<void> {
   // Created with the original's mode, so the copy is never more readable
   // than settings.json; the umask can narrow it, so chmod then sets it exactly.
   await writeFile(temporary, text, { mode });

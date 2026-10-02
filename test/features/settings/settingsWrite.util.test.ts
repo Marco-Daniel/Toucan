@@ -81,17 +81,17 @@ function setup(
   const updates: unknown[] = [];
   const debugs: string[] = [];
   const sleeps: number[] = [];
-  const writer = new SettingsFileWriter(
-    { profile: file, defaultProfile: file },
-    {
+  const writer = new SettingsFileWriter({
+    files: { profile: file, defaultProfile: file },
+    ports: {
       view: () => (view === "stale" ? VIEW : readKey(file)),
-      update: async (_key, value) => {
+      update: async ({ value }) => {
         updates.push(value);
       },
       dirtyFiles: () => dirty,
       debug: (message) => debugs.push(message),
     },
-    {
+    options: {
       ...TIMING,
       clock: fakeClock(async () => {
         sleeps.push(sleeps.length);
@@ -101,7 +101,7 @@ function setup(
         await onSleep?.();
       }),
     },
-  );
+  });
   return { writer, updates, debugs, sleeps };
 }
 
@@ -150,7 +150,7 @@ describe("SettingsFileWriter", () => {
     const inode = (await stat(file)).ino;
     await refreshView(file);
     const { writer, updates } = setup(file);
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(file, "utf8")).toBe(AFTER);
     expect((await stat(file)).mode & 0o777).toBe(0o640);
     expect((await stat(file)).ino).not.toBe(inode);
@@ -162,11 +162,11 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, entry("#e0620b"));
     await refreshView(file);
     const { writer, updates } = setup(file);
-    await writer.write(
-      KEY,
-      () => ({ value: { webshop: { background: "#101316", glyph: "heart" } } }),
-      "profile",
-    );
+    await writer.write({
+      key: KEY,
+      update: () => ({ value: { webshop: { background: "#101316", glyph: "heart" } } }),
+      target: "profile",
+    });
     expect(await readFile(file, "utf8")).toBe(entry("#101316"));
     expect(updates).toEqual([]);
   });
@@ -179,7 +179,7 @@ describe("SettingsFileWriter", () => {
     const inode = (await stat(target)).ino;
     await refreshView(file);
     const { writer, updates } = setup(file);
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect((await lstat(file)).isSymbolicLink()).toBe(true);
     expect(await readFile(target, "utf8")).toBe(AFTER);
     expect((await stat(target)).ino).toBe(inode);
@@ -193,7 +193,7 @@ describe("SettingsFileWriter", () => {
     await link(file, other);
     await refreshView(file);
     const { writer } = setup(file);
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect((await stat(file)).nlink).toBe(2);
     expect(await readFile(other, "utf8")).toBe(AFTER);
   });
@@ -202,7 +202,7 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
     const { writer, updates, sleeps } = setup(file, { view: "stale" });
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(file, "utf8")).toBe(BEFORE);
     expect(updates).toEqual([NEXT]);
     expect(sleeps).toHaveLength(40); // polled every 100 ms for the full 4 s
@@ -220,7 +220,7 @@ describe("SettingsFileWriter", () => {
         await writeFile(file, "{ /* someone else */ }\n");
       },
     });
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(edited).toBe(AFTER);
     expect(await readFile(file, "utf8")).toBe("{ /* someone else */ }\n");
     expect(updates).toEqual([NEXT]);
@@ -235,7 +235,7 @@ describe("SettingsFileWriter", () => {
     // VS Code follows the file, so an in-place edit would stick: only the
     // dirty check keeps the file unchanged here.
     const { writer, updates } = setup(file, { dirty: [target] });
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(target, "utf8")).toBe(BEFORE);
     expect(updates).toEqual([NEXT]);
   });
@@ -244,7 +244,7 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     await writeFile(file, '{\n  "editor.fontSize": 13,\n}\n');
     const { writer, updates } = setup(file);
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(file, "utf8")).toBe('{\n  "editor.fontSize": 13,\n}\n');
     expect(updates).toEqual([NEXT]);
   });
@@ -255,8 +255,8 @@ describe("SettingsFileWriter", () => {
     const inode = (await stat(file)).ino;
     await refreshView(file);
     const { writer, updates } = setup(file);
-    await writer.write(KEY, () => undefined, "profile");
-    await writer.write(KEY, () => ({ value: VIEW }), "profile");
+    await writer.write({ key: KEY, update: () => undefined, target: "profile" });
+    await writer.write({ key: KEY, update: () => ({ value: VIEW }), target: "profile" });
     expect(await readFile(file, "utf8")).toBe(BEFORE);
     expect((await stat(file)).ino).toBe(inode);
     expect(updates).toEqual([]);
@@ -267,9 +267,9 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const updates: unknown[] = [];
     let views = 0;
-    const writer = new SettingsFileWriter(
-      { profile: file, defaultProfile: file },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
         view: () => {
           views++;
           if (views === 2) {
@@ -279,19 +279,19 @@ describe("SettingsFileWriter", () => {
           }
           return views >= 3 ? { other: "#654321" } : VIEW;
         },
-        update: async (_key, value) => {
+        update: async ({ value }) => {
           updates.push(value);
         },
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { ...TIMING, clock: fakeClock() },
-    );
-    await writer.write(
-      KEY,
-      (current) => ({ value: { ...(current as object), webshop: "#14939c" } }),
-      "profile",
-    );
+      options: { ...TIMING, clock: fakeClock() },
+    });
+    await writer.write({
+      key: KEY,
+      update: (current) => ({ value: { ...(current as object), webshop: "#14939c" } }),
+      target: "profile",
+    });
     // The fallback writes the value computed from the latest view, not the first.
     expect(updates).toEqual([{ other: "#654321", webshop: "#14939c" }]);
   });
@@ -307,7 +307,7 @@ describe("SettingsFileWriter", () => {
       await refreshView(file);
       await chmod(dir, 0o555); // the temp file can't be created next to settings.json
       const { writer, updates, debugs } = setup(file);
-      await writer.write(KEY, replace, "profile");
+      await writer.write({ key: KEY, update: replace, target: "profile" });
       await chmod(dir, 0o755);
       expect(updates).toEqual([NEXT]);
       expect(reasons(debugs)).toEqual([
@@ -330,7 +330,7 @@ describe("SettingsFileWriter", () => {
         onSleep: () => chmod(dir, 0o555),
       });
       try {
-        await writer.write(KEY, replace, "profile");
+        await writer.write({ key: KEY, update: replace, target: "profile" });
       } finally {
         await chmod(dir, 0o755);
       }
@@ -356,7 +356,7 @@ describe("SettingsFileWriter", () => {
       execFileSync("chflags", ["uchg", file]);
       try {
         const { writer, updates } = setup(file);
-        await writer.write(KEY, replace, "profile");
+        await writer.write({ key: KEY, update: replace, target: "profile" });
         expect(updates).toEqual([NEXT]);
         expect(await readdir(dir)).toEqual(["settings.json"]);
       } finally {
@@ -369,7 +369,7 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     fileCache.set(file, VIEW);
     const { writer, updates } = setup(file);
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(updates).toEqual([NEXT]);
   });
 
@@ -382,7 +382,7 @@ describe("SettingsFileWriter", () => {
     const file = join(dir, "settings.json");
     fileCache.set(file, VIEW);
     const { writer, debugs } = setup(file, { dirty: [join(dir, open)] });
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(reasons(debugs)).toEqual([reason]);
   });
 
@@ -391,9 +391,9 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const updates: unknown[] = [];
     let views = 0;
-    const writer = new SettingsFileWriter(
-      { profile: file, defaultProfile: file },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
         view: () => {
           views++;
           if (views === 2) {
@@ -401,15 +401,15 @@ describe("SettingsFileWriter", () => {
           }
           return VIEW;
         },
-        update: async (_key, value) => {
+        update: async ({ value }) => {
           updates.push(value);
         },
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { ...TIMING, clock: fakeClock() },
-    );
-    await writer.write(KEY, replace, "profile");
+      options: { ...TIMING, clock: fakeClock() },
+    });
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(updates).toEqual([NEXT]);
   });
 
@@ -419,9 +419,9 @@ describe("SettingsFileWriter", () => {
     const updates: unknown[] = [];
     let views = 0;
     let updaterCalls = 0;
-    const writer = new SettingsFileWriter(
-      { profile: file, defaultProfile: file },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
         view: () => {
           views++;
           if (views === 2) {
@@ -429,16 +429,20 @@ describe("SettingsFileWriter", () => {
           }
           return VIEW;
         },
-        update: async (_key, value) => {
+        update: async ({ value }) => {
           updates.push(value);
         },
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { ...TIMING, clock: fakeClock() },
-    );
+      options: { ...TIMING, clock: fakeClock() },
+    });
     // First call computes a value; the recompute after the file changed says "leave alone".
-    await writer.write(KEY, () => (++updaterCalls === 1 ? { value: NEXT } : undefined), "profile");
+    await writer.write({
+      key: KEY,
+      update: () => (++updaterCalls === 1 ? { value: NEXT } : undefined),
+      target: "profile",
+    });
     expect(updaterCalls).toBe(2);
     expect(updates).toEqual([]);
     expect(await readFile(file, "utf8")).toBe("{}\n");
@@ -450,9 +454,9 @@ describe("SettingsFileWriter", () => {
     await writeFile(profile, BEFORE);
     await writeFile(defaultProfile, BEFORE);
     await refreshView(defaultProfile);
-    const writer = new SettingsFileWriter(
-      { profile, defaultProfile },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile, defaultProfile },
+      ports: {
         view: () => readKey(defaultProfile),
         update: async () => {
           throw new Error("unexpected update()");
@@ -460,9 +464,9 @@ describe("SettingsFileWriter", () => {
         dirtyFiles: () => [],
         debug: () => {},
       },
-      { ...TIMING, clock: fakeClock(() => refreshView(defaultProfile)) },
-    );
-    await writer.write(KEY, replace, "defaultProfile");
+      options: { ...TIMING, clock: fakeClock(() => refreshView(defaultProfile)) },
+    });
+    await writer.write({ key: KEY, update: replace, target: "defaultProfile" });
     expect(await readFile(defaultProfile, "utf8")).toBe(AFTER);
     expect(await readFile(profile, "utf8")).toBe(BEFORE);
   });
@@ -472,7 +476,7 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const { writer, updates, debugs } = setup(file, { view: "stale" });
     for (let i = 0; i < 3; i++) {
-      await writer.write(KEY, replace, "profile");
+      await writer.write({ key: KEY, update: replace, target: "profile" });
     }
     expect(updates).toEqual([NEXT, NEXT, NEXT]);
     expect(reasons(debugs)).toEqual([REVERTED, REVERTED, UNFOLLOWED]);
@@ -484,10 +488,10 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     const { writer, debugs } = setup(file, { view: "stale" });
     for (let i = 0; i < 3; i++) {
-      await writer.write(KEY, replace, "defaultProfile");
+      await writer.write({ key: KEY, update: replace, target: "defaultProfile" });
     }
     // The same path as the guessed profile file: its misses must not give that up either.
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(reasons(debugs)).toEqual([REVERTED, REVERTED, REVERTED, REVERTED]);
   });
 
@@ -498,17 +502,17 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     let follows = false;
     const updates: unknown[] = [];
-    const writer = new SettingsFileWriter(
-      { profile: file, defaultProfile: file },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
         view: () => readKey(file),
-        update: async (_key, value) => {
+        update: async ({ value }) => {
           updates.push(value);
         },
         dirtyFiles: () => [],
         debug: () => {},
       },
-      {
+      options: {
         ...TIMING,
         clock: fakeClock(async () => {
           if (follows) {
@@ -516,12 +520,12 @@ describe("SettingsFileWriter", () => {
           }
         }),
       },
-    );
+    });
     await refreshView(file);
-    await writer.write(KEY, replace, "profile"); // missed
-    await writer.write(KEY, replace, "profile"); // missed again: given up for "profile"
+    await writer.write({ key: KEY, update: replace, target: "profile" }); // missed
+    await writer.write({ key: KEY, update: replace, target: "profile" }); // missed again: given up for "profile"
     follows = true;
-    await writer.write(KEY, replace, "defaultProfile");
+    await writer.write({ key: KEY, update: replace, target: "defaultProfile" });
     expect(updates).toEqual([NEXT, NEXT]);
     expect(await readFile(file, "utf8")).toBe(AFTER);
   });
@@ -532,17 +536,17 @@ describe("SettingsFileWriter", () => {
     const edited = { webshop: "#e0620b", other: "#654321" };
     let view: unknown = VIEW;
     const updates: unknown[] = [];
-    const writer = new SettingsFileWriter(
-      { profile: file, defaultProfile: file },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
         view: () => view,
-        update: async (_key, value) => {
+        update: async ({ value }) => {
           updates.push(value);
         },
         dirtyFiles: () => [],
         debug: () => {},
       },
-      {
+      options: {
         ...TIMING,
         clock: fakeClock(async () => {
           // VS Code missed Toucan's edit; then the user saves their own change.
@@ -550,12 +554,12 @@ describe("SettingsFileWriter", () => {
           view = edited;
         }),
       },
-    );
-    await writer.write(
-      KEY,
-      (current) => ({ value: { ...(current as object), webshop: "#14939c" } }),
-      "profile",
-    );
+    });
+    await writer.write({
+      key: KEY,
+      update: (current) => ({ value: { ...(current as object), webshop: "#14939c" } }),
+      target: "profile",
+    });
     expect(updates).toEqual([{ webshop: "#14939c", other: "#654321" }]);
   });
 
@@ -564,32 +568,32 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     let view: unknown = VIEW;
     const updates: unknown[] = [];
-    const writer = new SettingsFileWriter(
-      { profile: file, defaultProfile: file },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
         view: () => view,
-        update: async (_key, value) => {
+        update: async ({ value }) => {
           updates.push(value);
         },
         dirtyFiles: () => [],
         debug: () => {},
       },
-      {
+      options: {
         ...TIMING,
         clock: fakeClock(async () => {
           view = {}; // another window removed the entry meanwhile
         }),
       },
-    );
+    });
     // Like Set Glyph: change the entry if it's still there, else leave it alone.
-    await writer.write(
-      KEY,
-      (current) =>
+    await writer.write({
+      key: KEY,
+      update: (current) =>
         isRecordForTest(current) && "webshop" in current
           ? { value: { ...current, webshop: "#14939c" } }
           : undefined,
-      "profile",
-    );
+      target: "profile",
+    });
     expect(updates).toEqual([]);
   });
 
@@ -605,11 +609,11 @@ describe("SettingsFileWriter", () => {
         }
       },
     });
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     interfere = false;
     await writeFile(file, BEFORE);
-    await writer.write(KEY, replace, "profile");
-    await writer.write(KEY, replace, "profile");
+    await writer.write({ key: KEY, update: replace, target: "profile" });
+    await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(reasons(debugs)).toEqual([CHANGED, REVERTED, REVERTED]);
   });
 
@@ -619,17 +623,17 @@ describe("SettingsFileWriter", () => {
     const updates: unknown[] = [];
     const debugs: string[] = [];
     let follows = false;
-    const writer = new SettingsFileWriter(
-      { profile: file, defaultProfile: file },
-      {
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
         view: () => readKey(file),
-        update: async (_key, value) => {
+        update: async ({ value }) => {
           updates.push(value);
         },
         dirtyFiles: () => [],
         debug: (message) => debugs.push(message),
       },
-      {
+      options: {
         ...TIMING,
         clock: fakeClock(async () => {
           if (follows) {
@@ -637,12 +641,12 @@ describe("SettingsFileWriter", () => {
           }
         }),
       },
-    );
+    });
     // VS Code is in sync before each write; `follow` says whether it picks up the edit in time.
     const write = async (value: Record<string, unknown>, follow: boolean) => {
       await refreshView(file);
       follows = follow;
-      await writer.write(KEY, () => ({ value }), "profile");
+      await writer.write({ key: KEY, update: () => ({ value }), target: "profile" });
     };
     await write(NEXT, false); // a slow pickup: missed once
     await write(NEXT, true);
@@ -660,16 +664,16 @@ describe("SettingsFileWriter", () => {
     await refreshView(file);
     const { writer, updates } = setup(file);
     await Promise.all([
-      writer.write(
-        KEY,
-        (current) => ({ value: { ...(current as object), webshop: "#14939c" } }),
-        "profile",
-      ),
-      writer.write(
-        KEY,
-        (current) => ({ value: { ...(current as object), other: "#654321" } }),
-        "profile",
-      ),
+      writer.write({
+        key: KEY,
+        update: (current) => ({ value: { ...(current as object), webshop: "#14939c" } }),
+        target: "profile",
+      }),
+      writer.write({
+        key: KEY,
+        update: (current) => ({ value: { ...(current as object), other: "#654321" } }),
+        target: "profile",
+      }),
     ]);
     expect(await readFile(file, "utf8")).toBe(
       AFTER.replace('"other": "#123456"', '"other": "#654321"'),
