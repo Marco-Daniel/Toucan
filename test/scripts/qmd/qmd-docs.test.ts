@@ -6,8 +6,8 @@ import {
   parseCollectionList,
   parseCollectionShow,
   planIndex,
-} from "../../scripts/qmd-docs.mts";
-import type { IndexState } from "../../scripts/qmd-docs.mts";
+} from "../../../scripts/qmd/qmd-docs.mts";
+import type { IndexState } from "../../../scripts/qmd/qmd-docs.mts";
 
 const DOCS_CONTEXT = DOCS_COLLECTIONS[0]!.contexts;
 const GUIDES_CONTEXT = DOCS_COLLECTIONS[1]!.contexts;
@@ -140,7 +140,7 @@ describe("planIndex", () => {
   it("notes a docs subfolder without a context", () => {
     const { notes } = plan({ subfolders: (dir) => (dir === "docs" ? ["plans", "guides"] : []) });
     expect(notes).toEqual([
-      "docs/guides has no context yet: add one to DOCS_COLLECTIONS in scripts/qmd-docs.mts.",
+      "docs/guides has no context yet: add one to DOCS_COLLECTIONS in scripts/qmd/qmd-docs.mts.",
     ]);
   });
 
@@ -170,7 +170,7 @@ describe("planIndex", () => {
 
 describe(".mcp.json", () => {
   it("starts qmd's MCP server on Toucan's own index", () => {
-    const config = JSON.parse(readFileSync(new URL("../../.mcp.json", import.meta.url), "utf8"));
+    const config = JSON.parse(readFileSync(new URL("../../../.mcp.json", import.meta.url), "utf8"));
     expect(config).toEqual({
       mcpServers: { qmd: { type: "stdio", command: "qmd", args: ["--index", "toucan", "mcp"] } },
     });

@@ -14,7 +14,7 @@ import type { IndexState } from "./qmd-docs.mts";
 import { isPending, releaseLock, takeLock, takePending } from "./qmd-lock.mts";
 
 /** The repo root at runtime (qmd stores real paths), so no path is committed. */
-export const ROOT = realpathSync(fileURLToPath(new URL("..", import.meta.url)));
+export const ROOT = realpathSync(fileURLToPath(new URL("../..", import.meta.url)));
 
 export function qmd(args: readonly string[]) {
   return spawnSync("qmd", args, { encoding: "utf8", stdio: "pipe" });

@@ -19,7 +19,7 @@ import {
   takeLock,
   takePending,
   touchLock,
-} from "../../scripts/qmd-lock.mts";
+} from "../../../scripts/qmd/qmd-lock.mts";
 
 let dir: string;
 let cache: string;

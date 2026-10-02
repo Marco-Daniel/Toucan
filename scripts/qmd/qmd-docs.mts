@@ -137,7 +137,7 @@ function planCollections(state: IndexState): IndexPlan {
     for (const sub of present) {
       if (!(sub in contexts)) {
         notes.push(
-          `${dir}/${sub} has no context yet: add one to DOCS_COLLECTIONS in scripts/qmd-docs.mts.`,
+          `${dir}/${sub} has no context yet: add one to DOCS_COLLECTIONS in scripts/qmd/qmd-docs.mts.`,
         );
       }
     }

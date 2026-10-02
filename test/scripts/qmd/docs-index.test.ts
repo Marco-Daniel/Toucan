@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SYSTEM_PATH, fakeQmd } from "./fake-qmd.ts";
 
-const SCRIPT = new URL("../../scripts/docs-index.mts", import.meta.url).pathname;
+const SCRIPT = new URL("../../../scripts/qmd/docs-index.mts", import.meta.url).pathname;
 
 let dir: string;
 let lock: string;

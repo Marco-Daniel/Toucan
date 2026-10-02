@@ -3,8 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { isPending, markPending, releaseLock, takeLock } from "../../scripts/qmd-lock.mts";
-import { exclusive } from "../../scripts/qmd-run.mts";
+import { isPending, markPending, releaseLock, takeLock } from "../../../scripts/qmd/qmd-lock.mts";
+import { ROOT, exclusive } from "../../../scripts/qmd/qmd-run.mts";
 import { fakeQmd } from "./fake-qmd.ts";
 
 let dir: string;
@@ -24,8 +24,8 @@ afterEach(() => {
 const log = () =>
   existsSync(join(dir, "qmd.log")) ? readFileSync(join(dir, "qmd.log"), "utf8") : "";
 
-const RUN = new URL("../../scripts/qmd-run.mts", import.meta.url).href;
-const LOCK = new URL("../../scripts/qmd-lock.mts", import.meta.url).href;
+const RUN = new URL("../../../scripts/qmd/qmd-run.mts", import.meta.url).href;
+const LOCK = new URL("../../../scripts/qmd/qmd-lock.mts", import.meta.url).href;
 
 /**
  * Runs `exclusive` in a child, so a loop that never ends fails on the timeout
@@ -52,6 +52,14 @@ function exclusiveInChild(renote: boolean) {
     timeout: 10_000,
   });
 }
+
+describe("ROOT", () => {
+  // qmd stores the collections' real paths, so this must be the repo itself.
+  it("is the repo root, where package.json names Toucan", () => {
+    const manifest: unknown = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+    expect(manifest).toMatchObject({ name: "toucan" });
+  });
+});
 
 describe("exclusive", () => {
   it("goes round again for an edit noted just as it lets go of the lock", async () => {

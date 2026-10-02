@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SYSTEM_PATH, fakeQmd } from "./fake-qmd.ts";
 
-const HOOK = new URL("../../scripts/docs-bootstrap-hook.mts", import.meta.url).pathname;
+const HOOK = new URL("../../../scripts/qmd/docs-bootstrap-hook.mts", import.meta.url).pathname;
 
 let dir: string;
 let cache: string;

@@ -15,7 +15,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { tryCatchSync } from "../src/shared/async/tryCatch.util.ts";
+import { tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
 
 /** A lock older than this (10 minutes) was left by a job that died. */
 const STALE_MS = 600_000;
