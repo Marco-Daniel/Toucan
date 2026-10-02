@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emojiColor, emojiFor } from "../../../src/features/searchEmoji/emoji.util.ts";
-import { GLYPHS, type Hex } from "../../../src/shared/model/model.consts.ts";
+import type { Hex } from "../../../src/shared/model/model.types.ts";
+import { GLYPHS } from "../../../src/shared/model/model.consts.ts";
 
 const hex = (value: string) => value as Hex;
 

@@ -1,4 +1,4 @@
-import type { Glyph, Hex } from "../../shared/model/model.consts.ts";
+import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
 
 /**

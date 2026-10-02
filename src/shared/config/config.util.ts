@@ -6,16 +6,13 @@ import {
   parseColor,
   toHex,
 } from "../color/color.util.ts";
+import type { ColorOverrides, Glyph, Hex, SidebarVisibility } from "../model/model.types.ts";
 import {
   COMMAND_CENTER_KEYS,
   DEFAULT_GLYPH,
   GLYPHS,
   RETIRED_GLYPHS,
   SIDEBAR_VISIBILITIES,
-  type ColorOverrides,
-  type Glyph,
-  type Hex,
-  type SidebarVisibility,
 } from "../model/model.consts.ts";
 import { isRecord } from "../records/records.util.ts";
 

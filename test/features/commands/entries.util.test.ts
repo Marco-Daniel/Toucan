@@ -5,7 +5,7 @@ import {
   withGlyph,
   withoutRepo,
 } from "../../../src/features/commands/entries.util.ts";
-import type { Hex } from "../../../src/shared/model/model.consts.ts";
+import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const RED = "#ff0000" as Hex;
 

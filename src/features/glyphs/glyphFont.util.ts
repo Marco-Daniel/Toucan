@@ -1,4 +1,4 @@
-import type { Glyph, Hex } from "../../shared/model/model.consts.ts";
+import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 // What `pnpm font` needs from the glyph code. Kept apart from glyphs.ts, which
 // imports the generated paths that `pnpm font` rewrites, so a missing or broken

@@ -4,7 +4,7 @@ import {
   hasToucanKeys,
   mergeCustomizations,
 } from "../../../src/features/focus/merge.util.ts";
-import type { CommandCenterColors, Hex } from "../../../src/shared/model/model.consts.ts";
+import type { CommandCenterColors, Hex } from "../../../src/shared/model/model.types.ts";
 
 const hex = (value: string) => value as Hex;
 

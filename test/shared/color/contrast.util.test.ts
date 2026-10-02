@@ -6,7 +6,7 @@ import {
   statusBarBackground,
 } from "../../../src/shared/color/contrast.util.ts";
 import { accessibilityLabel } from "../../../src/features/statusBar/labels.util.ts";
-import type { Hex } from "../../../src/shared/model/model.consts.ts";
+import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const hex = (value: string) => value as Hex;
 

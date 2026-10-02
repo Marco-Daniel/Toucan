@@ -13,7 +13,7 @@ import type { Log } from "../../core/log.adapter.ts";
 import { deriveColors } from "../../shared/color/derive.util.ts";
 import { resolveSidebarSettings, SidebarController, type SidebarSettings } from "./sidebar.util.ts";
 import { sidebarBlockHtml } from "./sidebar.view.ts";
-import type { SidebarStyle } from "../../shared/model/model.consts.ts";
+import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import { configs } from "../../generated/meta.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "../../core/ids.consts.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";

@@ -1,6 +1,6 @@
 import { wcagContrast, type Color } from "culori/fn";
 import { fromHex, toHex, toOklch } from "./color.util.ts";
-import type { ColorOverrides, CommandCenterColors, Hex } from "../model/model.consts.ts";
+import type { ColorOverrides, CommandCenterColors, Hex } from "../model/model.types.ts";
 
 // Starting amounts from 0004, to be tuned in the real title bar.
 /** OKLCH lightness shift from background to hover background. */

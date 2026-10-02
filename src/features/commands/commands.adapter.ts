@@ -26,7 +26,8 @@ import {
   clearDetail,
   saveFailed,
 } from "../../shared/messages/notifications.messages.ts";
-import { DEFAULT_GLYPH, type Glyph, type Hex } from "../../shared/model/model.consts.ts";
+import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
 import { PRESETS } from "../../shared/color/presets.consts.ts";
 import { COLOR_CUSTOMIZATIONS } from "../focus/focus.adapter.ts";
 import { commands, configs } from "../../generated/meta.ts";

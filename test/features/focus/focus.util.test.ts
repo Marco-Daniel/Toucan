@@ -4,7 +4,7 @@ import {
   FocusCoordinator,
   VERIFY_DELAY_MS,
 } from "../../../src/features/focus/focus.util.ts";
-import type { CommandCenterColors, Hex } from "../../../src/shared/model/model.consts.ts";
+import type { CommandCenterColors, Hex } from "../../../src/shared/model/model.types.ts";
 
 const colors = (background: string): CommandCenterColors => {
   const hex = background as Hex;

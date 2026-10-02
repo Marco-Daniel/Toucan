@@ -25,7 +25,8 @@ import {
   useMode,
   type Color,
 } from "culori/fn";
-import { asHex, type Hex } from "../model/model.consts.ts";
+import type { Hex } from "../model/model.types.ts";
+import { asHex } from "./hex.util.ts";
 
 // The color spaces CSS Color 4 can express, so `parse` accepts any CSS color
 // string (the same set culori's `css` entry registers).

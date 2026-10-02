@@ -5,7 +5,7 @@ import type {
   Glyph,
   Hex,
   SidebarStyle,
-} from "../../shared/model/model.consts.ts";
+} from "../../shared/model/model.types.ts";
 
 /** Fill alpha of the `muted` style (0013). */
 export const MUTED_ALPHA = 0.25;

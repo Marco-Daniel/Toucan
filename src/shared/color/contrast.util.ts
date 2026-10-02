@@ -1,7 +1,8 @@
 import { wcagContrast } from "culori/fn";
 import { fromHex, normalizeColor } from "./color.util.ts";
 import { isRecord } from "../records/records.util.ts";
-import { asHex, type Hex } from "../model/model.consts.ts";
+import type { Hex } from "../model/model.types.ts";
+import { asHex } from "./hex.util.ts";
 import { PRESETS } from "./presets.consts.ts";
 
 /** Below this WCAG contrast against the status bar, a color may be hard to see (0018). */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { asHex, isHex } from "../../../src/shared/model/model.consts.ts";
+import { asHex, isHex } from "../../../src/shared/color/hex.util.ts";
 
 describe("isHex", () => {
   it.each(["#e0620b", "#e0620b80"])("accepts %s, the form toHex produces", (value) => {

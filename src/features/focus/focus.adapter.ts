@@ -6,7 +6,7 @@ import { FocusCoordinator, type FocusPorts } from "./focus.util.ts";
 import { createOwnerFile } from "./ownerFile.util.ts";
 import { settingInText } from "../settings/settingsEdit.util.ts";
 import { userValue, type SettingsWriter } from "../settings/settings.adapter.ts";
-import type { CommandCenterColors } from "../../shared/model/model.consts.ts";
+import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 
 export const COLOR_CUSTOMIZATIONS = "workbench.colorCustomizations";
 /** globalState (per profile): Toucan has applied a color here at least once (0008). */

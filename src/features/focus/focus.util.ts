@@ -1,6 +1,6 @@
 import { createLock } from "../../shared/async/lock.util.ts";
 import { customizationsFor, mergeCustomizations } from "./merge.util.ts";
-import type { CommandCenterColors } from "../../shared/model/model.consts.ts";
+import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
 

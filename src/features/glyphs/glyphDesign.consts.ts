@@ -1,4 +1,4 @@
-import type { Glyph } from "../../shared/model/model.consts.ts";
+import type { Glyph } from "../../shared/model/model.types.ts";
 
 /** A point in glyph units: x to the right, y down, the glyph 16 units high. */
 export type Point = readonly [number, number];
