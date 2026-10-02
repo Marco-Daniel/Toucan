@@ -5,7 +5,7 @@
     "command": "node node_modules/vitest/vitest.mjs run"
   },
   "coverageAnalysis": "off",
-  "mutate": ["src/**/*.ts", "scripts/**/*.mts", "!src/generated/**"],
+  "mutate": ["src/**/*.ts", "scripts/**/*.mts", "!src/generated/**", "!scripts/qmd/**"],
   "incremental": true,
   "incrementalFile": "reports/stryker/incremental.json",
   "reporters": ["clear-text", "html", "progress"],

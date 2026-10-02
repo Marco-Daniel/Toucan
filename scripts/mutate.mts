@@ -6,8 +6,11 @@
 // Why the command runner rather than @stryker-mutator/vitest-runner: under
 // Vitest 5 that runner never switched mutants on inside functions, so nearly
 // everything "survived". The command runner passes the active mutant in an
-// environment variable, which also reaches the child processes the qmd
-// script tests start.
+// environment variable.
+//
+// scripts/qmd/ is never mutated: it locks files, writes qmd's cache and
+// starts detached processes, so a mutant there can reach the real
+// ~/.cache/qmd or leave processes running. Its tests still run as usual.
 //
 // stryker.config.json points tsconfigFile at a file that doesn't exist on
 // purpose: Stryker's tsconfig rewrite needs the TypeScript JS API, which
@@ -23,6 +26,14 @@ function shellQuoted(path: string): string {
 // After `node` and this script come the files to mutate.
 const FIRST_ARGUMENT = 2;
 const files = process.argv.slice(FIRST_ARGUMENT);
+
+const qmdFiles = files.filter((file) => file.startsWith("scripts/qmd/"));
+if (qmdFiles.length > 0) {
+  console.error(
+    `Not mutating ${qmdFiles.join(", ")}: scripts/qmd/ is excluded from mutation testing, because its file locks, cache writes and detached processes could reach the real ~/.cache/qmd.`,
+  );
+  process.exit(1);
+}
 
 const options =
   files.length === 0
