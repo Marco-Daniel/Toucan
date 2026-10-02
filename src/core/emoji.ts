@@ -17,12 +17,13 @@ export type EmojiColor = (typeof EMOJI_COLORS)[number];
 
 type Chromatic = Exclude<EmojiColor, "brown" | "black" | "white">;
 
+const CHROMATICS: readonly Chromatic[] = ["red", "orange", "yellow", "green", "blue", "purple"];
+
 /**
  * OKLCH hue of each chromatic emoji, measured from Apple Color Emoji's
  * 🟥🟧🟨🟩🟦🟪 (the set VS Code shows on macOS). Other emoji fonts differ a little,
  * so borderline hues such as teal (~203) may read differently there.
  */
-const CHROMATICS: readonly Chromatic[] = ["red", "orange", "yellow", "green", "blue", "purple"];
 const HUES: Record<Chromatic, number> = {
   red: 30,
   orange: 61,
