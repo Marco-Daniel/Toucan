@@ -98,6 +98,7 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 | `pnpm package`         | Build and package a VSIX                                                            |
 | `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (see below)         |
 | `pnpm mutate [file…]`  | StrykerJS mutation testing of the given files, or all but `scripts/qmd`; on demand  |
+| `/docs-sync`           | Claude Code skill: report doc drift since the last run, with a fix per item         |
 
 `pnpm install` also sets up a pre-push hook (husky) that runs `typecheck`, `lint`, `format:check` and `test`. It's set up per checkout, so run `pnpm install` in a new worktree before pushing from it. `HUSKY=0` skips it; CI skips it and runs the full set itself.
 

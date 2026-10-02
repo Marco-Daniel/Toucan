@@ -24,4 +24,4 @@
 
 ## Primary tech + key skills
 
-VS Code extension (`marco-daniel.toucan`): pnpm 12, TypeScript 7, tsdown, oxlint, oxfmt, vitest 5, vscode-ext-gen, culori. Plain VS Code API, no framework.
+VS Code extension (`marco-daniel.toucan`): pnpm 12, TypeScript 7, tsdown, oxlint, oxfmt, vitest 5, vscode-ext-gen, culori. Plain VS Code API, no framework. Repo skill: `/docs-sync` (`.claude/skills/docs-sync/`) reports doc drift since its last run.
