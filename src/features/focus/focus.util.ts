@@ -4,6 +4,7 @@ import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
 import { errorText, tryCatch, tryCatchSync } from "../../shared/async/tryCatch.util.ts";
+import { createTimer } from "../../shared/async/timer.util.ts";
 
 /**
  * Delay before an unfocused window clears the Command Center colors. Switching
@@ -69,8 +70,8 @@ interface FocusCoordinatorArgs {
  */
 export class FocusCoordinator {
   private focused = false;
-  private blurTimer: ReturnType<typeof setTimeout> | undefined;
-  private verifyTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly blurTimer = createTimer();
+  private readonly verifyTimer = createTimer();
   /** This window's own focus tasks run one at a time. */
   private readonly lock = createLock();
   private failing = false;
@@ -96,14 +97,14 @@ export class FocusCoordinator {
     this.focused = focused;
     this.ports.debug(focused ? "focused" : "blurred");
     if (focused) {
-      this.cancel("blur");
+      this.blurTimer.cancel();
       this.post(() => this.takeOver());
     } else {
-      this.cancel("verify");
-      this.blurTimer = setTimeout(() => {
-        this.blurTimer = undefined;
-        this.post(() => this.clearIfOwner());
-      }, BLUR_DEBOUNCE_MS);
+      this.verifyTimer.cancel();
+      this.blurTimer.start({
+        ms: BLUR_DEBOUNCE_MS,
+        run: () => this.post(() => this.clearIfOwner()),
+      });
     }
   }
 
@@ -129,8 +130,8 @@ export class FocusCoordinator {
 
   /** Best-effort clear on deactivate; the window may close before it finishes. */
   async dispose(): Promise<void> {
-    this.cancel("blur");
-    this.cancel("verify");
+    this.blurTimer.cancel();
+    this.verifyTimer.cancel();
     this.focused = false;
     await this.enqueue(() => this.clearIfOwner());
   }
@@ -153,11 +154,7 @@ export class FocusCoordinator {
       this.ports.warn(`Couldn't record this window as the color owner: ${errorText(ownerError)}`);
     }
     await this.write(colors);
-    this.cancel("verify");
-    this.verifyTimer = setTimeout(() => {
-      this.verifyTimer = undefined;
-      this.post(() => this.verify());
-    }, VERIFY_DELAY_MS);
+    this.verifyTimer.start({ ms: VERIFY_DELAY_MS, run: () => this.post(() => this.verify()) });
   }
 
   /** Re-applies if a racing blur from another window wiped this window's colors. */
@@ -245,18 +242,6 @@ export class FocusCoordinator {
     const [, error] = await tryCatch(() => this.ports.markApplied());
     if (error !== null) {
       this.ports.warn(`Couldn't record that Toucan applied a color: ${errorText(error)}`);
-    }
-  }
-
-  private cancel(timer: "blur" | "verify"): void {
-    const handle = timer === "blur" ? this.blurTimer : this.verifyTimer;
-    if (handle !== undefined) {
-      clearTimeout(handle);
-    }
-    if (timer === "blur") {
-      this.blurTimer = undefined;
-    } else {
-      this.verifyTimer = undefined;
     }
   }
 

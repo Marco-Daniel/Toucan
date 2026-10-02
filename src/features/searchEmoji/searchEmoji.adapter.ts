@@ -12,6 +12,7 @@ import { configs } from "../../generated/meta.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
+import { createTimer } from "../../shared/async/timer.util.ts";
 
 const WINDOW_TITLE = "window.title";
 /** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
@@ -50,7 +51,7 @@ export class SearchEmoji implements Disposable {
   private labelled = false;
   /** Whether the workspace's own window.title was logged, so it's logged once per change. */
   private reportedOverride = false;
-  private timer: ReturnType<typeof setTimeout> | undefined;
+  private readonly timer = createTimer();
 
   private readonly context: ExtensionContext;
   private readonly log: Log;
@@ -93,9 +94,7 @@ export class SearchEmoji implements Disposable {
   }
 
   dispose(): void {
-    if (this.timer !== undefined) {
-      clearTimeout(this.timer);
-    }
+    this.timer.cancel();
     for (const disposable of this.disposables) {
       disposable.dispose();
     }
@@ -142,16 +141,15 @@ export class SearchEmoji implements Disposable {
     if (!enabled()) {
       return;
     }
-    if (this.timer !== undefined) {
-      clearTimeout(this.timer);
-    }
-    this.timer = setTimeout(() => {
-      this.timer = undefined;
-      // A .catch, not tryCatch: a timer has no caller to await the assert.
-      this.assert().catch((error: unknown) => {
-        this.log.warn(`Couldn't set the search emoji: ${String(error)}`);
-      });
-    }, REASSERT_DELAY_MS);
+    this.timer.start({
+      ms: REASSERT_DELAY_MS,
+      run: () => {
+        // A .catch, not tryCatch: a timer has no caller to await the assert.
+        this.assert().catch((error: unknown) => {
+          this.log.warn(`Couldn't set the search emoji: ${String(error)}`);
+        });
+      },
+    });
   }
 
   /** SCM rewrites the key when repositories open, close or change branch. */
