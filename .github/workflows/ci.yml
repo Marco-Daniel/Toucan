@@ -24,6 +24,7 @@ jobs:
         run: |
           pnpm gen
           pnpm font
+          pnpm icon
           git diff --exit-code src/generated README.md media
           # Also fail on new files the generators created but nobody committed.
           test -z "$(git status --porcelain src/generated README.md media)"
