@@ -16,7 +16,10 @@ import {
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const STALE_MS = 10 * 60_000;
+/** A lock older than this (10 minutes) was left by a job that died. */
+const STALE_MS = 600_000;
+/** The lock and pending files: read and write for this user only. */
+const FILE_MODE = 0o600;
 
 /** qmd's cache folder, resolved the way qmd resolves it. */
 function cache(name: string): string {
@@ -28,7 +31,7 @@ function cache(name: string): string {
 function create(path: string): boolean {
   try {
     const { O_CREAT, O_EXCL, O_WRONLY } = constants;
-    closeSync(openSync(path, O_CREAT | O_EXCL | O_WRONLY, 0o600));
+    closeSync(openSync(path, O_CREAT | O_EXCL | O_WRONLY, FILE_MODE));
     return true;
   } catch {
     return false;

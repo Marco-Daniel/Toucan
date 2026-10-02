@@ -77,12 +77,14 @@ export function drainPending(): boolean {
 
 /** Rounds `exclusive` goes at most; edits noted after the last wait for the next job. */
 const MAX_ROUNDS = 5;
+/** How often a job waiting for the lock tries again. */
+const LOCK_POLL_MS = 250;
 
 /** Takes the lock, waiting up to `waitMs` for another job to let go of it. */
 async function waitForLock(waitMs: number): Promise<string | undefined> {
   let lock = takeLock();
-  for (let waited = 0; !lock && waited < waitMs; waited += 250) {
-    await new Promise((resolve) => setTimeout(resolve, 250));
+  for (let waited = 0; !lock && waited < waitMs; waited += LOCK_POLL_MS) {
+    await new Promise((resolve) => setTimeout(resolve, LOCK_POLL_MS));
     lock = takeLock();
   }
   return lock;

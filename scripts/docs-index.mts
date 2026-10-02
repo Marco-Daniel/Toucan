@@ -20,9 +20,15 @@ const run = (args: readonly string[]) =>
       .on("close", (code) => resolve(code === 0));
   });
 
+/** How long to wait for another job's lock, and how often to refresh our own. */
+const DEFAULT_WAIT_MS = 60_000;
+const DEFAULT_HEARTBEAT_MS = 60_000;
+/** A failed command is named by its first two words, say `collection add`. */
+const COMMAND_WORDS = 2;
+
 // The TOUCAN_QMD_* overrides shorten the waits in tests.
-const WAIT_MS = Number(process.env["TOUCAN_QMD_WAIT_MS"]) || 60_000;
-const HEARTBEAT_MS = Number(process.env["TOUCAN_QMD_HEARTBEAT_MS"]) || 60_000;
+const WAIT_MS = Number(process.env["TOUCAN_QMD_WAIT_MS"]) || DEFAULT_WAIT_MS;
+const HEARTBEAT_MS = Number(process.env["TOUCAN_QMD_HEARTBEAT_MS"]) || DEFAULT_HEARTBEAT_MS;
 
 if (!hasQmd()) {
   console.error(
@@ -44,7 +50,7 @@ const ran = await exclusive(
         console.log(`qmd ${args.join(" ")}`);
         if (!(await run(args))) {
           console.error(
-            `qmd ${args.slice(QMD_INDEX.length, QMD_INDEX.length + 2).join(" ")} failed; stopping.`,
+            `qmd ${args.slice(QMD_INDEX.length, QMD_INDEX.length + COMMAND_WORDS).join(" ")} failed; stopping.`,
           );
           process.exitCode = 1;
           return false;
