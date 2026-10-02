@@ -26,4 +26,4 @@ Chosen: **redraw all in Toucan's style**, because one source gives one consisten
 
 ## Amendment (2026-10-02)
 
-The `FALLBACK_ICON` constant (`circle-large-filled`) was removed as unused. The reason no fallback is wired up still stands: VS Code gives extensions no signal when a contributed icon font fails to load, so Toucan doesn't try to detect that and swap a codicon in.
+No fallback in code: VS Code gives extensions no signal when a contributed icon font fails to load, so detecting a failure and swapping in a fallback isn't possible; `FALLBACK_ICON` was removed as unused.

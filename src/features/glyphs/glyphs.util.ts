@@ -16,7 +16,11 @@ export function glyphIconId(glyph: Glyph): string {
   return `toucan-${glyph}`;
 }
 
-/** `$(…)` text for a status bar item or markdown string. */
+/**
+ * `$(…)` text for a status bar item or markdown string. VS Code gives
+ * extensions no signal when a contributed icon font fails to load, so don't
+ * try to detect it and swap in a fallback.
+ */
 export function glyphIcon(glyph: Glyph): string {
   return `$(${glyphIconId(glyph)})`;
 }
