@@ -16,7 +16,7 @@ export function createOwnerFile(
   const file = join(directory, "owner.json");
   return {
     async readOwner() {
-      const [parsed, error] = await tryCatch(
+      const [parsed, error] = await tryCatch(() =>
         readFile(file, "utf8").then((text): unknown => JSON.parse(text)),
       );
       if (error !== null) {
@@ -30,12 +30,12 @@ export function createOwnerFile(
       await mkdir(directory, { recursive: true });
       // Write then rename, so a reader never sees a half-written file.
       const temporary = join(directory, `owner.${id}.tmp`);
-      const [, error] = await tryCatch(
+      const [, error] = await tryCatch(() =>
         writeFile(temporary, JSON.stringify({ window: owner })).then(() => rename(temporary, file)),
       );
       if (error !== null) {
         // Best effort: the temp file may not exist; the write's error is the one to report.
-        await tryCatch(unlink(temporary));
+        await tryCatch(() => unlink(temporary));
         throw error;
       }
     },

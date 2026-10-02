@@ -209,7 +209,7 @@ export class SidebarController {
   }
 
   private async settle(what: string, task: Promise<void>): Promise<void> {
-    const [, error] = await tryCatch(task);
+    const [, error] = await tryCatch(() => task);
     if (error !== null) {
       this.ports.warn(failure(what, error));
     }

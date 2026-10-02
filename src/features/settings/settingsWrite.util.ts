@@ -157,7 +157,7 @@ export class SettingsFileWriter {
     if (await this.isDirty(file)) {
       return "the settings file has unsaved changes";
     }
-    const [read, readError] = await tryCatch(readFile(file, "utf8"));
+    const [read, readError] = await tryCatch(() => readFile(file, "utf8"));
     if (readError !== null) {
       return "the settings file can't be read";
     }
@@ -165,7 +165,7 @@ export class SettingsFileWriter {
 
     let plan = planEdit({ text, key, view: this.ports.view(key), desired });
     // Re-read right before writing, to narrow the race with VS Code's own writes.
-    const [latest] = await tryCatch(readFile(file, "utf8"));
+    const [latest] = await tryCatch(() => readFile(file, "utf8"));
     if (latest !== text) {
       if (latest === null) {
         return "the settings file disappeared";
@@ -186,7 +186,7 @@ export class SettingsFileWriter {
       return plan.reason;
     }
 
-    const [, writeError] = await tryCatch(writeLikeVsCode(file, plan.text));
+    const [, writeError] = await tryCatch(() => writeLikeVsCode(file, plan.text));
     if (writeError !== null) {
       // E.g. a read-only file, or a rename blocked by another process.
       return `couldn't write the settings file (${errorText(writeError)})`;
@@ -196,13 +196,13 @@ export class SettingsFileWriter {
       return undefined;
     }
     // VS Code didn't follow: maybe slow, maybe not this window's file (0017 step 5).
-    const [now] = await tryCatch(readFile(file, "utf8"));
+    const [now] = await tryCatch(() => readFile(file, "utf8"));
     if (now !== plan.text) {
       // Someone else wrote meanwhile: no evidence either way about the guess.
       return "VS Code didn't pick up the edit, and the file changed since; left it";
     }
     this.recordMiss(target, file);
-    const [, revertError] = await tryCatch(writeLikeVsCode(file, text));
+    const [, revertError] = await tryCatch(() => writeLikeVsCode(file, text));
     if (revertError !== null) {
       return `VS Code didn't pick up the edit, and reverting it failed (${errorText(revertError)})`;
     }
@@ -266,10 +266,12 @@ async function writeLikeVsCode(file: string, text: string): Promise<void> {
     return;
   }
   const temporary = join(dirname(file), `.${randomUUID()}.toucan.tmp`);
-  const [, error] = await tryCatch(replaceVia(temporary, file, text, link.mode & PERMISSION_BITS));
+  const [, error] = await tryCatch(() =>
+    replaceVia(temporary, file, text, link.mode & PERMISSION_BITS),
+  );
   if (error !== null) {
     // Never leave a copy of the user's settings behind.
-    await tryCatch(unlink(temporary));
+    await tryCatch(() => unlink(temporary));
     throw error;
   }
 }
@@ -290,6 +292,6 @@ async function replaceVia(
 
 /** The real path, or the path itself when it can't be resolved (it may not exist). */
 async function realOrSame(path: string): Promise<string> {
-  const [real] = await tryCatch(realpath(path));
+  const [real] = await tryCatch(() => realpath(path));
   return real ?? path;
 }

@@ -10,10 +10,14 @@ export type Thrown = NonNullable<unknown>;
  */
 export type Result<T> = readonly [data: T, error: null] | readonly [data: null, error: Thrown];
 
-/** Awaits `promise`, turning a rejection into the error half of a Result. */
-export async function tryCatch<T>(promise: PromiseLike<T>): Promise<Result<T>> {
+/**
+ * Starts and awaits `run`, turning a throw or a rejection into the error half
+ * of a Result. It takes the work, not a promise, so a synchronous throw while
+ * starting it is caught too.
+ */
+export async function tryCatch<T>(run: () => PromiseLike<T>): Promise<Result<T>> {
   try {
-    return [await promise, null];
+    return [await run(), null];
   } catch (error) {
     return [null, thrown(error)];
   }
@@ -28,7 +32,10 @@ export function tryCatchSync<T>(run: () => T): Result<T> {
   }
 }
 
-/** The error as text for a message, the way `String()` shows it. */
+/**
+ * The error as text for a message, the way `String()` shows it. A Result's
+ * error is typed `{}`, and String() on that trips no-base-to-string.
+ */
 export function errorText(error: unknown): string {
   return String(error);
 }

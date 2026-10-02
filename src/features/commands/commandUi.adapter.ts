@@ -43,7 +43,9 @@ export function statusBarAgainst(): Hex | undefined {
 
 export async function writeRepos(host: CommandHost, update: SettingsUpdate): Promise<void> {
   // Application-scoped, so VS Code keeps it in the default profile's file.
-  const [, error] = await tryCatch(host.writer.write(configs.repos.key, update, "defaultProfile"));
+  const [, error] = await tryCatch(() =>
+    host.writer.write(configs.repos.key, update, "defaultProfile"),
+  );
   if (error !== null) {
     notify("error", saveFailed(error));
   }

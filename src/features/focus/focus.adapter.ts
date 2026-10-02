@@ -52,7 +52,7 @@ function ownerFilePorts(
     async readCustomizationsFromDisk() {
       // A guess at this window's settings file, only used to notice a stale
       // view. It can be another profile's file, so it's never written back.
-      const [text] = await tryCatch(readFile(settingsFile, "utf8"));
+      const [text] = await tryCatch(() => readFile(settingsFile, "utf8"));
       return text === null ? undefined : settingInText(text, COLOR_CUSTOMIZATIONS);
     },
     hasApplied() {

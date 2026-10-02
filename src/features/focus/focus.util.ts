@@ -136,7 +136,7 @@ export class FocusCoordinator {
       return;
     }
     // Owner first: another window's pending blur checks it before clearing.
-    const [, ownerError] = await tryCatch(
+    const [, ownerError] = await tryCatch(() =>
       this.ports.writeOwner(this.id).then(() => this.ports.debug("took ownership")),
     );
     if (ownerError !== null) {
@@ -207,7 +207,7 @@ export class FocusCoordinator {
       this.staleSnapshot = snapshot;
       this.ports.debug("settings view is stale; rewriting");
     }
-    const [, error] = await tryCatch(
+    const [, error] = await tryCatch(() =>
       // Toucan's keys merged onto whatever the user value is when it's written.
       this.ports
         .writeCustomizations((current) => customizationsFor(current, colors))
@@ -233,7 +233,7 @@ export class FocusCoordinator {
     if (!colors || this.ports.hasApplied()) {
       return;
     }
-    const [, error] = await tryCatch(this.ports.markApplied());
+    const [, error] = await tryCatch(() => this.ports.markApplied());
     if (error !== null) {
       this.ports.warn(`Couldn't record that Toucan applied a color: ${errorText(error)}`);
     }
@@ -264,7 +264,7 @@ export class FocusCoordinator {
   /** Runs tasks one at a time, so this window's own writes never interleave. */
   private enqueue(task: () => Promise<void>): Promise<void> {
     return this.lock(async () => {
-      const [, error] = await tryCatch(task());
+      const [, error] = await tryCatch(() => task());
       if (error !== null) {
         // Logging can fail during shutdown; the queue must keep going.
         tryCatchSync(() => this.ports.warn(`Focus handling failed: ${errorText(error)}`));

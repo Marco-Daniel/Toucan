@@ -103,7 +103,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   focus.setFocused(window.state.focused);
   // The view's `when` context key must be set before the first reveal, or the
   // reveal can reach the workbench before the view exists.
-  const [, sidebarError] = await tryCatch(sidebar.refresh());
+  const [, sidebarError] = await tryCatch(() => sidebar.refresh());
   if (sidebarError !== null) {
     // Keep the rest of Toucan running if the sidebar's context key fails.
     log.warn(`Sidebar block setup failed: ${errorText(sidebarError)}`);

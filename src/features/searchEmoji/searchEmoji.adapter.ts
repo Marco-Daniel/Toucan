@@ -156,7 +156,7 @@ export class SearchEmoji implements Disposable {
       return;
     }
     this.gitHooked = true;
-    const [, error] = await tryCatch(this.watchGit());
+    const [, error] = await tryCatch(() => this.watchGit());
     if (error !== null) {
       this.log.warn(`Couldn't watch git repositories for the search emoji: ${errorText(error)}`);
     }

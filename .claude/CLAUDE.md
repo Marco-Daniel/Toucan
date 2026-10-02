@@ -28,7 +28,7 @@ Hooks register Toucan's collections at session start and keep the keyword index 
 
 ## Code rules
 
-- `tryCatch` and `tryCatchSync` (`src/shared/async/tryCatch.util.ts`) are the standard wherever an error is caught: `const [data, error] = await tryCatch(…)`, then handle `error !== null`. A catch that cleans up and rethrows becomes tryCatch, the cleanup, then `throw error`. Keep `try/finally` only for cleanup that must run (a lock or a flag reset), and `.catch()` only on a promise chain nobody awaits, with a comment saying so.
+- `tryCatch` and `tryCatchSync` (`src/shared/async/tryCatch.util.ts`) are the standard wherever an error is caught: `const [data, error] = await tryCatch(() => work())` (it takes the work, not a promise), then handle `error !== null`, and show the error with `errorText(error)`. A catch that cleans up and rethrows becomes tryCatch, the cleanup, then `throw error`. Keep `try/finally` only for cleanup that must run (a lock or a flag reset), and `.catch()` only on a promise chain nobody awaits, with a comment saying so.
 - Await every promise. No `void` fire-and-forget (lint enforces it). Two exceptions: a non-modal notification goes through `notify()` (`src/core/notify.adapter.ts`), which doesn't wait for dismissal; and a sync event handler or timer with no caller to await hands its work off with a lint disable that states the reason.
 - Every `oxlint-disable` comment states its reason after `--`. Fix the finding where you can, and disable a rule only where a fix would make the code worse.
 

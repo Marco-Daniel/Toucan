@@ -60,7 +60,7 @@ export class TitleSetup {
     }
     const step = searchEmojiStep({ enabled, focused, change });
     if (step === "ask") {
-      const [, error] = await tryCatch(this.askAndApply());
+      const [, error] = await tryCatch(() => this.askAndApply());
       if (error !== null) {
         // The record was cleared again in askAndApply; just tell the user.
         ports.failed(error);
@@ -97,7 +97,7 @@ export class TitleSetup {
       if (written === undefined) {
         return;
       }
-      const [, error] = await tryCatch(ports.writeTitle(written));
+      const [, error] = await tryCatch(() => ports.writeTitle(written));
       if (error !== null) {
         await ports.writeChange(undefined);
         throw error;
