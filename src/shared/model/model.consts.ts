@@ -1,3 +1,4 @@
+// import types
 import type { Glyph } from "./model.types.ts";
 
 /** `commandCenter.*` color keys Toucan owns and lets users override (ADR-0002, toucan-v1/0004). */

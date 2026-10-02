@@ -1,4 +1,7 @@
+// import libraries
 import { chmod, rename, unlink, writeFile } from "node:fs/promises";
+
+// import utils
 import { tryCatch } from "../async/tryCatch.util.ts";
 
 interface WriteAtomicallyArgs {

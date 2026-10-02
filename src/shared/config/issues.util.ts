@@ -1,3 +1,4 @@
+// import types
 import type { ConfigIssue } from "./config.util.ts";
 
 /** The part of VS Code's `LogOutputChannel` the reporter uses. */

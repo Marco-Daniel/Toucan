@@ -1,3 +1,4 @@
+// import types
 import type {
   COMMAND_CENTER_KEYS,
   GLYPHS,

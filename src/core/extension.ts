@@ -1,21 +1,30 @@
+// import vscode
 import { window, workspace } from "vscode";
-import type { ExtensionContext } from "vscode";
+
+// import adapters
 import { AgentsControlOffer } from "../features/agentsControl/agentsControl.adapter.ts";
 import { registerCommands } from "../features/commands/commands.adapter.ts";
-import { deriveColors } from "../shared/color/derive.util.ts";
-import type { FocusCoordinator } from "../features/focus/focus.util.ts";
-import { IssueReporter } from "../shared/config/issues.util.ts";
 import { COLOR_CUSTOMIZATIONS, startFocusCoordinator } from "../features/focus/focus.adapter.ts";
-import { configs } from "../generated/meta.ts";
 import { createLog } from "./log.adapter.ts";
 import { resolveActiveRepo } from "./repo.adapter.ts";
-import type { ActiveRepo } from "./repo.adapter.ts";
 import { SearchEmoji } from "../features/searchEmoji/searchEmoji.adapter.ts";
 import { createSettingsWriter } from "../features/settings/settings.adapter.ts";
 import { SidebarBlock } from "../features/sidebar/sidebar.adapter.ts";
 import { StatusBarIndicator } from "../features/statusBar/statusBar.adapter.ts";
+
+// import utils
+import { deriveColors } from "../shared/color/derive.util.ts";
+import { IssueReporter } from "../shared/config/issues.util.ts";
 import { tryCatch } from "../shared/async/tryCatch.util.ts";
 import { logFailure } from "../shared/async/logFailure.util.ts";
+
+// import consts
+import { configs } from "../generated/meta.ts";
+
+// import types
+import type { ExtensionContext } from "vscode";
+import type { FocusCoordinator } from "../features/focus/focus.util.ts";
+import type { ActiveRepo } from "./repo.adapter.ts";
 
 let coordinator: FocusCoordinator | undefined;
 

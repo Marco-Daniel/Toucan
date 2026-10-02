@@ -1,3 +1,4 @@
+// import types
 import type { Hex } from "../model/model.types.ts";
 
 const HEX_FORM = /^#[\da-f]{6}(?:[\da-f]{2})?$/;

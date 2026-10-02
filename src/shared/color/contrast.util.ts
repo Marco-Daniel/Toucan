@@ -1,9 +1,16 @@
+// import libraries
 import { wcagContrast } from "culori/fn";
+
+// import utils
 import { fromHex, normalizeColor } from "./color.util.ts";
 import { isRecord } from "../records/records.util.ts";
 import { asHex } from "./hex.util.ts";
-import type { Hex } from "../model/model.types.ts";
+
+// import consts
 import { PRESETS } from "./presets.consts.ts";
+
+// import types
+import type { Hex } from "../model/model.types.ts";
 
 /** Below this WCAG contrast against the status bar, a color may be hard to see (toucan-v1/0018). */
 export const MIN_STATUS_BAR_CONTRAST = 3;

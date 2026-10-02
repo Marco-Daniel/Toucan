@@ -1,6 +1,11 @@
+// import libraries
 import { wcagContrast } from "culori/fn";
-import type { Color } from "culori/fn";
+
+// import utils
 import { fromHex, toHex, toOklch } from "./color.util.ts";
+
+// import types
+import type { Color } from "culori/fn";
 import type { ColorOverrides, CommandCenterColors, Hex } from "../model/model.types.ts";
 
 // Starting amounts from toucan-v1/0004, to be tuned in the real title bar.

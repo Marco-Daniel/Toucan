@@ -1,8 +1,15 @@
+// import vscode
 import { workspace } from "vscode";
+
+// import utils
 import { parseRepos } from "../shared/config/config.util.ts";
+
+// import consts
+import { configs } from "../generated/meta.ts";
+
+// import types
 import type { RepoConfig } from "../shared/config/config.util.ts";
 import type { IssueReporter } from "../shared/config/issues.util.ts";
-import { configs } from "../generated/meta.ts";
 
 export interface ActiveRepo {
   /** Workspace folder name, the key in `toucan.repos`. */

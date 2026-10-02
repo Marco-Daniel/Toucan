@@ -1,3 +1,4 @@
+// import utils
 import {
   CHANNEL_MAX,
   isTranslucent,
@@ -6,6 +7,10 @@ import {
   parseColor,
   toHex,
 } from "../color/color.util.ts";
+import { isRecord } from "../records/records.util.ts";
+import { isOneOf } from "../guards/oneOf.util.ts";
+
+// import consts
 import {
   COMMAND_CENTER_KEYS,
   DEFAULT_GLYPH,
@@ -13,9 +18,9 @@ import {
   RETIRED_GLYPHS,
   SIDEBAR_VISIBILITIES,
 } from "../model/model.consts.ts";
+
+// import types
 import type { ColorOverrides, Glyph, Hex, SidebarVisibility } from "../model/model.types.ts";
-import { isRecord } from "../records/records.util.ts";
-import { isOneOf } from "../guards/oneOf.util.ts";
 
 export interface RepoConfig {
   /** Command Center background, always opaque. */
