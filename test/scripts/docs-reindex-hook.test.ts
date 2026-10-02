@@ -26,7 +26,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   rmSync(join(dir, "hold"), { force: true });
-  rmSync(dir, { recursive: true, force: true });
+  rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });
 
 const env = (path: string) => ({ PATH: path, CLAUDE_PROJECT_DIR: "/repo", TMPDIR: dir, HOME: dir });
@@ -58,6 +58,25 @@ async function until(condition: () => boolean): Promise<void> {
     () => {
       if (!condition()) {
         throw new Error("not yet");
+      }
+    },
+    { timeout: 5000, interval: 20 },
+  );
+}
+
+/** Waits until the log hasn't changed for `quietMs`: the workers have all finished. */
+async function quiet(quietMs = 200): Promise<void> {
+  let last = read();
+  let since = Date.now();
+  await vi.waitFor(
+    () => {
+      const now = read();
+      if (now !== last) {
+        last = now;
+        since = Date.now();
+      }
+      if (Date.now() - since < quietMs) {
+        throw new Error("still writing");
       }
     },
     { timeout: 5000, interval: 20 },
@@ -124,6 +143,8 @@ describe("the docs re-index hook", () => {
       .split("\n")
       .filter((line) => line.startsWith("update"));
     expect(updates).toEqual(["update start", "update end", "update start", "update end"]);
+    // The workers that found the lock taken may still be finishing: let them, before cleanup.
+    await quiet();
   });
 
   it("leaves the edit noted while another job holds the lock", async () => {
