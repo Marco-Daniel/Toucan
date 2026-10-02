@@ -16,7 +16,7 @@ A skill, run by hand every once in a while, that finds documentation drift since
 `/docs-sync` lives in the repo at `.claude/skills/docs-sync/` (→ [0003](decisions/0003-keep-the-skill-in-the-repo.md)). A run:
 
 1. **Range.** `docs-sync/last..HEAD` (→ [0002](decisions/0002-mark-the-last-run-with-a-git-tag.md)). With no tag, or with `--full`, it sweeps every doc (→ [0004](decisions/0004-check-the-diff-since-the-last-run-with-a-full-sweep-on-demand.md)).
-2. **Extract what changed:** paths, renamed or removed files, `pnpm` scripts, config keys, commands, ADR statuses, and notable exported symbols.
+2. **Extract what changed:** paths, renamed or removed files, `pnpm` scripts, config keys, commands, ADR statuses, and notable exported symbols. Amendment (2026-10-03): it also reads each modified source file's diff for behaviour changes to look up (→ [0004](decisions/0004-check-the-diff-since-the-last-run-with-a-full-sweep-on-demand.md)).
 3. **Find mentions:** search qmd (`--index toucan`, `toucan-docs` and `toucan-guides`) plus a plain text search, falling back to the text search alone when qmd is unavailable.
 4. **Check each mention** against the current code, and classify each finding as missed, stale or contradicts.
 5. **Report**, with a proposed fix per item (→ [0001](decisions/0001-report-drift-with-a-proposed-fix-for-every-item.md)):
@@ -48,7 +48,7 @@ A skill, run by hand every once in a while, that finds documentation drift since
 ## Risks
 
 - **A tag that isn't pushed is lost.** The skill pushes it, and treats a missing tag as "full sweep".
-- **Extraction misses a subtle behaviour change.** Accepted; `--full` covers it.
+- **Extraction misses a subtle behaviour change.** Accepted; `--full` covers it. Amendment (2026-10-03): a diff run now also reads each modified file's diff for behaviour changes, and its report says what that still misses (→ [0004](decisions/0004-check-the-diff-since-the-last-run-with-a-full-sweep-on-demand.md)).
 - **A big report stops being useful.** The skill groups by doc and severity, and caps the detail per item.
 - **Wrong fixes.** Every fix is approved by a person and then reviewed in a PR.
 

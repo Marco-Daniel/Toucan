@@ -11,18 +11,20 @@ The periodic backstop for the CLAUDE.md rule that a change updates every doc tha
 ## 1. Range
 
 1. `git fetch --tags --force origin main`. `--force` takes the tag as another clone last moved it; without it git keeps a stale local `docs-sync/last` and the run diffs from an older one. If the fetch fails, say so once with git's error and carry on from the local refs; call it offline only when `git ls-remote origin` fails too.
-2. Run from main as it is on origin: `git switch main && git merge --ff-only origin/main` (skip the merge when the fetch failed). If that fails (local commits on main, uncommitted changes), stop and tell the user: the tag must only ever point at a commit that is on main.
-3. Note the **start commit**: `git rev-parse HEAD`. The run covers everything up to it, and the tag later moves here, not to whatever is on main by then.
-4. Run `node scripts/docs-sync.mts` (or `--since <ref>` to compare from another ref). It prints JSON: the changed, renamed and removed files, `pnpm` scripts, setting keys, commands, ADR status changes and exported symbols since `docs-sync/last`.
+2. Run on main as it is on origin. `git status --porcelain` must print nothing; otherwise stop and tell the user, because the run would read uncommitted work. Then `git switch --detach origin/main`: it touches no branch, and works in a worktree while main is checked out elsewhere. If the fetch failed, say the run starts from the last known `origin/main`. Afterwards, `git switch -` returns the user to where they were.
+3. Note the **start commit**: `git rev-parse HEAD`, which is now a commit on main. The run covers everything up to it, and the tag later moves here, not to whatever is on main by then.
+4. Run `node scripts/docs-sync.mts` (or `--since <ref>` to compare from another ref). It prints JSON with what changed since `docs-sync/last`: files (added, removed, renamed, modified), `pnpm` scripts, setting keys and their changed fields, command ids and titles, ADR statuses and exported symbols.
 5. **Full sweep** instead of the diff when the user passed `--full`, or when the helper answers `"full": true` (no tag yet, or a shallow clone that can't reach it). Say which, and why.
 
 ## 2. Find the mentions
 
 The docs are README.md, GROUNDING.md, .claude/CLAUDE.md, `docs/adr/` and `docs/plans/`. Leave out generated text: the README's settings table (`check:generated` keeps it in sync) and the ADR log's own mechanics (`test/adr.test.ts` checks numbering, the index and citations).
 
-- **Diff run:** for each changed name (a path, an old path, a script, a setting key, a command id, an ADR, a symbol), find where the docs mention it:
-  - qmd, always on Toucan's own index: the `qmd` MCP server (it runs `qmd --index toucan`), with `toucan-docs` for `docs/` and `toucan-guides` for README.md and GROUNDING.md, a `lex` line with the exact name and a `vec` line for what it does;
-  - plus a plain text search, which also catches what qmd's ranking leaves out: `git grep -nF -e '<name>' -- README.md GROUNDING.md .claude/CLAUDE.md docs`.
+- **Diff run, names:** for each changed name (a path, an old path, a script, a setting key, a command id or title, an ADR, a symbol), find where the docs mention it.
+- **Diff run, behaviour:** a change can make a doc false without renaming anything (a branch made unconditional, a default flipped). For each modified or renamed file under `src/` and `scripts/`, and for `package.json`, read its diff: `git diff <since> HEAD -M -- <path>`. State each behaviour change in one line ("choosing _Not now_ no longer stops the prompt", say), and search the docs for that sentence as well as for the user-facing strings, titles and setting keys the hunks touch. Skip pure refactors, and say how many files you skipped that way.
+- How to search, for a name or a behaviour:
+  - qmd, always on Toucan's own index: the `qmd` MCP server (it runs `qmd --index toucan`), with `toucan-docs` for `docs/` and `toucan-guides` for README.md and GROUNDING.md, a `lex` line with the exact name or string and a `vec` line for what it does (for a behaviour change, its one-line statement);
+  - plus a plain text search, which also catches what qmd's ranking leaves out: `git grep -nF -e '<name or string>' -- README.md GROUNDING.md .claude/CLAUDE.md docs`.
   - If qmd isn't available, say so once and continue with the text search alone.
 - **Full sweep:** read every doc and check each concrete claim it makes: paths, commands and scripts, setting keys, symbols, file roles and the rules CLAUDE.md states.
 
@@ -44,7 +46,7 @@ Classify each finding:
 
 ## 4. Propose a fix per item
 
-- **README.md, GROUNDING.md, .claude/CLAUDE.md:** a direct edit. CLAUDE.md stays within its ~80-line budget.
+- **README.md, GROUNDING.md, .claude/CLAUDE.md:** a direct edit. CLAUDE.md stays a short set of rules with pointers, about 80 lines (`docs/plans/architecture-maintenance/decisions/0006-write-claude-md-as-lean-rules-plus-a-library-of-pointers.md`): put detail in the doc it points to.
 - **An ADR:** an edit for wording only. If the rule itself no longer holds, propose a superseding ADR (the steps are in `docs/adr/README.md`); never rewrite an accepted rule in place.
 - **A plan** (`docs/plans/<plan>/`): plans are history, so never rewrite them.
   - A decision that no longer matches the code, where nothing else records why: a dated `## Amendment (YYYY-MM-DD)` note under it, keeping the original text.
@@ -66,6 +68,7 @@ Group by doc, then by class (contradicts, stale, missed). One block per item, wi
 ```
 - Keep each item to its evidence and its fix; one or two lines of evidence are enough.
 - End with a count per class and per doc, the start commit, and whether this was a diff run (from which tag) or a full sweep (and why).
+- A diff run's report ends with its limit: "Behaviour changes the diff reading doesn't describe can still be missed; run `/docs-sync --full` every so often."
 - No drift found: say so plainly; the tag can still move (step 7).
 
 ## 6. Approval

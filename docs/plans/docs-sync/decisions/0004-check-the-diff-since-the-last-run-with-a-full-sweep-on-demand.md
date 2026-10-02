@@ -22,3 +22,7 @@ Chosen: diff-driven by default: extract what changed since the tag (paths, renam
 
 - Good: Cheap regular runs, with a way to catch older drift.
 - Bad: Subtle behaviour changes the extraction misses wait for a full sweep.
+
+## Amendment (2026-10-03)
+
+A diff run also reads each modified file's diff and searches the docs for the behaviour change it describes; behaviour changes that reading doesn't surface still wait for `--full`. Review found that matching changed names alone missed a behaviour-only change that made a README paragraph false.
