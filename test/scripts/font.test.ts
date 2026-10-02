@@ -35,11 +35,10 @@ afterAll(() => {
 /** Opaque-pixel mask of an SVG rendered at its own size. */
 function ink(svg: string, fontFiles: string[] = []): { width: number; mask: boolean[] } {
   const image = new Resvg(svg, { font: { fontFiles, loadSystemFonts: false } }).render();
-  const mask = Array.from(
-    { length: image.width * image.height },
-    (_, i) => image.pixels[i * 4 + 3]! > 127,
-  );
-  return { width: image.width, mask };
+  // `pixels` copies the whole buffer on every access: read it once.
+  const { pixels, width, height } = image;
+  const mask = Array.from({ length: width * height }, (_, i) => pixels[i * 4 + 3]! > 127);
+  return { width, mask };
 }
 
 /** The glyph as the font draws it, placed like the 16-unit SVG: 1/8 of the em below the baseline. */

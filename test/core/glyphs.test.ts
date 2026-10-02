@@ -122,9 +122,9 @@ describe("glyphSvg", () => {
 /** Alpha at glyph coordinate (x, y) of the glyph rendered 10 px per unit. */
 function inkAt(glyph: Glyph): (x: number, y: number) => number {
   const scale = 10;
-  const image = new Resvg(glyphSvg(glyph, RED, 16 * scale)).render();
-  return (x, y) =>
-    image.pixels[(Math.floor(y * scale) * image.width + Math.floor(x * scale)) * 4 + 3]!;
+  // `pixels` copies the whole buffer on every access: read it once.
+  const { pixels, width } = new Resvg(glyphSvg(glyph, RED, 16 * scale)).render();
+  return (x, y) => pixels[(Math.floor(y * scale) * width + Math.floor(x * scale)) * 4 + 3]!;
 }
 
 describe("glyph shapes", () => {
