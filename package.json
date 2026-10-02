@@ -34,6 +34,7 @@
     "package": "tsdown && vsce package --no-dependencies",
     "font": "node scripts/build-font.mts",
     "icon": "node scripts/build-icon.mts",
+    "check:generated": "\"$npm_execpath\" gen && \"$npm_execpath\" font && \"$npm_execpath\" icon && git diff --exit-code src/generated README.md media && test -z \"$(git status --porcelain src/generated README.md media)\"",
     "check:bundle": "node scripts/check-bundle.mts",
     "check:vsix": "node scripts/check-vsix.mts"
   },

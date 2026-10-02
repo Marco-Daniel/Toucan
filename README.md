@@ -84,17 +84,18 @@ code --install-extension toucan-*.vsix
 
 Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 
-| Command             | What it does                                                                        |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `pnpm lint`         | Lint with oxlint                                                                    |
-| `pnpm format:check` | Check formatting with oxfmt (`pnpm format` to fix)                                  |
-| `pnpm typecheck`    | Typecheck with TypeScript 7                                                         |
-| `pnpm test`         | Run the unit tests with vitest                                                      |
-| `pnpm build`        | Bundle `dist/extension.cjs` with tsdown                                             |
-| `pnpm gen`          | Regenerate `src/generated/meta.ts` and the settings table above from `package.json` |
-| `pnpm font`         | Rebuild the status bar glyph font in `media/` from the glyph shapes                 |
-| `pnpm icon`         | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`             |
-| `pnpm package`      | Build and package a VSIX                                                            |
+| Command                | What it does                                                                        |
+| ---------------------- | ----------------------------------------------------------------------------------- |
+| `pnpm lint`            | Lint with oxlint                                                                    |
+| `pnpm format:check`    | Check formatting with oxfmt (`pnpm format` to fix)                                  |
+| `pnpm typecheck`       | Typecheck with TypeScript 7                                                         |
+| `pnpm test`            | Run the unit tests with vitest                                                      |
+| `pnpm build`           | Bundle `dist/extension.cjs` with tsdown                                             |
+| `pnpm gen`             | Regenerate `src/generated/meta.ts` and the settings table above from `package.json` |
+| `pnpm font`            | Rebuild the status bar glyph font in `media/` from the glyph shapes                 |
+| `pnpm icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`             |
+| `pnpm check:generated` | Regenerate everything above and fail if anything changed (CI runs this)             |
+| `pnpm package`         | Build and package a VSIX                                                            |
 
 ## License
 

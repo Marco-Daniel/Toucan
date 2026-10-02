@@ -21,11 +21,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The same checks as CI: a release is never built from a red tree.
       - name: Check generated files are up to date
-        run: |
-          pnpm gen
-          pnpm font
-          git diff --exit-code src/generated README.md media
-          test -z "$(git status --porcelain src/generated README.md media)"
+        run: pnpm check:generated
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
