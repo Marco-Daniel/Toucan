@@ -4,19 +4,18 @@ import {
   hasToucanKeys,
   mergeCustomizations,
 } from "../../../src/features/focus/merge.util.ts";
-import type { CommandCenterColors, Hex } from "../../../src/shared/model/model.types.ts";
-
-const hex = (value: string) => value as Hex;
+import type { CommandCenterColors } from "../../../src/shared/model/model.types.ts";
+import { asHex } from "../../../src/shared/color/hex.util.ts";
 
 const colors = (background: string): CommandCenterColors => ({
-  background: hex(background),
-  foreground: hex("#ffffff"),
-  activeBackground: hex("#222222"),
-  activeForeground: hex("#ffffff"),
-  border: hex("#333333"),
-  activeBorder: hex("#333333"),
-  inactiveForeground: hex("#ffffff99"),
-  inactiveBorder: hex("#33333380"),
+  background: asHex(background),
+  foreground: asHex("#ffffff"),
+  activeBackground: asHex("#222222"),
+  activeForeground: asHex("#ffffff"),
+  border: asHex("#333333"),
+  activeBorder: asHex("#333333"),
+  inactiveForeground: asHex("#ffffff99"),
+  inactiveBorder: asHex("#33333380"),
 });
 
 const prefixed = (set: CommandCenterColors) =>

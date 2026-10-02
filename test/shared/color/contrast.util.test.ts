@@ -6,9 +6,7 @@ import {
   statusBarBackground,
 } from "../../../src/shared/color/contrast.util.ts";
 import { accessibilityLabel } from "../../../src/features/statusBar/labels.util.ts";
-import type { Hex } from "../../../src/shared/model/model.types.ts";
-
-const hex = (value: string) => value as Hex;
+import { asHex } from "../../../src/shared/color/hex.util.ts";
 
 describe("statusBarBackground", () => {
   it("uses the representative Modern theme color for the kind", () => {
@@ -98,42 +96,42 @@ describe("activeThemeName", () => {
 
 describe("lowContrast", () => {
   it("flags colors under 3:1 against the status bar", () => {
-    expect(lowContrast({ color: hex("#101316"), background: hex("#181818") })).toBe(true); // Plumage Black, 1.05
-    expect(lowContrast({ color: hex("#8a9c05"), background: hex("#f8f8f8") })).toBe(true); // Bill Lime, 2.89
+    expect(lowContrast({ color: asHex("#101316"), background: asHex("#181818") })).toBe(true); // Plumage Black, 1.05
+    expect(lowContrast({ color: asHex("#8a9c05"), background: asHex("#f8f8f8") })).toBe(true); // Bill Lime, 2.89
   });
 
   it("puts the line at 3:1 (no hex color lands exactly on it against Dark Modern)", () => {
-    expect(lowContrast({ color: hex("#7747cb"), background: hex("#181818") })).toBe(true); // 2.999999, the closest below
-    expect(lowContrast({ color: hex("#646464"), background: hex("#181818") })).toBe(false); // 3.0006
+    expect(lowContrast({ color: asHex("#7747cb"), background: asHex("#181818") })).toBe(true); // 2.999999, the closest below
+    expect(lowContrast({ color: asHex("#646464"), background: asHex("#181818") })).toBe(false); // 3.0006
   });
 
   it("accepts colors at or above 3:1", () => {
-    expect(lowContrast({ color: hex("#e8579b"), background: hex("#f8f8f8") })).toBe(false); // Tropical Pink, 3.15
-    expect(lowContrast({ color: hex("#f92824"), background: hex("#181818") })).toBe(false); // Beak Red
+    expect(lowContrast({ color: asHex("#e8579b"), background: asHex("#f8f8f8") })).toBe(false); // Tropical Pink, 3.15
+    expect(lowContrast({ color: asHex("#f92824"), background: asHex("#181818") })).toBe(false); // Beak Red
   });
 
   it("never warns without a background to compare", () => {
-    expect(lowContrast({ color: hex("#101316"), background: undefined })).toBe(false);
+    expect(lowContrast({ color: asHex("#101316"), background: undefined })).toBe(false);
   });
 });
 
 describe("presetName and accessibilityLabel", () => {
   it("names a preset color", () => {
-    expect(presetName(hex("#e0620b"))).toBe("Beak Orange");
-    expect(presetName(hex("#123456"))).toBeUndefined();
+    expect(presetName(asHex("#e0620b"))).toBe("Beak Orange");
+    expect(presetName(asHex("#123456"))).toBeUndefined();
   });
 
   it("announces the repo, the preset color and the glyph, never a hex code", () => {
     expect(
       accessibilityLabel({
         name: "webshop",
-        config: { background: hex("#e0620b"), glyph: "toucan" },
+        config: { background: asHex("#e0620b"), glyph: "toucan" },
       }),
     ).toBe("Toucan: webshop, Beak Orange toucan");
     expect(
       accessibilityLabel({
         name: "webshop",
-        config: { background: hex("#123456"), glyph: "heart" },
+        config: { background: asHex("#123456"), glyph: "heart" },
       }),
     ).toBe("Toucan: webshop, heart");
   });
