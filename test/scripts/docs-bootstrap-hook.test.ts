@@ -59,7 +59,7 @@ function fakeQmd(collections = ""): string {
 function start(path: string) {
   return spawnSync(process.execPath, [HOOK], {
     input: JSON.stringify({ hook_event_name: "SessionStart", source: "startup" }),
-    env: { PATH: path, TMPDIR: dir },
+    env: { PATH: path, TMPDIR: dir, HOME: dir },
     encoding: "utf8",
   });
 }

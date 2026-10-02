@@ -56,7 +56,7 @@ function fakeQmd(collections: string, updateSeconds = 0): string {
   return `${bin}:${SYSTEM_PATH}`;
 }
 
-const env = (path: string) => ({ PATH: path, CLAUDE_PROJECT_DIR: "/repo", TMPDIR: dir });
+const env = (path: string) => ({ PATH: path, CLAUDE_PROJECT_DIR: "/repo", TMPDIR: dir, HOME: dir });
 const input = (file: unknown) =>
   JSON.stringify({ tool_name: "Edit", tool_input: { file_path: file } });
 
