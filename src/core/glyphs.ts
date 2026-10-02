@@ -43,18 +43,36 @@ export function svgDataUri(svg: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`;
 }
 
-/** Set Glyph's list: a separator per group, then its glyphs, the current one marked. */
-export type GlyphPickEntry =
-  | { kind: "separator"; label: string }
-  | { kind: "glyph"; glyph: Glyph; current: boolean };
+/**
+ * VS Code's `QuickPickItemKind.Separator`. Core code can't import `vscode`, so
+ * the value is written here and a test pins it against VS Code's API types.
+ */
+export const QUICK_PICK_SEPARATOR = -1;
 
-export function glyphPickEntries(current: Glyph): GlyphPickEntry[] {
-  const entries: GlyphPickEntry[] = [];
+/** A Set Glyph quick pick item: a group separator, or a glyph with its swatch. */
+export interface GlyphPickItem<Icon> {
+  label: string;
+  kind?: typeof QUICK_PICK_SEPARATOR;
+  glyph?: Glyph;
+  iconPath?: Icon;
+  description?: string;
+}
+
+/** Set Glyph's list: a separator per group, then its glyphs, the current one marked. */
+export function glyphPickItems<Icon>(
+  current: Glyph,
+  icon: (glyph: Glyph) => Icon,
+): GlyphPickItem<Icon>[] {
+  const items: GlyphPickItem<Icon>[] = [];
   for (const { label, glyphs } of GLYPH_GROUPS) {
-    entries.push({ kind: "separator", label });
+    items.push({ label, kind: QUICK_PICK_SEPARATOR });
     for (const glyph of glyphs) {
-      entries.push({ kind: "glyph", glyph, current: glyph === current });
+      const item: GlyphPickItem<Icon> = { label: glyph, glyph, iconPath: icon(glyph) };
+      if (glyph === current) {
+        item.description = "current";
+      }
+      items.push(item);
     }
   }
-  return entries;
+  return items;
 }

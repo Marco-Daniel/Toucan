@@ -1,7 +1,6 @@
 import {
   ColorThemeKind,
   InputBoxValidationSeverity,
-  QuickPickItemKind,
   Uri,
   commands as vscodeCommands,
   window,
@@ -18,7 +17,7 @@ import {
 } from "./core/contrast.ts";
 import type { RepoConfig } from "./core/config.ts";
 import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "./core/entries.ts";
-import { glyphPickEntries, glyphSvg, svgDataUri } from "./core/glyphs.ts";
+import { glyphPickItems, glyphSvg, svgDataUri } from "./core/glyphs.ts";
 import {
   CLEAR_CONFIRMATION,
   NO_COLOR,
@@ -156,24 +155,9 @@ async function setGlyph(host: CommandHost, name: string): Promise<void> {
     }
     return;
   }
-  const items = glyphPickEntries(repo.config.glyph).map((entry) => {
-    if (entry.kind === "separator") {
-      const separator: QuickPickItem & { glyph?: Glyph } = {
-        label: entry.label,
-        kind: QuickPickItemKind.Separator,
-      };
-      return separator;
-    }
-    const item: QuickPickItem & { glyph?: Glyph } = {
-      label: entry.glyph,
-      iconPath: swatch(entry.glyph, repo.config.background),
-      glyph: entry.glyph,
-    };
-    if (entry.current) {
-      item.description = "current";
-    }
-    return item;
-  });
+  const items: (QuickPickItem & { glyph?: Glyph })[] = glyphPickItems(repo.config.glyph, (glyph) =>
+    swatch(glyph, repo.config.background),
+  );
   const picked = await pickWithPreview(
     host,
     name,

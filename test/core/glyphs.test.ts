@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
 import {
   FONT_CODEPOINTS,
   escapeIcons,
   glyphIcon,
-  glyphPickEntries,
+  QUICK_PICK_SEPARATOR,
+  glyphPickItems,
   glyphSvg,
   svgDataUri,
 } from "../../src/core/glyphs.ts";
@@ -62,13 +64,28 @@ describe("glyph groups", () => {
     expect(GLYPH_GROUPS.flatMap(({ glyphs }) => glyphs)).toEqual([...GLYPHS]);
   });
 
-  it("give Set Glyph a separator per group and mark the current glyph", () => {
-    const entries = glyphPickEntries("sun").map((entry) =>
-      entry.kind === "separator"
-        ? `-- ${entry.label}`
-        : `${entry.glyph}${entry.current ? " *" : ""}`,
-    );
-    expect(entries).toEqual([
+  it("give Set Glyph a separator per group, then its glyphs with swatches, the current one marked", () => {
+    const items = glyphPickItems("sun", (glyph) => `swatch:${glyph}`);
+    expect(items.slice(0, 7)).toEqual([
+      { label: "Shapes", kind: -1 },
+      { label: "square", glyph: "square", iconPath: "swatch:square" },
+      { label: "bar", glyph: "bar", iconPath: "swatch:bar" },
+      { label: "pill", glyph: "pill", iconPath: "swatch:pill" },
+      { label: "circle", glyph: "circle", iconPath: "swatch:circle" },
+      { label: "Toucan's world", kind: -1 },
+      { label: "toucan", glyph: "toucan", iconPath: "swatch:toucan" },
+    ]);
+    expect(items[7]).toEqual({
+      label: "sun",
+      glyph: "sun",
+      iconPath: "swatch:sun",
+      description: "current",
+    });
+    expect(
+      items.map((item) =>
+        item.kind === -1 ? `-- ${item.label}` : `${item.label}${item.description ? " *" : ""}`,
+      ),
+    ).toEqual([
       "-- Shapes",
       "square",
       "bar",
@@ -91,6 +108,16 @@ describe("glyph groups", () => {
       "star",
       "rocket",
     ]);
+  });
+
+  it("use VS Code's separator kind", () => {
+    // Core can't import vscode, so pin the value against its API types.
+    const api = readFileSync(
+      new URL("../../node_modules/@types/vscode/index.d.ts", import.meta.url),
+      "utf8",
+    );
+    const kinds = /export enum QuickPickItemKind \{([\s\S]*?)\n\t\}/.exec(api)?.[1] ?? "";
+    expect(/Separator = (-?\d+)/.exec(kinds)?.[1]).toBe(String(QUICK_PICK_SEPARATOR));
   });
 });
 
