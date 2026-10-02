@@ -157,12 +157,17 @@ describe("glyphSvg", () => {
   });
 });
 
+interface GlyphPoint {
+  x: number;
+  y: number;
+}
+
 /** Alpha at glyph coordinate (x, y) of the glyph rendered 10 px per unit. */
-function inkAt(glyph: Glyph): (x: number, y: number) => number {
+function inkAt(glyph: Glyph): (point: GlyphPoint) => number {
   const scale = 10;
   // `pixels` copies the whole buffer on every access: read it once.
   const { pixels, width } = new Resvg(glyphSvg({ glyph, color: RED, height: 16 * scale })).render();
-  return (x, y) => pixels[(Math.floor(y * scale) * width + Math.floor(x * scale)) * 4 + 3]!;
+  return ({ x, y }) => pixels[(Math.floor(y * scale) * width + Math.floor(x * scale)) * 4 + 3]!;
 }
 
 describe("glyph bounds", () => {
@@ -343,8 +348,8 @@ describe("glyph shapes", () => {
     ],
   ] as const)("draws %s with its holes and gaps open", (glyph, ink, clear) => {
     const at = inkAt(glyph);
-    expect(ink.map(([x, y]) => at(x, y))).toEqual(ink.map(() => 255));
-    expect(clear.map(([x, y]) => at(x, y))).toEqual(clear.map(() => 0));
+    expect(ink.map(([x, y]) => at({ x, y }))).toEqual(ink.map(() => 255));
+    expect(clear.map(([x, y]) => at({ x, y }))).toEqual(clear.map(() => 0));
   });
 });
 
