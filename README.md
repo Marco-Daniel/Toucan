@@ -96,6 +96,18 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 | `pnpm icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`             |
 | `pnpm check:generated` | Regenerate everything above and fail if anything changed (CI runs this)             |
 | `pnpm package`         | Build and package a VSIX                                                            |
+| `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (optional, below)   |
+
+### Docs search with qmd (optional)
+
+[qmd](https://github.com/tobi/qmd) gives local keyword and semantic search over the docs. Claude Code sessions in this repo use it through `.mcp.json`. Nothing needs it: without qmd, agents read the files directly, and CI never installs it.
+
+One-time setup:
+
+1. Install it globally: `npm i -g @tobilu/qmd` (2.8 or newer). It has native dependencies and downloads about 2 GB of models on first use, which is why it isn't a devDependency. Make sure `qmd` is on the `PATH` that Claude Code starts with (with nvm, install it under the Node version that's active there).
+2. Run `pnpm docs:index` in this checkout. It registers two collections, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and then indexes and embeds them. It only ever touches `toucan-*` collections in qmd's global config, and it's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
+
+After that, a Claude Code hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
 
 ## License
 
