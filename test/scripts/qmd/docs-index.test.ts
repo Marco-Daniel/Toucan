@@ -1,7 +1,6 @@
 import { spawn } from "node:child_process";
 import {
   existsSync,
-  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -11,8 +10,15 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SYSTEM_PATH, fakeQmd } from "./fake-qmd.ts";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  SYSTEM_PATH,
+  fakeQmd,
+  qmdEnv,
+  readQmdLog,
+  until,
+  writeCacheFile,
+} from "../../helpers/qmd.ts";
 
 const SCRIPT = new URL("../../../scripts/qmd/docs-index.mts", import.meta.url).pathname;
 
@@ -39,7 +45,7 @@ interface Exit {
 /** Starts `pnpm docs:index` as a child, with only the fake qmd and this test's dir for home and cache. */
 function docsIndex(path: string, extra: Record<string, string> = {}): Promise<Exit> {
   const child = spawn(process.execPath, [SCRIPT], {
-    env: { PATH: path, HOME: dir, XDG_CACHE_HOME: dir, ...extra },
+    env: { ...qmdEnv({ dir, path }), ...extra },
     stdio: ["ignore", "pipe", "pipe"],
     // A run that hangs (a broken lock, say) is killed and fails, not left hanging.
     timeout: 10_000,
@@ -51,22 +57,10 @@ function docsIndex(path: string, extra: Record<string, string> = {}): Promise<Ex
   return new Promise((resolve) => child.on("close", (code) => resolve({ code, stdout, stderr })));
 }
 
-const lines = () =>
-  existsSync(join(dir, "qmd.log"))
-    ? readFileSync(join(dir, "qmd.log"), "utf8").trim().split("\n")
-    : [];
-
-/** Waits until `condition` holds. */
-async function until(condition: () => boolean): Promise<void> {
-  await vi.waitFor(
-    () => {
-      if (!condition()) {
-        throw new Error("not yet");
-      }
-    },
-    { timeout: 5000, interval: 20 },
-  );
-}
+const lines = () => {
+  const log = readQmdLog(dir);
+  return log === "" ? [] : log.trim().split("\n");
+};
 
 /** Starts docs:index with the update held open and a fast heartbeat; resolves once the update runs. */
 async function slowUpdate(): Promise<{ exit: Promise<Exit> }> {
@@ -79,8 +73,7 @@ async function slowUpdate(): Promise<{ exit: Promise<Exit> }> {
 
 /** Holds the lock as another job would. */
 function holdLock(): void {
-  mkdirSync(join(dir, "qmd"), { recursive: true });
-  writeFileSync(lock, "another job");
+  writeCacheFile({ dir, name: "toucan.lock", text: "another job" });
 }
 
 describe("pnpm docs:index", () => {
@@ -96,14 +89,7 @@ describe("pnpm docs:index", () => {
   it("waits for a job holding the lock, then runs", async () => {
     holdLock();
     const exit = docsIndex(fakeQmd(dir, { tag: lock }));
-    await vi.waitFor(
-      () => {
-        if (!lines().includes("version @another job")) {
-          throw new Error("not started");
-        }
-      },
-      { timeout: 5000, interval: 20 },
-    );
+    await until(() => lines().includes("version @another job"));
     // Hold it through a few of its retries (every 250 ms). How long only decides whether a
     // broken wait gets caught: every call is tagged with the lock it ran under, below.
     await new Promise((resolve) => setTimeout(resolve, 600));
@@ -117,8 +103,7 @@ describe("pnpm docs:index", () => {
   });
 
   it("re-indexes once more for an edit noted while it ran", async () => {
-    mkdirSync(join(dir, "qmd"), { recursive: true });
-    writeFileSync(pending, "");
+    writeCacheFile({ dir, name: "toucan.pending", text: "" });
     expect(await docsIndex(fakeQmd(dir))).toMatchObject({ code: 0 });
     expect(lines().slice(-5)).toEqual([
       "update start",

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isPending, markPending, releaseLock, takeLock } from "../../../scripts/qmd/qmd-lock.mts";
 import { ROOT, exclusive } from "../../../scripts/qmd/qmd-run.mts";
-import { fakeQmd } from "./fake-qmd.ts";
+import { fakeQmd, readQmdLog } from "../../helpers/qmd.ts";
 
 let dir: string;
 
@@ -21,8 +21,7 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const log = () =>
-  existsSync(join(dir, "qmd.log")) ? readFileSync(join(dir, "qmd.log"), "utf8") : "";
+const log = () => readQmdLog(dir);
 
 const RUN = new URL("../../../scripts/qmd/qmd-run.mts", import.meta.url).href;
 const LOCK = new URL("../../../scripts/qmd/qmd-lock.mts", import.meta.url).href;
