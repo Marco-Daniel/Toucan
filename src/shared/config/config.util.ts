@@ -15,6 +15,7 @@ import {
 } from "../model/model.consts.ts";
 import type { ColorOverrides, Glyph, Hex, SidebarVisibility } from "../model/model.types.ts";
 import { isRecord } from "../records/records.util.ts";
+import { isOneOf } from "../guards/oneOf.util.ts";
 
 export interface RepoConfig {
   /** Command Center background, always opaque. */
@@ -159,8 +160,4 @@ function parseBackground({ value, report }: ParseArgs<string>): Hex | undefined 
     return toHex(opaque(color));
   }
   return toHex(color);
-}
-
-function isOneOf<T extends string>(options: readonly T[], value: unknown): value is T {
-  return typeof value === "string" && (options as readonly string[]).includes(value);
 }

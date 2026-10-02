@@ -1,6 +1,7 @@
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "../../shared/model/model.consts.ts";
 import type { SidebarStyle, SidebarVisibility } from "../../shared/model/model.types.ts";
+import { isOneOf } from "../../shared/guards/oneOf.util.ts";
 
 /** How long a user close must last before it's remembered (see `visibilityChanged`). */
 export const REMEMBER_CLOSE_DELAY_MS = 1500;
@@ -26,21 +27,12 @@ interface ResolveSidebarSettingsArgs {
 export function resolveSidebarSettings(
   input: ResolveSidebarSettingsArgs,
 ): SidebarSettings & { style: SidebarStyle } {
-  const general = oneOf({ options: SIDEBAR_VISIBILITIES, value: input.visibility }) ?? "always";
+  const general = isOneOf(SIDEBAR_VISIBILITIES, input.visibility) ? input.visibility : "always";
   return {
     enabled: input.repo !== undefined && input.enabled === true,
     visibility: input.repo?.sidebarBlock ?? general,
-    style: oneOf({ options: SIDEBAR_STYLES, value: input.style }) ?? "full",
+    style: isOneOf(SIDEBAR_STYLES, input.style) ? input.style : "full",
   };
-}
-
-interface OneOfArgs<T> {
-  options: readonly T[];
-  value: unknown;
-}
-
-function oneOf<T extends string>({ options, value }: OneOfArgs<T>): T | undefined {
-  return options.find((option) => option === value);
 }
 
 export interface SidebarPorts {
