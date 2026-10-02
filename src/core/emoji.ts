@@ -77,19 +77,13 @@ const HEARTS: Record<EmojiColor, string> = {
 };
 
 /**
- * Emoji set per glyph shape; shapes without their own emoji use squares. Star
- * uses squares too, because ⭐ only comes in yellow and would lose the color (0012).
+ * The emoji set for a glyph: circle and heart have their own; every other
+ * glyph uses squares, since no emoji both matches its shape and comes in every
+ * color (⭐ is only yellow, for example).
  */
-const FAMILIES: Record<Glyph, (color: EmojiColor) => string> = {
-  square: (color) => SQUARES[color],
-  bar: (color) => SQUARES[color],
-  pill: (color) => SQUARES[color],
-  circle: (color) => CIRCLES[color],
-  "double-circle": (color) => CIRCLES[color],
-  "check-circle": (color) => CIRCLES[color],
-  heart: (color) => HEARTS[color],
-  star: (color) => SQUARES[color],
-};
+function family(glyph: Glyph): Record<EmojiColor, string> {
+  return glyph === "circle" ? CIRCLES : glyph === "heart" ? HEARTS : SQUARES;
+}
 
 /** The emoji color category a color reads as. */
 export function emojiColor(hex: Hex): EmojiColor {
@@ -105,7 +99,7 @@ export function emojiColor(hex: Hex): EmojiColor {
 
 /** The emoji for a repo's color in its glyph's shape (0007, 0012). */
 export function emojiFor(hex: Hex, glyph: Glyph): string {
-  return FAMILIES[glyph](emojiColor(hex));
+  return family(glyph)[emojiColor(hex)];
 }
 
 function nearestHue(hue: number): Chromatic {

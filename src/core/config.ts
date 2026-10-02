@@ -3,6 +3,7 @@ import {
   COMMAND_CENTER_KEYS,
   DEFAULT_GLYPH,
   GLYPHS,
+  RETIRED_GLYPHS,
   SIDEBAR_VISIBILITIES,
   type ColorOverrides,
   type Glyph,
@@ -93,6 +94,10 @@ function parseEntry(value: unknown, report: (message: string) => void): RepoConf
   if (rawGlyph !== undefined) {
     if (isOneOf(GLYPHS, rawGlyph)) {
       entry.glyph = rawGlyph;
+    } else if (isOneOf(RETIRED_GLYPHS, rawGlyph)) {
+      report(
+        `glyph ${JSON.stringify(rawGlyph)} was retired; using ${DEFAULT_GLYPH}. Pick another with Toucan: Set Glyph.`,
+      );
     } else {
       report(
         `glyph ${JSON.stringify(rawGlyph)} is not one of ${GLYPHS.join(", ")}; using ${DEFAULT_GLYPH}.`,

@@ -7,6 +7,6 @@ export function accessibilityLabel(
   config: Pick<RepoConfig, "background" | "glyph">,
 ): string {
   const color = presetName(config.background);
-  const glyph = config.glyph.replaceAll("-", " ");
+  const { glyph } = config;
   return color ? `Toucan: ${name}, ${color} ${glyph}` : `Toucan: ${name}, ${glyph}`;
 }
