@@ -301,11 +301,38 @@ describe("SettingsFileWriter", () => {
     await writeFile(file, BEFORE);
     await refreshView(file);
     await chmod(dir, 0o555); // the temp file can't be created next to settings.json
-    const { writer, updates } = setup(file);
+    const { writer, updates, debugs } = setup(file);
     await writer.write(KEY, replace, "profile");
     await chmod(dir, 0o755);
     expect(updates).toEqual([NEXT]);
+    expect(reasons(debugs)).toEqual([
+      expect.stringMatching(/^couldn't write the settings file \(Error: EACCES/),
+    ]);
     expect(await readFile(file, "utf8")).toBe(BEFORE);
+    expect(await readdir(dir)).toEqual(["settings.json"]);
+  });
+
+  it("says so when reverting an edit VS Code missed fails, and uses update()", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    // The edit lands; then, while the writer waits for VS Code, the folder
+    // turns read-only, so the revert's temp file can't be created.
+    const { writer, updates, debugs } = setup(file, {
+      view: "stale",
+      onSleep: () => chmod(dir, 0o555),
+    });
+    try {
+      await writer.write(KEY, replace, "profile");
+    } finally {
+      await chmod(dir, 0o755);
+    }
+    expect(updates).toEqual([NEXT]);
+    expect(reasons(debugs)).toEqual([
+      expect.stringMatching(
+        /^VS Code didn't pick up the edit, and reverting it failed \(Error: EACCES/,
+      ),
+    ]);
+    expect(await readFile(file, "utf8")).toBe(AFTER);
     expect(await readdir(dir)).toEqual(["settings.json"]);
   });
 
