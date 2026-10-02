@@ -96,11 +96,11 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 | `pnpm icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`             |
 | `pnpm check:generated` | Regenerate everything above and fail if anything changed (CI runs this)             |
 | `pnpm package`         | Build and package a VSIX                                                            |
-| `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (optional, below)   |
+| `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (see below)         |
 
-### Docs search with qmd (optional)
+### Docs search with qmd
 
-[qmd](https://github.com/tobi/qmd) gives local keyword and semantic search over the docs. Claude Code sessions in this repo use it through `.mcp.json`. Nothing needs it: without qmd, agents read the files directly, and CI never installs it.
+[qmd](https://github.com/tobi/qmd) gives local keyword and semantic search over the docs, and it's part of the setup for working on Toucan: agents search the docs with it instead of reading whole folders, which finds things far better. Claude Code sessions in this repo use it through `.mcp.json`. The extension itself doesn't need it, and CI never installs it.
 
 Toucan keeps its docs in its own qmd index, `toucan`, so it never touches your other qmd collections. Search it yourself with `qmd --index toucan query "…"`.
 
@@ -109,7 +109,7 @@ One-time setup:
 1. Install it globally: `npm i -g @tobilu/qmd` (2.8 or newer). It has native dependencies and downloads about 2 GB of models on first use, which is why it isn't a devDependency. Install it under the Node version your editor and Claude Code use (with nvm, the one that's active there), so `qmd` is on their `PATH`. If npm skips the install scripts, the prebuilt binaries usually work; otherwise reinstall with `--allow-scripts`.
 2. Start a Claude Code session here. A session-start hook registers Toucan's two collections in the `toucan` index, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and builds the keyword index in the background. Then run `pnpm docs:index` once for semantic search: it also refreshes the embeddings (downloading qmd's models on first use). It's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
 
-The first search downloads qmd's models (about 2 GB, once), even before `pnpm docs:index`: qmd uses them to expand and rerank queries. That's expected, and the much better search is worth it.
+The first search, usually made by an agent, downloads qmd's models (about 2 GB, one-time); that's expected and well worth it. `pnpm docs:index` adds full embeddings.
 
 After that, a hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
 
