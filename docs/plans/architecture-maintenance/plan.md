@@ -83,6 +83,7 @@ The work ships as three stacked PRs, each with internal review rounds before it 
 ## Risks
 
 - **Stacked PRs drift.** Every change below needs a merge up the stack. Mitigation: merge, don't rebase (no force-pushes), and run a stack check on every push.
+- **Main ahead of its code.** #7's ADRs and CLAUDE.md describe the layout and rules that #8 and #9 bring. Mitigation: #7–#9 merge back-to-back in one session, with nothing landing on main in between.
 - **Tooling with side effects.** qmd and its tests write to the user's cache and start background processes. Mitigation:
   - Toucan uses its own named index.
   - Tests isolate HOME and XDG.
