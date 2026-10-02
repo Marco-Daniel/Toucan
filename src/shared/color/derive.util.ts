@@ -70,7 +70,7 @@ export function deriveColors({
 }
 
 /** Dark when white text has more WCAG contrast on it than black text. */
-export function isDark(color: Color): boolean {
+function isDark(color: Color): boolean {
   return wcagContrast(color, WHITE) > wcagContrast(color, BLACK);
 }
 

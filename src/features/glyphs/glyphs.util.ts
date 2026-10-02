@@ -4,13 +4,6 @@ import { GLYPH_GROUPS } from "../../shared/model/model.consts.ts";
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 /**
- * Solid codicon used where no glyph applies (0005). VS Code gives extensions
- * no signal when a contributed icon font fails to load, so don't try to
- * detect that and swap this in.
- */
-export const FALLBACK_ICON = "circle-large-filled";
-
-/**
  * Escapes `$(…)` in user text such as a folder name, so VS Code shows it
  * literally instead of as an icon. Its label renderer prints `\$(x)` as `$(x)`.
  */

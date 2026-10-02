@@ -46,7 +46,7 @@ export interface Clock {
 }
 
 /** Consecutive missed edits before a guessed settings file counts as not this window's. */
-export const MISSES_BEFORE_UNFOLLOWED = 2;
+const MISSES_BEFORE_UNFOLLOWED = 2;
 /** Defaults for how long, and how often, a write is checked to have landed. */
 const VERIFY_TIMEOUT_MS = 4000;
 const VERIFY_POLL_MS = 100;
