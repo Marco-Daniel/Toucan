@@ -1,6 +1,6 @@
 # Architecture decisions
 
-The decisions that shape Toucan as a whole, one per file. Plan folders (`docs/plans/*/decisions/`) record how a piece of work was decided; a rule that outlives its plan is lifted here. Cite these as `ADR-NNNN`. A test keeps this index complete and fails on a cited ADR that doesn't exist or is superseded.
+The decisions that shape Toucan as a whole, one per file. Plan folders (`docs/plans/*/decisions/`) record how a piece of work was decided; a rule that outlives its plan is lifted here. Cite these as `ADR-NNNN`. A test keeps this index complete and fails on a cited ADR that doesn't exist or, in code and the guides, isn't Accepted; ADRs and plans may cite one that was superseded since.
 
 ## The system
 

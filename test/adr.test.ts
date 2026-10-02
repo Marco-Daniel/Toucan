@@ -4,16 +4,10 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = join(import.meta.dirname, "..");
 const ADR_DIR = join(ROOT, "docs", "adr");
-/** Where code, the guides, the plans and the ADR log itself may cite an ADR. */
-const CITING = [
-  "src",
-  "scripts",
-  "test",
-  ".claude/CLAUDE.md",
-  "README.md",
-  "docs/adr",
-  "docs/plans",
-];
+/** Live instructions: an ADR cited here must still be in force. */
+const LIVE = ["src", "scripts", "test", ".claude/CLAUDE.md", "README.md", "docs/adr/README.md"];
+/** History: the ADRs and plans may cite an ADR that was later superseded (that's how superseding reads). */
+const HISTORY = ["docs/adr", "docs/plans"];
 const CITATION = /\bADR-(\d{4})\b/g;
 
 interface AdrHeader {
@@ -77,9 +71,9 @@ function filesUnder(path: string): string[] {
   }
 }
 
-/** Each `ADR-NNNN` cited, with where it's cited; an ADR naming its own number doesn't count. */
-function citations(): { number: string; where: string }[] {
-  return CITING.flatMap(filesUnder).flatMap((file) => {
+/** Each `ADR-NNNN` cited at `sites`, with where; an ADR naming its own number doesn't count. */
+function citations(sites: readonly string[]): { number: string; where: string }[] {
+  return sites.flatMap(filesUnder).flatMap((file) => {
     const own = /docs\/adr\/(\d{4})-/.exec(file)?.[1];
     return [...readFileSync(join(ROOT, file), "utf8").matchAll(CITATION)]
       .map(([, number = ""]) => ({ number, where: file }))
@@ -91,7 +85,7 @@ describe("the ADR log", () => {
   const log = adrs();
   const readme = readFileSync(join(ADR_DIR, "README.md"), "utf8");
 
-  it("numbers its ADRs from 0001 without gaps or repeats", () => {
+  it("numbers its ADRs from one, without gaps or repeats", () => {
     const numbers = log.map(({ number }) => number).toSorted();
     expect(numbers).toEqual(numbers.map((_, i) => String(i + 1).padStart(4, "0")));
   });
@@ -125,16 +119,18 @@ describe("the ADR log", () => {
     }
   });
 
-  it("only cites ADRs that exist and are accepted", () => {
-    const byNumber = new Map(log.map((adr) => [adr.number, adr]));
-    const found = citations();
+  it("only cites ADRs that exist", () => {
+    const numbers = new Set(log.map(({ number }) => number));
+    const missing = citations([...LIVE, ...HISTORY]).filter(({ number }) => !numbers.has(number));
+    expect(missing).toEqual([]);
+  });
+
+  it("points live instructions only at accepted ADRs", () => {
+    const statusOf = new Map(log.map((adr) => [adr.number, adr.status]));
+    const found = citations(LIVE);
     // It did read the citations: CLAUDE.md cites the ADRs its rules come from.
     expect(found.some(({ where }) => where === join(".claude", "CLAUDE.md"))).toBe(true);
-    const broken = found.filter(({ number }) => {
-      const adr = byNumber.get(number);
-      // Superseded, Deprecated or Rejected: the rule no longer stands.
-      return adr?.status !== "Accepted";
-    });
-    expect(broken).toEqual([]);
+    // Superseded, Deprecated or Rejected: the rule no longer stands.
+    expect(found.filter(({ number }) => statusOf.get(number) !== "Accepted")).toEqual([]);
   });
 });
