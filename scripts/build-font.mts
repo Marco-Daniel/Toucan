@@ -5,7 +5,7 @@
 // the font and the swatches can't drift apart.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { GLYPH_DESIGNS } from "../src/core/glyphDesign.ts";
-import { FONT_CODEPOINTS, shapeSvg } from "../src/core/glyphs.ts";
+import { FONT_CODEPOINTS, shapeSvg } from "../src/core/glyphFont.ts";
 import { GLYPHS, type Hex } from "../src/core/model.ts";
 import { bakeGlyph } from "./bake-glyphs.mts";
 import { buildFont } from "./font.mts";
