@@ -9,6 +9,7 @@ Everything pushed to GitHub is public: files, commit messages, branch names, PR 
 - references to other projects or repositories of the owner, or where an idea was borrowed from (describe the idea itself)
 - local machine details: absolute paths (home folders, temp or scratch directories), usernames, hostnames, SSH host aliases or other local config
 - secrets, tokens or credentials, or anything copied from a private source
+- agent or session names (e.g. local tooling session ids); refer to roles instead: the lead, the implementer, the outside reviewer, the blind reviewer, DevOps
 
 Public prior art (other open-source extensions, VS Code itself) is fine to name.
 
