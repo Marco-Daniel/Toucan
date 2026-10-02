@@ -1,7 +1,7 @@
 import { NEUTRAL_GRAY } from "../../shared/color/color.util.ts";
 import type { RepoConfig } from "../../shared/config/config.util.ts";
 import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
-import type { CommandHost } from "./commands.adapter.ts";
+import type { CommandArgs, CommandHost } from "./commands.adapter.ts";
 
 /**
  * Shows a changed color or glyph on this window's status bar only, without
@@ -13,7 +13,7 @@ export class Preview {
   private readonly host: CommandHost;
   private readonly name: string;
 
-  constructor(host: CommandHost, name: string) {
+  constructor({ host, name }: CommandArgs) {
     this.host = host;
     this.name = name;
     this.base = host.activeRepo()?.config ?? {

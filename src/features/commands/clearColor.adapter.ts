@@ -9,17 +9,17 @@ import {
 import { configs } from "../../generated/meta.ts";
 import { userValue } from "../settings/settings.adapter.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
-import type { CommandHost } from "./commands.adapter.ts";
+import type { CommandArgs } from "./commands.adapter.ts";
 import { writeRepos } from "./commandUi.adapter.ts";
 
-export async function clearColor(host: CommandHost, name: string): Promise<void> {
+export async function clearColor({ host, name }: CommandArgs): Promise<void> {
   const raw = readRepos();
   if (!isRecord(raw) || !Object.hasOwn(raw, name)) {
     notify({ level: "info", message: NO_COLOR });
     return;
   }
   // Only a bare color is cheap to set again; anything more was typed by hand.
-  const handEdited = handEditedKeys(raw, name);
+  const handEdited = handEditedKeys({ raw, repo: name });
   if (handEdited.length > 0) {
     const answer = await window.showWarningMessage(
       CLEAR_CONFIRMATION,
@@ -32,7 +32,10 @@ export async function clearColor(host: CommandHost, name: string): Promise<void>
   }
   // From the settings at write time, not `raw`: the dialog may have been open
   // while another window changed a different repo.
-  await writeRepos(host, (repos) => ({ value: withoutRepo(repos, name) }));
+  await writeRepos({
+    host,
+    update: (repos) => ({ value: withoutRepo({ raw: repos, repo: name }) }),
+  });
 }
 
 /**

@@ -13,7 +13,12 @@ import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 /** A quick pick swatch is drawn 16 px high. */
 const SWATCH_PX = 16;
 
-export function swatch(glyph: Glyph, hex: Hex): Uri {
+interface SwatchArgs {
+  glyph: Glyph;
+  hex: Hex;
+}
+
+export function swatch({ glyph, hex }: SwatchArgs): Uri {
   return Uri.parse(svgDataUri(glyphSvg(glyph, hex, SWATCH_PX)));
 }
 
@@ -41,7 +46,12 @@ export function statusBarAgainst(): Hex | undefined {
   });
 }
 
-export async function writeRepos(host: CommandHost, update: SettingsUpdate): Promise<void> {
+interface WriteReposArgs {
+  host: CommandHost;
+  update: SettingsUpdate;
+}
+
+export async function writeRepos({ host, update }: WriteReposArgs): Promise<void> {
   // Application-scoped, so VS Code keeps it in the default profile's file.
   const [, error] = await tryCatch(() =>
     host.writer.write(configs.repos.key, update, "defaultProfile"),

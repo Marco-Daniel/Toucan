@@ -3,12 +3,12 @@ import { validateColorInput } from "../../shared/color/color.util.ts";
 import { LOW_CONTRAST_WARNING, lowContrast } from "../../shared/color/contrast.util.ts";
 import { withBackground } from "./entries.util.ts";
 import type { Hex } from "../../shared/model/model.types.ts";
-import type { CommandHost } from "./commands.adapter.ts";
+import type { CommandArgs } from "./commands.adapter.ts";
 import { statusBarAgainst, writeRepos } from "./commandUi.adapter.ts";
 import { Preview } from "./preview.adapter.ts";
 
-export async function setColor(host: CommandHost, name: string): Promise<void> {
-  const preview = new Preview(host, name);
+export async function setColor({ host, name }: CommandArgs): Promise<void> {
+  const preview = new Preview({ host, name });
   const box = window.createInputBox();
   box.title = `Toucan: Color for ${name}`;
   box.prompt = "Any CSS color: #e91e63, rebeccapurple, oklch(0.6 0.15 30)…";
@@ -47,7 +47,10 @@ export async function setColor(host: CommandHost, name: string): Promise<void> {
     }
     accepted = true;
     box.hide();
-    await writeRepos(host, (repos) => ({ value: withBackground(repos, name, hex) }));
+    await writeRepos({
+      host,
+      update: (repos) => ({ value: withBackground({ raw: repos, repo: name, background: hex }) }),
+    });
     // The saved value is in place now (or the save failed and the old one is).
     preview.restore();
   });

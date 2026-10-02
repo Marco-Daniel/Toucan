@@ -4,11 +4,11 @@ import { withBackground } from "./entries.util.ts";
 import type { Hex } from "../../shared/model/model.types.ts";
 import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
 import { PRESETS } from "../../shared/color/presets.consts.ts";
-import type { CommandHost } from "./commands.adapter.ts";
+import type { CommandArgs } from "./commands.adapter.ts";
 import { statusBarAgainst, swatch, writeRepos } from "./commandUi.adapter.ts";
 import { pickWithPreview } from "./pickWithPreview.adapter.ts";
 
-export async function pickPreset(host: CommandHost, name: string): Promise<void> {
+export async function pickPreset({ host, name }: CommandArgs): Promise<void> {
   const glyph = host.activeRepo()?.config.glyph ?? DEFAULT_GLYPH;
   const current = host.activeRepo()?.config.background;
   const statusBar = statusBarAgainst();
@@ -16,7 +16,7 @@ export async function pickPreset(host: CommandHost, name: string): Promise<void>
     const item: QuickPickItem & { hex: Hex } = {
       label: preset.name,
       description: preset.hex === current ? `${preset.hex} · current` : preset.hex,
-      iconPath: swatch(glyph, preset.hex),
+      iconPath: swatch({ glyph, hex: preset.hex }),
       hex: preset.hex,
     };
     // Marked, not hidden: the user can still pick it (0018).
@@ -25,18 +25,23 @@ export async function pickPreset(host: CommandHost, name: string): Promise<void>
     }
     return item;
   });
-  const picked = await pickWithPreview(
+  const picked = await pickWithPreview({
     host,
     name,
     items,
-    `Toucan: Preset for ${name}`,
-    (item) => ({
+    title: `Toucan: Preset for ${name}`,
+    change: (item) => ({
       background: item.hex,
     }),
-    items.find((item) => item.hex === current),
-  );
+    active: items.find((item) => item.hex === current),
+  });
   if (picked) {
-    await writeRepos(host, (repos) => ({ value: withBackground(repos, name, picked.item.hex) }));
+    await writeRepos({
+      host,
+      update: (repos) => ({
+        value: withBackground({ raw: repos, repo: name, background: picked.item.hex }),
+      }),
+    });
     picked.done();
   }
 }
