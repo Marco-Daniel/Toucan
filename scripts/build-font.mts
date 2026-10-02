@@ -1,8 +1,9 @@
-// Builds Toucan's glyphs from their designs in src/core/glyphDesign.ts: bakes
-// each into a plain filled path (src/generated/glyphPaths.ts, which the
-// swatches and the sidebar block draw), writes the SVG sources to
-// media/icons, and builds the icon font media/toucan-icons.woff from them, so
-// the font and the swatches can't drift apart.
+// Builds Toucan's glyphs from their designs in
+// src/features/glyphs/glyphDesign.consts.ts: bakes each into a plain filled
+// path (src/generated/glyphPaths.ts, which the swatches and the sidebar block
+// draw), writes the SVG sources to media/icons, and builds the icon font
+// media/toucan-icons.woff from them, so the font and the swatches can't drift
+// apart.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { GLYPH_DESIGNS } from "../src/features/glyphs/glyphDesign.consts.ts";
 import { FONT_CODEPOINTS, shapeSvg } from "../src/features/glyphs/glyphFont.util.ts";

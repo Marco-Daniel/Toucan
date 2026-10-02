@@ -1,4 +1,4 @@
-// Ids that package.json declares too; test/core/manifest.test.ts keeps them in sync.
+// Ids that package.json declares too; test/manifest.test.ts keeps them in sync.
 
 /** The status bar item's id (not in package.json, but stable across reloads). */
 export const STATUS_ITEM_ID = "toucan.indicator";

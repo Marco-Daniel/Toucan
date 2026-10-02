@@ -80,7 +80,7 @@ function messageArguments(): { file: string; text: string }[] {
   });
 }
 
-/** A plain literal (no interpolation), or a constant or builder call from core/messages.ts. */
+/** A plain literal (no interpolation), or a constant or builder call from shared/messages/notifications.messages.ts. */
 function allowed(text: string): boolean {
   if (/^"(?:[^"\\]|\\.)*"$|^'(?:[^'\\]|\\.)*'$|^`[^`$]*`$/.test(text)) {
     return true;
@@ -94,9 +94,9 @@ function allowed(text: string): boolean {
 describe("notification texts", () => {
   // VS Code renders markdown links in notification messages, `command:` links
   // included, so workspace text (the folder name) must never reach one. Only
-  // a plain literal or a text from core/messages.ts is allowed: that rules out
+  // a plain literal or a text from shared/messages/notifications.messages.ts is allowed: that rules out
   // interpolation, concatenation and variables in one go.
-  it("come only from plain literals or core/messages.ts", () => {
+  it("come only from plain literals or shared/messages/notifications.messages.ts", () => {
     const calls = messageArguments();
     expect(calls.length).toBeGreaterThanOrEqual(9);
     expect(calls.filter(({ text }) => !allowed(text))).toEqual([]);
