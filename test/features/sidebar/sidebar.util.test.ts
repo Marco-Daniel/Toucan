@@ -372,6 +372,16 @@ describe("resolveSidebarSettings", () => {
   });
 });
 
+describe("SidebarController, hand-off timing", () => {
+  // The reveal starts within the triggering call, so its `revealing` guard is
+  // set before anything else can run, not a tick later.
+  it("calls the reveal port before the triggering call returns", () => {
+    const { controller, state } = setup();
+    controller.start(true);
+    expect(state.reveals).toBe(1);
+  });
+});
+
 describe("SidebarController, failures", () => {
   // Every place the controller starts async work from an event or timer.
   it.each([
