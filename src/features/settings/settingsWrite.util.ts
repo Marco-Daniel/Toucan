@@ -12,6 +12,7 @@ import {
 import { dirname, join } from "node:path";
 import { createLock } from "../../shared/async/lock.util.ts";
 import { planEdit, viewReflects } from "./settingsEdit.util.ts";
+import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 export type SettingsTarget = "profile" | "defaultProfile";
 
@@ -156,18 +157,17 @@ export class SettingsFileWriter {
     if (await this.isDirty(file)) {
       return "the settings file has unsaved changes";
     }
-    let text: string;
-    try {
-      text = await readFile(file, "utf8");
-    } catch {
+    const [read, readError] = await tryCatch(readFile(file, "utf8"));
+    if (readError !== null) {
       return "the settings file can't be read";
     }
+    let text = read;
 
     let plan = planEdit({ text, key, view: this.ports.view(key), desired });
     // Re-read right before writing, to narrow the race with VS Code's own writes.
-    const latest = await readFile(file, "utf8").catch(() => undefined);
+    const [latest] = await tryCatch(readFile(file, "utf8"));
     if (latest !== text) {
-      if (latest === undefined) {
+      if (latest === null) {
         return "the settings file disappeared";
       }
       text = latest;
@@ -186,27 +186,25 @@ export class SettingsFileWriter {
       return plan.reason;
     }
 
-    try {
-      await writeLikeVsCode(file, plan.text);
-    } catch (error) {
+    const [, writeError] = await tryCatch(writeLikeVsCode(file, plan.text));
+    if (writeError !== null) {
       // E.g. a read-only file, or a rename blocked by another process.
-      return `couldn't write the settings file (${String(error)})`;
+      return `couldn't write the settings file (${errorText(writeError)})`;
     }
     if (await this.reflected(key, desired, plan.changed)) {
       this.misses.delete(file);
       return undefined;
     }
     // VS Code didn't follow: maybe slow, maybe not this window's file (0017 step 5).
-    const now = await readFile(file, "utf8").catch(() => undefined);
+    const [now] = await tryCatch(readFile(file, "utf8"));
     if (now !== plan.text) {
       // Someone else wrote meanwhile: no evidence either way about the guess.
       return "VS Code didn't pick up the edit, and the file changed since; left it";
     }
     this.recordMiss(target, file);
-    try {
-      await writeLikeVsCode(file, text);
-    } catch (error) {
-      return `VS Code didn't pick up the edit, and reverting it failed (${String(error)})`;
+    const [, revertError] = await tryCatch(writeLikeVsCode(file, text));
+    if (revertError !== null) {
+      return `VS Code didn't pick up the edit, and reverting it failed (${errorText(revertError)})`;
     }
     return "VS Code didn't pick up the edit; reverted it";
   }
@@ -241,10 +239,8 @@ export class SettingsFileWriter {
 
   /** Open with unsaved edits, compared by real path (a symlink may be open under its target). */
   private async isDirty(file: string): Promise<boolean> {
-    const real = await realpath(file).catch(() => file);
-    const paths = await Promise.all(
-      this.ports.dirtyFiles().map((path) => realpath(path).catch(() => path)),
-    );
+    const real = await realOrSame(file);
+    const paths = await Promise.all(this.ports.dirtyFiles().map(realOrSame));
     return paths.includes(real);
   }
 }
@@ -270,16 +266,30 @@ async function writeLikeVsCode(file: string, text: string): Promise<void> {
     return;
   }
   const temporary = join(dirname(file), `.${randomUUID()}.toucan.tmp`);
-  try {
-    const mode = link.mode & PERMISSION_BITS;
-    // Created with the original's mode, so the copy is never more readable
-    // than settings.json; the umask can narrow it, so chmod then sets it exactly.
-    await writeFile(temporary, text, { mode });
-    await chmod(temporary, mode);
-    await rename(temporary, file);
-  } catch (error) {
+  const [, error] = await tryCatch(replaceVia(temporary, file, text, link.mode & PERMISSION_BITS));
+  if (error !== null) {
     // Never leave a copy of the user's settings behind.
-    await unlink(temporary).catch(() => undefined);
+    await tryCatch(unlink(temporary));
     throw error;
   }
+}
+
+/** Writes `text` to `temporary`, then renames it over `file`. */
+async function replaceVia(
+  temporary: string,
+  file: string,
+  text: string,
+  mode: number,
+): Promise<void> {
+  // Created with the original's mode, so the copy is never more readable
+  // than settings.json; the umask can narrow it, so chmod then sets it exactly.
+  await writeFile(temporary, text, { mode });
+  await chmod(temporary, mode);
+  await rename(temporary, file);
+}
+
+/** The real path, or the path itself when it can't be resolved (it may not exist). */
+async function realOrSame(path: string): Promise<string> {
+  const [real] = await tryCatch(realpath(path));
+  return real ?? path;
 }

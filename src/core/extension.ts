@@ -14,6 +14,7 @@ import { SearchEmoji } from "../features/searchEmoji/searchEmoji.adapter.ts";
 import { createSettingsWriter } from "../features/settings/settings.adapter.ts";
 import { SidebarBlock } from "../features/sidebar/sidebar.adapter.ts";
 import { StatusBarIndicator } from "../features/statusBar/statusBar.adapter.ts";
+import { errorText, tryCatch } from "../shared/async/tryCatch.util.ts";
 
 let coordinator: FocusCoordinator | undefined;
 
@@ -21,6 +22,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const log = createLog();
   /** Fire-and-forget work: a failure is logged instead of becoming an unhandled rejection. */
   const background = (what: string, task: Promise<unknown>) => {
+    // A .catch, not tryCatch: nothing here awaits, the task runs on by itself.
     task.catch((error: unknown) => log.warn(`${what} failed: ${String(error)}`));
   };
   const reporter = new IssueReporter(log, configs.repos.key);
@@ -101,11 +103,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
   focus.setFocused(window.state.focused);
   // The view's `when` context key must be set before the first reveal, or the
   // reveal can reach the workbench before the view exists.
-  try {
-    await sidebar.refresh();
-  } catch (error) {
+  const [, sidebarError] = await tryCatch(sidebar.refresh());
+  if (sidebarError !== null) {
     // Keep the rest of Toucan running if the sidebar's context key fails.
-    log.warn(`Sidebar block setup failed: ${String(error)}`);
+    log.warn(`Sidebar block setup failed: ${errorText(sidebarError)}`);
   }
   sidebar.controller.start(window.state.focused);
   offerAgentsControl(window.state.focused);

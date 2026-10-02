@@ -8,6 +8,7 @@ import { COLOR_CUSTOMIZATIONS } from "../focus/focus.adapter.ts";
 import { configs } from "../../generated/meta.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import type { CommandHost } from "./commands.adapter.ts";
+import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 /** A quick pick swatch is drawn 16 px high. */
 const SWATCH_PX = 16;
@@ -41,10 +42,9 @@ export function statusBarAgainst(): Hex | undefined {
 }
 
 export async function writeRepos(host: CommandHost, update: SettingsUpdate): Promise<void> {
-  try {
-    // Application-scoped, so VS Code keeps it in the default profile's file.
-    await host.writer.write(configs.repos.key, update, "defaultProfile");
-  } catch (error) {
+  // Application-scoped, so VS Code keeps it in the default profile's file.
+  const [, error] = await tryCatch(host.writer.write(configs.repos.key, update, "defaultProfile"));
+  if (error !== null) {
     notify("error", saveFailed(error));
   }
 }

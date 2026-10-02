@@ -9,6 +9,7 @@ import { settingInText } from "../settings/settingsEdit.util.ts";
 import { userValue } from "../settings/settings.adapter.ts";
 import type { SettingsWriter } from "../settings/settings.adapter.ts";
 import type { CommandCenterColors } from "../../shared/model/model.types.ts";
+import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 export const COLOR_CUSTOMIZATIONS = "workbench.colorCustomizations";
 /** globalState (per profile): Toucan has applied a color here at least once (0008). */
@@ -51,8 +52,8 @@ function ownerFilePorts(
     async readCustomizationsFromDisk() {
       // A guess at this window's settings file, only used to notice a stale
       // view. It can be another profile's file, so it's never written back.
-      const text = await readFile(settingsFile, "utf8").catch(() => undefined);
-      return text === undefined ? undefined : settingInText(text, COLOR_CUSTOMIZATIONS);
+      const [text] = await tryCatch(readFile(settingsFile, "utf8"));
+      return text === null ? undefined : settingInText(text, COLOR_CUSTOMIZATIONS);
     },
     hasApplied() {
       return context.globalState.get<boolean>(APPLIED_KEY, false);
