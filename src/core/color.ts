@@ -23,8 +23,9 @@ import {
   parse,
   toGamut,
   useMode,
-  type Color,
 } from "culori/fn";
+import type { Color } from "culori/fn";
+import { asHex } from "./model.ts";
 import type { Hex } from "./model.ts";
 
 // The color spaces CSS Color 4 can express, so `parse` accepts any CSS color
@@ -74,9 +75,12 @@ export function parseColor(input: string): Color | undefined {
   return parse(input.trim());
 }
 
+/** The largest 8-bit channel value: `ff` in hex. */
+export const CHANNEL_MAX = 255;
+
 /** Whether the alpha survives as something other than `ff` in hex. */
 export function isTranslucent(color: Color): boolean {
-  return color.alpha !== undefined && Math.round(color.alpha * 255) < 255;
+  return color.alpha !== undefined && Math.round(color.alpha * CHANNEL_MAX) < CHANNEL_MAX;
 }
 
 /** The same color without its alpha channel. */
@@ -89,7 +93,7 @@ export function opaque(color: Color): Color {
 export function toHex(color: Color): Hex {
   // In-gamut colors skip the OKLCH round trip, which can introduce rounding errors.
   const srgb = displayable(color) ? color : toSrgbGamut(color);
-  return (isTranslucent(srgb) ? formatHex8(srgb) : formatHex(srgb)) as Hex;
+  return asHex(isTranslucent(srgb) ? formatHex8(srgb) : formatHex(srgb));
 }
 
 /** The background a preview starts from before the repo has a color. */

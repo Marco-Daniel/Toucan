@@ -5,9 +5,9 @@ import {
   commands as vscodeCommands,
   window,
   workspace,
-  type Disposable,
-  type QuickPickItem,
 } from "vscode";
+import type { Disposable, QuickPickItem } from "vscode";
+import { notify } from "./notify.ts";
 import { NEUTRAL_GRAY, validateColorInput } from "./core/color.ts";
 import {
   LOW_CONTRAST_WARNING,
@@ -25,18 +25,20 @@ import {
   clearDetail,
   saveFailed,
 } from "./core/messages.ts";
-import { DEFAULT_GLYPH, type Glyph, type Hex } from "./core/model.ts";
+import { DEFAULT_GLYPH } from "./core/model.ts";
+import type { Glyph, Hex } from "./core/model.ts";
 import { PRESETS } from "./core/presets.ts";
 import { COLOR_CUSTOMIZATIONS } from "./focus.ts";
 import { commands, configs } from "./generated/meta.ts";
 import type { ActiveRepo } from "./repo.ts";
-import { userValue, type SettingsUpdate, type SettingsWriter } from "./settingsWriter.ts";
+import { userValue } from "./settingsWriter.ts";
+import type { SettingsUpdate, SettingsWriter } from "./settingsWriter.ts";
 import type { SidebarBlock } from "./sidebar.ts";
 import type { StatusBarIndicator } from "./statusBar.ts";
 import { isRecord } from "./core/records.ts";
 
 export interface CommandHost {
-  /** Writes toucan.repos, keeping comments when it safely can (0017). */
+  /** Writes toucan.repos, keeping comments when it safely can (toucan-v1/0017). */
   writer: SettingsWriter;
   /** This window's repo (first folder) name, configured or not. */
   repoName(): string | undefined;
@@ -74,7 +76,7 @@ async function setColor(host: CommandHost, name: string): Promise<void> {
     if (input.kind === "invalid") {
       box.validationMessage = input.message;
     } else if (input.kind === "color" && lowContrast(input.hex, statusBar)) {
-      // A warning, not an error: the color can still be saved (0018).
+      // A warning, not an error: the color can still be saved (toucan-v1/0018).
       box.validationMessage = {
         message: LOW_CONTRAST_WARNING,
         severity: InputBoxValidationSeverity.Warning,
@@ -124,7 +126,7 @@ async function pickPreset(host: CommandHost, name: string): Promise<void> {
       iconPath: swatch(glyph, preset.hex),
       hex: preset.hex,
     };
-    // Marked, not hidden: the user can still pick it (0018).
+    // Marked, not hidden: the user can still pick it (toucan-v1/0018).
     if (lowContrast(preset.hex, statusBar)) {
       item.detail = `$(warning) ${LOW_CONTRAST_WARNING}`;
     }
@@ -180,7 +182,7 @@ async function setGlyph(host: CommandHost, name: string): Promise<void> {
 async function clearColor(host: CommandHost, name: string): Promise<void> {
   const raw = readRepos();
   if (!isRecord(raw) || !Object.hasOwn(raw, name)) {
-    void window.showInformationMessage(NO_COLOR);
+    notify("info", NO_COLOR);
     return;
   }
   // Only a bare color is cheap to set again; anything more was typed by hand.
@@ -281,18 +283,21 @@ function withRepo(
   return async () => {
     const name = host.repoName();
     if (name === undefined) {
-      void window.showWarningMessage("Toucan colors a repository. Open a folder first.");
+      notify("warning", "Toucan colors a repository. Open a folder first.");
       return;
     }
     await command(host, name);
   };
 }
 
+/** A quick pick swatch is drawn 16 px high. */
+const SWATCH_PX = 16;
+
 function swatch(glyph: Glyph, hex: Hex): Uri {
-  return Uri.parse(svgDataUri(glyphSvg(glyph, hex, 16)));
+  return Uri.parse(svgDataUri(glyphSvg(glyph, hex, SWATCH_PX)));
 }
 
-/** The status bar background to check picked colors against (0018). */
+/** The status bar background to check picked colors against (toucan-v1/0018). */
 function statusBarAgainst(): Hex | undefined {
   const themeKind = window.activeColorTheme.kind;
   const kind =
@@ -330,6 +335,6 @@ async function writeRepos(host: CommandHost, update: SettingsUpdate): Promise<vo
     // Application-scoped, so VS Code keeps it in the default profile's file.
     await host.writer.write(configs.repos.key, update, "defaultProfile");
   } catch (error) {
-    void window.showErrorMessage(saveFailed(error));
+    notify("error", saveFailed(error));
   }
 }

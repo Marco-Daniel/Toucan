@@ -1,4 +1,4 @@
-/** VS Code's experimental setting whose "compact" mode hides the Command Center background (0016). */
+/** VS Code's experimental setting whose "compact" mode hides the Command Center background (toucan-v1/0016). */
 export const AGENTS_CONTROL = "chat.agentsControl.enabled";
 
 export interface AgentsControlState {
@@ -13,7 +13,7 @@ export interface AgentsControlState {
 }
 
 /**
- * Whether to offer switching Agents control to "badge" (0016): only when the
+ * Whether to offer switching Agents control to "badge" (toucan-v1/0016): only when the
  * setting exists, compact mode is in effect, and a user-settings write would
  * actually change it. After "Not now", only log.
  */

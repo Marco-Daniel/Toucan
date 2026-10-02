@@ -1,3 +1,4 @@
+import { asHex } from "./model.ts";
 import type { Hex } from "./model.ts";
 
 export interface Preset {
@@ -5,7 +6,7 @@ export interface Preset {
   hex: Hex;
 }
 
-/** The toucan-themed palette (0014). A picked preset is stored as its hex. */
+/** The toucan-themed palette (toucan-v1/0014). A picked preset is stored as its hex. */
 export const PRESETS: readonly Preset[] = (
   [
     ["Beak Red", "#f92824"],
@@ -25,4 +26,4 @@ export const PRESETS: readonly Preset[] = (
     ["Silver", "#a7a8b3"],
     ["Plumage Black", "#101316"],
   ] as const
-).map(([name, hex]) => ({ name, hex: hex as Hex }));
+).map(([name, hex]) => ({ name, hex: asHex(hex) }));

@@ -11,7 +11,8 @@ import {
   svgDataUri,
 } from "../../src/core/glyphs.ts";
 import { GLYPH_PATHS } from "../../src/generated/glyphPaths.ts";
-import { GLYPH_GROUPS, GLYPHS, type Glyph, type Hex } from "../../src/core/model.ts";
+import { GLYPH_GROUPS, GLYPHS } from "../../src/core/model.ts";
+import type { Glyph, Hex } from "../../src/core/model.ts";
 
 const RED = "#ff0000" as Hex;
 

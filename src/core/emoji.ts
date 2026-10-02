@@ -17,6 +17,8 @@ export type EmojiColor = (typeof EMOJI_COLORS)[number];
 
 type Chromatic = Exclude<EmojiColor, "brown" | "black" | "white">;
 
+const CHROMATICS: readonly Chromatic[] = ["red", "orange", "yellow", "green", "blue", "purple"];
+
 /**
  * OKLCH hue of each chromatic emoji, measured from Apple Color Emoji's
  * 🟥🟧🟨🟩🟦🟪 (the set VS Code shows on macOS). Other emoji fonts differ a little,
@@ -35,10 +37,14 @@ const HUES: Record<Chromatic, number> = {
 export const ACHROMATIC_CHROMA = 0.045;
 /** Gray at or above this OKLCH lightness maps to white, below to black. */
 export const WHITE_LIGHTNESS = 0.6;
+const BROWN_HUE_FROM = 35;
+const BROWN_HUE_TO = 100;
 /** Dark colors in this OKLCH hue band (orange to yellow) map to brown. */
-export const BROWN_HUES = [35, 100] as const;
+export const BROWN_HUES = [BROWN_HUE_FROM, BROWN_HUE_TO] as const;
 /** Lightness below which a color in the brown hue band is brown. */
 export const BROWN_LIGHTNESS = 0.55;
+/** Hue is an angle: distances wrap around at 360°. */
+const FULL_CIRCLE_DEG = 360;
 
 const SQUARES: Record<EmojiColor, string> = {
   red: "🟥",
@@ -97,7 +103,7 @@ export function emojiColor(hex: Hex): EmojiColor {
   return nearestHue(h);
 }
 
-/** The emoji for a repo's color in its glyph's shape (0007, 0012). */
+/** The emoji for a repo's color in its glyph's shape (toucan-v1/0007, toucan-v1/0012). */
 export function emojiFor(hex: Hex, glyph: Glyph): string {
   return family(glyph)[emojiColor(hex)];
 }
@@ -105,8 +111,9 @@ export function emojiFor(hex: Hex, glyph: Glyph): string {
 function nearestHue(hue: number): Chromatic {
   let best: Chromatic = "red";
   let bestDistance = Infinity;
-  for (const [name, target] of Object.entries(HUES) as [Chromatic, number][]) {
-    const distance = Math.min(Math.abs(hue - target), 360 - Math.abs(hue - target));
+  for (const name of CHROMATICS) {
+    const target = HUES[name];
+    const distance = Math.min(Math.abs(hue - target), FULL_CIRCLE_DEG - Math.abs(hue - target));
     if (distance < bestDistance) {
       best = name;
       bestDistance = distance;

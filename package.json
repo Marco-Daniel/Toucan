@@ -26,7 +26,7 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "gen": "vscode-ext-gen --output src/generated/meta.ts",
-    "lint": "oxlint",
+    "lint": "oxlint --type-aware --deny-warnings --report-unused-disable-directives",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
@@ -34,9 +34,11 @@
     "package": "tsdown && vsce package --no-dependencies",
     "font": "node scripts/build-font.mts",
     "icon": "node scripts/build-icon.mts",
+    "docs:index": "node scripts/docs-index.mts",
     "check:generated": "\"$npm_execpath\" gen && \"$npm_execpath\" font && \"$npm_execpath\" icon && git diff --exit-code src/generated README.md media && test -z \"$(git status --porcelain src/generated README.md media)\"",
     "check:bundle": "node scripts/check-bundle.mts",
-    "check:vsix": "node scripts/check-vsix.mts"
+    "check:vsix": "node scripts/check-vsix.mts",
+    "prepare": "husky"
   },
   "dependencies": {
     "culori": "^4.0.2",
@@ -49,8 +51,10 @@
     "@types/vscode": "1.138.0",
     "@vscode/vsce": "^4.0.0",
     "clipper-lib": "6.4.2",
+    "husky": "^9.1.7",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
+    "oxlint-tsgolint": "7.0.2003",
     "svg2ttf": "^6.1.0",
     "svgicons2svgfont": "^16.0.0",
     "tsdown": "^0.23.0",

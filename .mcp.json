@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "qmd": { "type": "stdio", "command": "qmd", "args": ["--index", "toucan", "mcp"] }
+  }
+}

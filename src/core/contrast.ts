@@ -1,22 +1,23 @@
 import { wcagContrast } from "culori/fn";
 import { fromHex, normalizeColor } from "./color.ts";
 import { isRecord } from "./records.ts";
+import { asHex } from "./model.ts";
 import type { Hex } from "./model.ts";
 import { PRESETS } from "./presets.ts";
 
-/** Below this WCAG contrast against the status bar, a color may be hard to see (0018). */
+/** Below this WCAG contrast against the status bar, a color may be hard to see (toucan-v1/0018). */
 export const MIN_STATUS_BAR_CONTRAST = 3;
 
 export type ThemeKind = "light" | "dark" | "highContrast";
 
 /** Representative status bar backgrounds: Default Light Modern and Dark Modern. */
 const KIND_DEFAULTS: Record<"light" | "dark", Hex> = {
-  light: "#f8f8f8" as Hex,
-  dark: "#181818" as Hex,
+  light: asHex("#f8f8f8"),
+  dark: asHex("#181818"),
 };
 
 /**
- * The status bar background to compare against (0018). Extensions can't read
+ * The status bar background to compare against (toucan-v1/0018). Extensions can't read
  * a theme's resolved colors, so: the user's override for the active theme
  * (a `"[Theme Name]"` block wins, as in VS Code), then their top-level
  * override, then a representative color for the theme kind. `undefined` in
@@ -71,7 +72,7 @@ export function lowContrast(color: Hex, background: Hex | undefined): boolean {
   );
 }
 
-/** The warning both pickers show (0018): no measured ratio, since the background is a guess. */
+/** The warning both pickers show (toucan-v1/0018): no measured ratio, since the background is a guess. */
 export const LOW_CONTRAST_WARNING = "May be hard to see on the status bar.";
 
 /** The name of the preset with this color, if there is one. */

@@ -1,4 +1,5 @@
-import { ConfigurationTarget, window, workspace, type ExtensionContext } from "vscode";
+import { ConfigurationTarget, window, workspace } from "vscode";
+import type { ExtensionContext } from "vscode";
 import { AGENTS_CONTROL_OFFER } from "./core/messages.ts";
 import type { Log } from "./log.ts";
 import { AGENTS_CONTROL, agentsControlAction } from "./core/agentsControl.ts";
@@ -8,7 +9,7 @@ const DECLINED_KEY = "agentsControl.declined";
 
 /**
  * Offers once to switch Agents control to "badge" so the Command Center can
- * show Toucan's background (0016). Never changes it without asking, never
+ * show Toucan's background (toucan-v1/0016). Never changes it without asking, never
  * changes it back.
  */
 export class AgentsControlOffer {

@@ -1,4 +1,5 @@
-import { COMMAND_CENTER_KEYS, type CommandCenterColors } from "./model.ts";
+import { COMMAND_CENTER_KEYS } from "./model.ts";
+import type { CommandCenterColors } from "./model.ts";
 import { isRecord } from "./records.ts";
 
 const PREFIX = "commandCenter.";
@@ -13,8 +14,8 @@ export type MergeResult =
 
 /**
  * Merges Toucan's colors into the user-level `workbench.colorCustomizations`
- * (0003). Toucan owns every top-level `commandCenter.*` key: they are replaced
- * by `colors`, or all removed when `colors` is `undefined` (0008). Every other
+ * (ADR-0002). Toucan owns every top-level `commandCenter.*` key: they are replaced
+ * by `colors`, or all removed when `colors` is `undefined` (toucan-v1/0008). Every other
  * key, including theme-scoped blocks such as `"[Default Dark Modern]"`, is kept.
  *
  * Reports `changed: false` when the result equals the current value, so

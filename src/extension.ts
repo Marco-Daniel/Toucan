@@ -1,4 +1,5 @@
-import { window, workspace, type ExtensionContext } from "vscode";
+import { window, workspace } from "vscode";
+import type { ExtensionContext } from "vscode";
 import { AgentsControlOffer } from "./agentsControl.ts";
 import { registerCommands } from "./commands.ts";
 import { deriveColors } from "./core/derive.ts";
@@ -7,7 +8,8 @@ import { IssueReporter } from "./core/issues.ts";
 import { COLOR_CUSTOMIZATIONS, startFocusCoordinator } from "./focus.ts";
 import { configs } from "./generated/meta.ts";
 import { createLog } from "./log.ts";
-import { resolveActiveRepo, type ActiveRepo } from "./repo.ts";
+import { resolveActiveRepo } from "./repo.ts";
+import type { ActiveRepo } from "./repo.ts";
 import { SearchEmoji } from "./searchEmoji.ts";
 import { createSettingsWriter } from "./settingsWriter.ts";
 import { SidebarBlock } from "./sidebar.ts";
@@ -34,7 +36,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const sidebar = new SidebarBlock(context, log, () => repo);
   const agentsControl = new AgentsControlOffer(context, log);
   const searchEmoji = new SearchEmoji(context, log, () => repo);
-  // Only a window that colors the Command Center asks (0016).
+  // Only a window that colors the Command Center asks (toucan-v1/0016).
   const offerAgentsControl = (focused: boolean) => {
     if (focused && repo) {
       background("The Agents control offer", agentsControl.check());

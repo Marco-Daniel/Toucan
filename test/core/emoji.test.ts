@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { emojiColor, emojiFor } from "../../src/core/emoji.ts";
-import { GLYPHS, type Hex } from "../../src/core/model.ts";
+import { GLYPHS } from "../../src/core/model.ts";
+import type { Hex } from "../../src/core/model.ts";
 
 const hex = (value: string) => value as Hex;
 
 describe("emojiColor", () => {
-  // The 0014 presets, plus a few common colors that are hard to classify.
+  // The toucan-v1/0014 presets, plus a few common colors that are hard to classify.
   it.each([
     ["#f92824", "red"],
     ["#a3161a", "red"],

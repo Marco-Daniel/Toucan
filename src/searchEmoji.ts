@@ -4,22 +4,23 @@ import {
   extensions,
   window,
   workspace,
-  type Disposable,
-  type Event,
-  type ExtensionContext,
 } from "vscode";
+import type { Disposable, Event, ExtensionContext } from "vscode";
+import { notify } from "./notify.ts";
 import type { Log } from "./log.ts";
 import { emojiFor } from "./core/emoji.ts";
 import { titleChangeFailed } from "./core/messages.ts";
-import { TitleSetup, type TitlePorts } from "./core/titleSetup.ts";
-import { repoVariableValue, shouldLabel, type TitleChange } from "./core/windowTitle.ts";
+import { TitleSetup } from "./core/titleSetup.ts";
+import type { TitlePorts } from "./core/titleSetup.ts";
+import { repoVariableValue, shouldLabel } from "./core/windowTitle.ts";
+import type { TitleChange } from "./core/windowTitle.ts";
 import { configs } from "./generated/meta.ts";
 import type { ActiveRepo } from "./repo.ts";
 
 const WINDOW_TITLE = "window.title";
 /** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
 const REPO_NAME_CONTEXT = "scmActiveRepositoryName";
-/** globalState: what Toucan changed in window.title (0015). */
+/** globalState: what Toucan changed in window.title (toucan-v1/0015). */
 const CHANGE_KEY = "searchEmoji.titleChange";
 /** SCM rewrites the key after its own events; reassert just after them. */
 const REASSERT_DELAY_MS = 50;
@@ -32,7 +33,7 @@ interface GitApi {
 }
 
 /**
- * The experimental emoji in the Command Center label (0007, 0015). It needs
+ * The experimental emoji in the Command Center label (toucan-v1/0007, toucan-v1/0015). It needs
  * `${activeRepositoryName}` in the global window.title, which Toucan only
  * adds after asking, and restores when the feature is turned off. Then it
  * overwrites the internal `scmActiveRepositoryName` context key with the
@@ -221,11 +222,11 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
         "Show the repo's emoji in the search bar?",
         {
           modal: true,
-          detail:
-            "Toucan's experimental search emoji needs ${activeRepositoryName} at the start of window.title, so it changes that setting in your user settings. Turning the emoji off restores your previous title." +
-            (overridden
+          detail: `Toucan's experimental search emoji needs \${activeRepositoryName} at the start of window.title, so it changes that setting in your user settings. Turning the emoji off restores your previous title.${
+            overridden
               ? " This workspace sets its own window.title, so the emoji won't show in this window."
-              : ""),
+              : ""
+          }`,
         },
         "Change Window Title",
       );
@@ -234,7 +235,7 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
     info: (message) => log.info(message),
     failed: (error) => {
       log.warn(titleChangeFailed(error));
-      void window.showWarningMessage(titleChangeFailed(error));
+      notify("warning", titleChangeFailed(error));
     },
   };
 }

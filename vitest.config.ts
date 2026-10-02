@@ -4,5 +4,8 @@ export default defineConfig({
   test: {
     include: ["test/**/*.test.ts"],
     environment: "node",
+    // Explicit, so a test waiting on a child or an event fails rather than stalls.
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
   },
 });

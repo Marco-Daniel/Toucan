@@ -6,7 +6,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FONT_CODEPOINTS } from "../../src/core/glyphFont.ts";
 import { glyphSvg } from "../../src/core/glyphs.ts";
 import { GLYPH_PATHS } from "../../src/generated/glyphPaths.ts";
-import { GLYPHS, type Glyph, type Hex } from "../../src/core/model.ts";
+import { GLYPHS } from "../../src/core/model.ts";
+import type { Glyph, Hex } from "../../src/core/model.ts";
 import { buildFont } from "../../scripts/font.mts";
 
 const BLACK = "#000000" as Hex;
@@ -25,7 +26,7 @@ beforeAll(async () => {
     svg: readFileSync(new URL(`../../media/icons/${glyph}.svg`, import.meta.url), "utf8"),
   }));
   const font = await buildFont(icons);
-  svgFont = font.svgFont;
+  ({ svgFont } = font);
   dir = mkdtempSync(join(tmpdir(), "toucan-font-"));
   fontFile = join(dir, "toucan-icons.ttf");
   writeFileSync(fontFile, font.ttf);

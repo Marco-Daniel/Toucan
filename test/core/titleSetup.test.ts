@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TitleSetup } from "../../src/core/titleSetup.ts";
-import { PENDING_STALE_MS, type TitleChange } from "../../src/core/windowTitle.ts";
+import { PENDING_STALE_MS } from "../../src/core/windowTitle.ts";
+import type { TitleChange } from "../../src/core/windowTitle.ts";
 
 const DEFAULT = "${activeEditorShort}${separator}${rootName}";
 const MINE = "${rootName} — ${activeEditorShort}";

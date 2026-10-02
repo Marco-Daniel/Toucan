@@ -1,6 +1,7 @@
 # 0003. Toucan owns the `commandCenter.*` namespace
 
 - Status: Accepted
+- Lifted to: [ADR-0002](../../../adr/0002-toucan-owns-the-commandcenter-keys.md)
 - Date: 2026-10-01
 - Deciders: Marco
 

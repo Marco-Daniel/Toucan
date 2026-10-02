@@ -4,18 +4,16 @@ import type { CommandCenterColors, Hex } from "../../src/core/model.ts";
 
 const hex = (value: string) => value as Hex;
 
-const colors = (background: string): CommandCenterColors => {
-  return {
-    background: hex(background),
-    foreground: hex("#ffffff"),
-    activeBackground: hex("#222222"),
-    activeForeground: hex("#ffffff"),
-    border: hex("#333333"),
-    activeBorder: hex("#333333"),
-    inactiveForeground: hex("#ffffff99"),
-    inactiveBorder: hex("#33333380"),
-  };
-};
+const colors = (background: string): CommandCenterColors => ({
+  background: hex(background),
+  foreground: hex("#ffffff"),
+  activeBackground: hex("#222222"),
+  activeForeground: hex("#ffffff"),
+  border: hex("#333333"),
+  activeBorder: hex("#333333"),
+  inactiveForeground: hex("#ffffff99"),
+  inactiveBorder: hex("#33333380"),
+});
 
 const prefixed = (set: CommandCenterColors) =>
   Object.fromEntries(Object.entries(set).map(([key, value]) => [`commandCenter.${key}`, value]));

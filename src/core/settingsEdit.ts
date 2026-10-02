@@ -8,15 +8,19 @@ import {
   modify,
   parse,
   parseTree,
-  type Edit,
-  type JSONScanner,
-  type ParseError,
 } from "jsonc-parser/lib/esm/main.js";
+import type { Edit, JSONScanner, ParseError } from "jsonc-parser/lib/esm/main.js";
 import { isRecord } from "./records.ts";
+
+const CRLF = "\r\n";
+/** `globalStorage/<extension id>`, under a profile's folder. */
+const STORAGE_SEGMENTS = 2;
+/** `profiles/<profile id>`, under the user folder. */
+const PROFILE_SEGMENTS = 2;
 
 /**
  * Plans an in-place edit of one setting in the user settings file, keeping
- * comments and formatting (0017). The adapter does the file I/O.
+ * comments and formatting (toucan-v1/0017). The adapter does the file I/O.
  */
 export type EditPlan =
   | { kind: "noop" }
@@ -63,7 +67,7 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
   if (current === undefined) {
     return { kind: "fallback", reason: `${key} isn't in the file` };
   }
-  // Not proof the file is this window's (0017 step 2); the adapter's
+  // Not proof the file is this window's (toucan-v1/0017 step 2); the adapter's
   // verify-and-revert covers the rest.
   if (!isRecord(current) || !isDeepStrictEqual(current, view)) {
     return { kind: "fallback", reason: `${key} in the file differs from VS Code's view` };
@@ -121,6 +125,11 @@ const SyntaxKind = {
   EOF: 17,
 } as const;
 
+/** The next token's kind as a plain number, comparable with the values above. */
+function scan(scanner: JSONScanner): number {
+  return scanner.scan();
+}
+
 /**
  * Removes a property by deleting its whole lines, so comments on the lines
  * around it stay. jsonc-parser's own removal deletes everything from the end
@@ -146,22 +155,22 @@ function removeLines(text: string, path: string[]): Edit[] | undefined {
   // After the value: an optional comma, then an optional comment, then the line break.
   const scanner = createScanner(text, false);
   scanner.setPosition(node.offset + node.length);
-  let token = scanner.scan();
+  let token = scan(scanner);
   if (token === SyntaxKind.Trivia) {
-    token = scanner.scan();
+    token = scan(scanner);
   }
   if (token === SyntaxKind.CommaToken) {
-    token = scanner.scan();
+    token = scan(scanner);
     if (token === SyntaxKind.Trivia) {
-      token = scanner.scan();
+      token = scan(scanner);
     }
   }
   let comment = "";
   if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
     comment = tokenText(text, scanner);
-    token = scanner.scan();
+    token = scan(scanner);
     if (token === SyntaxKind.Trivia) {
-      token = scanner.scan();
+      token = scan(scanner);
     }
   }
   if (token !== SyntaxKind.LineBreakTrivia) {
@@ -172,7 +181,7 @@ function removeLines(text: string, path: string[]): Edit[] | undefined {
   if (comment === "") {
     return [removal];
   }
-  const previousBreak = lineStart - (text[lineStart - 2] === "\r" ? 2 : 1);
+  const previousBreak = lineStart - (text[lineStart - CRLF.length] === "\r" ? CRLF.length : 1);
   const previousStart = text.lastIndexOf("\n", previousBreak - 1) + 1;
   const endsInLineComment = comments(text).some(
     ({ offset, value }) =>
@@ -224,7 +233,7 @@ function keepsComments(text: string, edited: string, paths: string[][]): boolean
 function comments(text: string): { offset: number; value: string }[] {
   const scanner = createScanner(text, false);
   const found: { offset: number; value: string }[] = [];
-  for (let token = scanner.scan(); token !== SyntaxKind.EOF; token = scanner.scan()) {
+  for (let token = scan(scanner); token !== SyntaxKind.EOF; token = scan(scanner)) {
     if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
       found.push({ offset: scanner.getTokenOffset(), value: tokenText(text, scanner) });
     }
@@ -267,7 +276,7 @@ export function viewReflects(
 /**
  * The user settings files, derived from the extension's global storage path:
  * `<User>/globalStorage/<ext>` or `<User>/profiles/<id>/globalStorage/<ext>`.
- * `profile` is this profile's file (a guess, see 0017); `defaultProfile` is
+ * `profile` is this profile's file (a guess, see toucan-v1/0017); `defaultProfile` is
  * where VS Code keeps application-scoped settings such as `toucan.repos`.
  */
 export function settingsFiles(globalStoragePath: string): {
@@ -277,9 +286,9 @@ export function settingsFiles(globalStoragePath: string): {
   const separator =
     globalStoragePath.includes("\\") && !globalStoragePath.includes("/") ? "\\" : "/";
   const parts = globalStoragePath.split(separator);
-  const profileDir = parts.slice(0, -2);
-  const isProfile = profileDir.at(-2) === "profiles";
-  const userDir = isProfile ? profileDir.slice(0, -2) : profileDir;
+  const profileDir = parts.slice(0, -STORAGE_SEGMENTS);
+  const isProfile = profileDir.at(-PROFILE_SEGMENTS) === "profiles";
+  const userDir = isProfile ? profileDir.slice(0, -PROFILE_SEGMENTS) : profileDir;
   return {
     profile: [...profileDir, "settings.json"].join(separator),
     defaultProfile: [...userDir, "settings.json"].join(separator),

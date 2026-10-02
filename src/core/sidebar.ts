@@ -1,21 +1,18 @@
-import {
-  SIDEBAR_STYLES,
-  SIDEBAR_VISIBILITIES,
-  type SidebarStyle,
-  type SidebarVisibility,
-} from "./model.ts";
+import { tryCatch } from "./tryCatch.ts";
+import { SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "./model.ts";
+import type { SidebarStyle, SidebarVisibility } from "./model.ts";
 
 /** How long a user close must last before it's remembered (see `visibilityChanged`). */
 export const REMEMBER_CLOSE_DELAY_MS = 1500;
 
 export interface SidebarSettings {
   enabled: boolean;
-  /** The repo's override, or else the general setting (0013). */
+  /** The repo's override, or else the general setting (toucan-v1/0013). */
   visibility: SidebarVisibility;
 }
 
 /**
- * The block's effective settings from the raw setting values (0013): enabled
+ * The block's effective settings from the raw setting values (toucan-v1/0013): enabled
  * only for a repo with a color; the repo's own visibility override wins over
  * the general one; anything unexpected falls back to the defaults.
  */
@@ -34,7 +31,7 @@ export function resolveSidebarSettings(input: {
 }
 
 function oneOf<T extends string>(options: readonly T[], value: unknown): T | undefined {
-  return (options as readonly unknown[]).includes(value) ? (value as T) : undefined;
+  return options.find((option) => option === value);
 }
 
 export interface SidebarPorts {
@@ -42,14 +39,15 @@ export interface SidebarPorts {
   reveal(): Promise<void>;
   /** Closes the secondary sidebar. */
   closeBar(): Promise<void>;
-  /** Whether the user closed the block in this workspace (`always` mode, 0013). */
+  /** Whether the user closed the block in this workspace (`always` mode, toucan-v1/0013). */
   readClosed(): boolean;
   writeClosed(closed: boolean): Promise<void>;
+  warn(message: string): void;
   debug(message: string): void;
 }
 
 /**
- * Shows and hides the opt-in sidebar block (0006, 0013).
+ * Shows and hides the opt-in sidebar block (toucan-v1/0006, toucan-v1/0013).
  *
  * `always`: revealed on startup unless the user closed it in this workspace.
  * A close counts when the block stops being visible while the window is
@@ -89,7 +87,7 @@ export class SidebarController {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !focused) {
-      void this.reveal(visibility === "unfocused");
+      this.post("Revealing the block", this.reveal(visibility === "unfocused"));
     }
   }
 
@@ -111,13 +109,13 @@ export class SidebarController {
       if (this.visible) {
         this.openedByToucan = false;
       } else {
-        void this.reveal(true);
+        this.post("Revealing the block", this.reveal(true));
       }
     } else if (this.openedByToucan && this.visible) {
       this.openedByToucan = false;
       this.closingByToucan = true; // cleared by its visibility event or the next focus change
       this.ports.debug("closing the bar Toucan opened");
-      void this.ports.closeBar();
+      this.post("Closing the bar", this.ports.closeBar());
     } else {
       this.openedByToucan = false;
     }
@@ -137,7 +135,7 @@ export class SidebarController {
       // Only the user's own open forgets their close, not Toucan's reveal.
       if (!this.revealing && this.ports.readClosed()) {
         this.ports.debug("block opened; forgetting the remembered close");
-        void this.ports.writeClosed(false);
+        this.post("Forgetting the close", this.ports.writeClosed(false));
       }
       return;
     }
@@ -154,7 +152,7 @@ export class SidebarController {
         this.rememberTimer = undefined;
         if (!this.visible) {
           this.ports.debug("user closed the block; remembering");
-          void this.ports.writeClosed(true);
+          this.post("Remembering the close", this.ports.writeClosed(true));
         }
       }, REMEMBER_CLOSE_DELAY_MS);
     }
@@ -167,7 +165,7 @@ export class SidebarController {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !this.focused) {
-      void this.reveal(visibility === "unfocused");
+      this.post("Revealing the block", this.reveal(visibility === "unfocused"));
     }
   }
 
@@ -201,10 +199,30 @@ export class SidebarController {
     }
   }
 
+  /**
+   * Finishes work started by a sync event handler or timer, which has no
+   * caller to await it: a failure is logged, never left unhandled.
+   */
+  private post(what: string, task: Promise<void>): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- no caller to await (see above); settle never rejects
+    this.settle(what, task);
+  }
+
+  private async settle(what: string, task: Promise<void>): Promise<void> {
+    const [, error] = await tryCatch(task);
+    if (error !== null) {
+      this.ports.warn(failure(what, error));
+    }
+  }
+
   private cancelRemember(): void {
     if (this.rememberTimer !== undefined) {
       clearTimeout(this.rememberTimer);
       this.rememberTimer = undefined;
     }
   }
+}
+
+function failure(what: string, error: unknown): string {
+  return `${what} failed: ${String(error)}`;
 }

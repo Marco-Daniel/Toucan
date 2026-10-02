@@ -4,7 +4,7 @@ import type { Glyph } from "./model.ts";
 export type Point = readonly [number, number];
 
 /**
- * A glyph as drawn (glyph-set plan, 0004): straight-edged polygons whose
+ * A glyph as drawn (glyph-set/0004): straight-edged polygons whose
  * corners are softened as if painted with a round stroke of width `softening`,
  * with holes cut out of the result. `pnpm font` bakes this into the plain
  * filled paths in src/generated/glyphPaths.ts, which everything else draws.
@@ -18,15 +18,29 @@ export interface GlyphDesign {
   softening: number;
 }
 
-/** Corner softening of the set (0004). */
+/** Corner softening of the set (glyph-set/0004). */
 export const SOFTENING = 1.5;
-/** Holes get a lighter softening, so they stay open (0004). */
-export const HOLE_SOFTENING = SOFTENING * 0.45;
-/** The sun's rays stay pointy with a sharper softening (0006). */
+/** Holes get a lighter softening, so they stay open (glyph-set/0004): this share of SOFTENING. */
+const HOLE_SOFTENING_SHARE = 0.45;
+export const HOLE_SOFTENING = SOFTENING * HOLE_SOFTENING_SHARE;
+/** The sun's rays stay pointy with a sharper softening (glyph-set/0006). */
 export const SUN_SOFTENING = 0.7;
 
+/** The glyph's center on both axes: half its 16-unit height. */
+const CENTER = 8;
+/** A full turn in radians. */
+// oxlint-disable-next-line no-magic-numbers -- 2π is the definition, not a tunable
+const TURN = 2 * Math.PI;
+/** Points are kept to hundredths of a unit. */
+const HUNDREDTHS = 100;
+/** The sun's disc is a 12-gon (glyph-set/0006). */
+const SUN_DISC_SIDES = 12;
+/** A star's five points, so ten vertices alternating outer and inner. */
+const STAR_POINTS = 5;
+const STAR_VERTICES = 10;
+
 function round2(value: number): number {
-  return Math.round(value * 100) / 100;
+  return Math.round(value * HUNDREDTHS) / HUNDREDTHS;
 }
 
 /** "x,y x,y …" as written in the reference sheet. */
@@ -37,39 +51,40 @@ function points(text: string): Point[] {
   });
 }
 
-/** A regular polygon around (cx, cy), first vertex straight up. Round shapes are 14-gons (0004). */
+/** A regular polygon around (cx, cy), first vertex straight up. Round shapes are 14-gons (glyph-set/0004). */
 function ngon(cx: number, cy: number, r: number, n = 14): Point[] {
   return Array.from({ length: n }, (_, i) => {
-    const angle = (2 * Math.PI * i) / n;
+    const angle = (TURN * i) / n;
     return [round2(cx + r * Math.sin(angle)), round2(cy - r * Math.cos(angle))] as const;
   });
 }
 
 /** A five-pointed star alternating outer and inner radius. */
 function star(cx: number, cy: number, outer: number, inner: number): Point[] {
-  return Array.from({ length: 10 }, (_, i) => {
+  return Array.from({ length: STAR_VERTICES }, (_, i) => {
+    // oxlint-disable-next-line no-magic-numbers -- parity: even vertices are the outer points
     const r = i % 2 === 0 ? outer : inner;
-    const angle = (Math.PI * i) / 5;
+    const angle = (Math.PI * i) / STAR_POINTS;
     return [round2(cx + r * Math.sin(angle)), round2(cy - r * Math.cos(angle))] as const;
   });
 }
 
 /** The point at radius `r` and `angle` (clockwise from straight up) around the glyph's center. */
 function at(r: number, angle: number): Point {
-  return [round2(8 + r * Math.sin(angle)), round2(8 - r * Math.cos(angle))];
+  return [round2(CENTER + r * Math.sin(angle)), round2(CENTER - r * Math.cos(angle))];
 }
 
 /**
- * The sun (0006): a 12-gon disc and eight separate straight rays from radius
+ * The sun (glyph-set/0006): a 12-gon disc and eight separate straight rays from radius
  * `from` to `to`, each `half` of a ray step wide on either side at its base.
  */
 function pinSun(disc: number, from: number, to: number, half: number, rays = 8): Point[][] {
-  const step = (2 * Math.PI) / rays;
+  const step = TURN / rays;
   const pins = Array.from({ length: rays }, (_, i) => {
     const angle = step * i;
     return [at(from, angle - half * step), at(from, angle + half * step), at(to, angle)];
   });
-  return [ngon(8, 8, disc, 12), ...pins];
+  return [ngon(CENTER, CENTER, disc, SUN_DISC_SIDES), ...pins];
 }
 
 /**
@@ -113,13 +128,14 @@ const shape = (width: number, fills: string[], holes: (string | Point[])[] = [])
 });
 
 /** The agreed geometry, ported from the plan's reference sheet (assets/glyph-sheet.py). */
+/* oxlint-disable no-magic-numbers -- glyph coordinates and sizes: the table is the design */
 export const GLYPH_DESIGNS: Record<Glyph, GlyphDesign> = {
   square: shape(16, ["1.2,1.2 14.8,1.2 14.8,14.8 1.2,14.8"]),
   // Ends 0.75 in, so the softened outline fills the box exactly.
   bar: shape(6, ["1.2,0.75 4.8,0.75 4.8,15.25 1.2,15.25"]),
   pill: shape(44, ["7,1.2 37,1.2 42.8,4 42.8,12 37,14.8 7,14.8 1.2,12 1.2,4"]),
   circle: { ...shape(16, []), fills: [ngon(8, 8, 6.8)] },
-  // After the app icon (0005): head and beak, a notch between them and a cut-out eye.
+  // After the app icon (glyph-set/0005): head and beak, a notch between them and a cut-out eye.
   toucan: shape(
     18,
     [
@@ -130,12 +146,12 @@ export const GLYPH_DESIGNS: Record<Glyph, GlyphDesign> = {
   ),
   // Rays end at radius 7.65 (8 minus half the sun's softening), so their tips stay in the box.
   sun: { width: 16, fills: pinSun(2.8, 5.0, 7.65, 0.2), holes: [], softening: SUN_SOFTENING },
-  // A pointed blade on a short stem (0007).
+  // A pointed blade on a short stem (glyph-set/0007).
   leaf: {
     ...shape(16, []),
     fills: [blade([3.6, 12.4], [14.3, 1.7], 3.6, 0.8), strip([1.2, 14.8], [4.6, 11.4], 0.25)],
   },
-  // The sheet's drop (0007), its tip and bottom 0.1 in, so the softened outline stays in the box.
+  // The sheet's drop (glyph-set/0007), its tip and bottom 0.1 in, so the softened outline stays in the box.
   drop: shape(16, ["8,0.9 12.4,7.5 12.9,11 11,14.4 8,15.2 5,14.4 3.1,11 3.6,7.5"]),
   moon: { ...shape(16, []), fills: [ngon(8, 8, 6.8)], holes: [ngon(11.4, 5.4, 5.8)] },
   alien: shape(
@@ -173,3 +189,4 @@ export const GLYPH_DESIGNS: Record<Glyph, GlyphDesign> = {
     [ngon(8, 6.6, 1.3, 8)],
   ),
 };
+/* oxlint-enable no-magic-numbers */

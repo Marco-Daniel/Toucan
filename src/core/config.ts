@@ -1,15 +1,12 @@
-import { isTranslucent, normalizeColor, opaque, parseColor, toHex } from "./color.ts";
+import { CHANNEL_MAX, isTranslucent, normalizeColor, opaque, parseColor, toHex } from "./color.ts";
 import {
   COMMAND_CENTER_KEYS,
   DEFAULT_GLYPH,
   GLYPHS,
   RETIRED_GLYPHS,
   SIDEBAR_VISIBILITIES,
-  type ColorOverrides,
-  type Glyph,
-  type Hex,
-  type SidebarVisibility,
 } from "./model.ts";
+import type { ColorOverrides, Glyph, Hex, SidebarVisibility } from "./model.ts";
 import { isRecord } from "./records.ts";
 
 export interface RepoConfig {
@@ -36,7 +33,7 @@ export interface ParsedConfig {
 const OVERRIDE_KEYS = COMMAND_CENTER_KEYS.filter((key) => key !== "background");
 
 /**
- * Normalizes the raw `toucan.repos` value (0001). An entry with an invalid
+ * Normalizes the raw `toucan.repos` value (ADR-0001). An entry with an invalid
  * background is dropped; any other invalid field is ignored and reported.
  */
 export function parseRepos(raw: unknown): ParsedConfig {
@@ -141,7 +138,7 @@ function parseBackground(value: string, report: (message: string) => void): Hex 
     report(`background "${value}" is not a valid color.`);
     return undefined;
   }
-  if (color.alpha !== undefined && Math.round(color.alpha * 255) === 0) {
+  if (color.alpha !== undefined && Math.round(color.alpha * CHANNEL_MAX) === 0) {
     report(`background "${value}" is fully transparent.`);
     return undefined;
   }

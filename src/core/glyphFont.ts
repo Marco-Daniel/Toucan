@@ -30,9 +30,11 @@ export const FONT_CODEPOINTS: Record<Glyph, number> = {
 
 /** Every glyph is 16 units high. */
 export const HEIGHT = 16;
+/** Coordinates are kept to hundredths of a unit. */
+const HUNDREDTHS = 100;
 
 function round(value: number): number {
-  return Math.round(value * 100) / 100;
+  return Math.round(value * HUNDREDTHS) / HUNDREDTHS;
 }
 
 /** The SVG for one baked glyph path; `pnpm font` uses it for the font sources too. */

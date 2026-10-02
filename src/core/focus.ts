@@ -11,8 +11,10 @@ import { isRecord } from "./records.ts";
  * longer delay saves writes on brief app switches and widens the race margin.
  */
 export const BLUR_DEBOUNCE_MS = 1000;
+/** How much longer than the blur debounce a focused window waits before checking. */
+const VERIFY_MARGIN_MS = 250;
 /** Delay before a focused window checks that its colors survived (self-heal). */
-export const VERIFY_DELAY_MS = BLUR_DEBOUNCE_MS + 250;
+export const VERIFY_DELAY_MS = BLUR_DEBOUNCE_MS + VERIFY_MARGIN_MS;
 
 /** Everything the coordinator touches outside itself, so tests can fake it. */
 export interface FocusPorts {
@@ -38,7 +40,7 @@ export interface FocusPorts {
    */
   writeCustomizations(update: SettingsUpdate): Promise<void>;
   /**
-   * Whether Toucan has applied a color in this profile before (0008): until
+   * Whether Toucan has applied a color in this profile before (toucan-v1/0008): until
    * it has, it never clears `commandCenter.*`, so colors the user set by hand
    * survive installing Toucan.
    */
@@ -51,7 +53,7 @@ export interface FocusPorts {
 
 /**
  * Applies this window's Command Center colors while it's focused and clears
- * them after it loses focus, unless another window has taken over (0002).
+ * them after it loses focus, unless another window has taken over (toucan-v1/0002).
  * Ownership is a window id the focused window writes before its colors, so a
  * window only clears colors it still owns. Leftovers from crashed windows are
  * fixed lazily at the next focus of any window.
@@ -86,12 +88,12 @@ export class FocusCoordinator {
     this.ports.debug(focused ? "focused" : "blurred");
     if (focused) {
       this.cancel("blur");
-      this.enqueue(() => this.takeOver());
+      this.post(() => this.takeOver());
     } else {
       this.cancel("verify");
       this.blurTimer = setTimeout(() => {
         this.blurTimer = undefined;
-        this.enqueue(() => this.clearIfOwner());
+        this.post(() => this.clearIfOwner());
       }, BLUR_DEBOUNCE_MS);
     }
   }
@@ -99,7 +101,7 @@ export class FocusCoordinator {
   /** Re-applies after a `toucan.*` change. Unfocused windows never write. */
   refresh(): void {
     if (this.focused) {
-      this.enqueue(() => this.takeOver());
+      this.post(() => this.takeOver());
     }
   }
 
@@ -112,7 +114,7 @@ export class FocusCoordinator {
    */
   customizationsChanged(): void {
     if (this.focused) {
-      this.enqueue(() => this.verify());
+      this.post(() => this.verify());
     }
   }
 
@@ -127,7 +129,7 @@ export class FocusCoordinator {
   private async takeOver(): Promise<void> {
     const colors = this.desired();
     if (colors === undefined && !this.ports.hasApplied()) {
-      // Not managing commandCenter.* yet (0008). Taking ownership anyway would
+      // Not managing commandCenter.* yet (toucan-v1/0008). Taking ownership anyway would
       // stop the previous owner's blur from clearing its colors here.
       this.ports.debug("not taking ownership: no color to apply or clear yet");
       return;
@@ -145,7 +147,7 @@ export class FocusCoordinator {
     this.cancel("verify");
     this.verifyTimer = setTimeout(() => {
       this.verifyTimer = undefined;
-      this.enqueue(() => this.verify());
+      this.post(() => this.verify());
     }, VERIFY_DELAY_MS);
   }
 
@@ -221,7 +223,7 @@ export class FocusCoordinator {
     await this.recordApplied(colors);
   }
 
-  /** Records the first applied color in this profile (0008); a failure here isn't a settings failure. */
+  /** Records the first applied color in this profile (toucan-v1/0008); a failure here isn't a settings failure. */
   private async recordApplied(colors: CommandCenterColors | undefined): Promise<void> {
     if (!colors || this.ports.hasApplied()) {
       return;
@@ -243,6 +245,16 @@ export class FocusCoordinator {
     } else {
       this.verifyTimer = undefined;
     }
+  }
+
+  /**
+   * Queues a task from a sync event handler or timer, which has no caller to
+   * await it. The queue owns the promise: enqueue logs every failure and never
+   * rejects, and dispose waits behind it.
+   */
+  private post(task: () => Promise<void>): void {
+    // oxlint-disable-next-line typescript/no-floating-promises -- no caller to await (see above); the queue never rejects
+    this.enqueue(task);
   }
 
   /** Runs tasks one at a time, so this window's own writes never interleave. */

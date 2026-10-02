@@ -1,27 +1,21 @@
-import {
-  ConfigurationTarget,
-  commands as vscodeCommands,
-  window,
-  workspace,
-  type Disposable,
-  type ExtensionContext,
-  type WebviewView,
-  type WebviewViewProvider,
-} from "vscode";
+import { ConfigurationTarget, commands as vscodeCommands, window, workspace } from "vscode";
+import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
+import { notify } from "./notify.ts";
 import type { Log } from "./log.ts";
 import { deriveColors } from "./core/derive.ts";
-import { resolveSidebarSettings, SidebarController, type SidebarSettings } from "./core/sidebar.ts";
+import { resolveSidebarSettings, SidebarController } from "./core/sidebar.ts";
+import type { SidebarSettings } from "./core/sidebar.ts";
 import { sidebarBlockHtml } from "./core/sidebarHtml.ts";
 import type { SidebarStyle } from "./core/model.ts";
 import { configs } from "./generated/meta.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "./ids.ts";
 import type { ActiveRepo } from "./repo.ts";
 
-/** workspaceState key for "the user closed the block here" (0013). */
+/** workspaceState key for "the user closed the block here" (toucan-v1/0013). */
 const CLOSED_KEY = "sidebarBlock.closed";
 
 /**
- * The opt-in sidebar block (0006, 0013): renders the repo color in a webview
+ * The opt-in sidebar block (toucan-v1/0006, toucan-v1/0013): renders the repo color in a webview
  * without scripts and lets `SidebarController` decide when it's shown.
  */
 export class SidebarBlock implements WebviewViewProvider, Disposable {
@@ -49,6 +43,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         writeClosed: async (closed) => {
           await context.workspaceState.update(CLOSED_KEY, closed || undefined);
         },
+        warn: (message) => log.warn(`[sidebar] ${message}`),
         debug: (message) => log.debug(`[sidebar] ${message}`),
       },
       () => this.settings(),
@@ -121,11 +116,11 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   /**
    * Toggle Sidebar Block. Turning the block on writes the boolean with
    * VS Code's own update(): a boolean has no comments inside it to keep, and
-   * the settings writer only edits Toucan's object settings (0017).
+   * the settings writer only edits Toucan's object settings (toucan-v1/0017).
    */
   async toggle(): Promise<void> {
     if (!this.repo()) {
-      void window.showInformationMessage("Set a Toucan color for this repo first.");
+      notify("info", "Set a Toucan color for this repo first.");
       return;
     }
     if (!workspace.getConfiguration().get(configs.sidebarBlockEnabled.key, false)) {

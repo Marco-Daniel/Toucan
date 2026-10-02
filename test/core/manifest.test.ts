@@ -5,8 +5,8 @@ import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_CONTAINER_ID, SIDEBAR_VIEW_ID } from
 import { COMMAND_CENTER_KEYS, GLYPHS, SIDEBAR_VISIBILITIES } from "../../src/core/model.ts";
 
 const manifest = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
-const properties = manifest.contributes.configuration.properties;
-const entrySchema = properties["toucan.repos"].additionalProperties.anyOf[1];
+const { properties } = manifest.contributes.configuration;
+const [, entrySchema] = properties["toucan.repos"].additionalProperties.anyOf;
 
 // The package.json schema and the parser must accept the same values.
 describe("package.json configuration schema", () => {

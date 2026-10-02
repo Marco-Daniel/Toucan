@@ -4,11 +4,108 @@
   "categories": {
     "correctness": "error",
     "suspicious": "error",
-    "perf": "warn"
+    "perf": "error"
   },
   "env": {
     "node": true,
     "es2024": true
   },
-  "ignorePatterns": ["dist/**", "src/generated/**", "docs/**"]
+  "ignorePatterns": ["dist/**", "src/generated/**", "docs/**"],
+  "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_"
+      }
+    ],
+    "eqeqeq": ["error", "always"],
+    "no-var": "error",
+    "prefer-template": "error",
+    "prefer-destructuring": "error",
+    "object-shorthand": ["error", "always"],
+    "arrow-body-style": ["error", "as-needed"],
+    "max-nested-callbacks": ["error", 5],
+    "array-callback-return": [
+      "error",
+      { "checkForEach": true, "allowVoid": true, "allowImplicit": true }
+    ],
+    "max-lines": ["error", { "max": 400, "skipBlankLines": true, "skipComments": true }],
+    "max-lines-per-function": [
+      "error",
+      { "max": 300, "skipBlankLines": true, "skipComments": true }
+    ],
+    "complexity": ["error", { "max": 30, "variant": "modified" }],
+    "no-empty-function": "error",
+    "no-fallthrough": "error",
+    "no-case-declarations": "error",
+    "no-prototype-builtins": "error",
+    "no-empty": "error",
+    "no-void": ["error", { "allowAsStatement": false }],
+    "typescript/no-magic-numbers": [
+      "error",
+      {
+        "ignore": [-1, 0, 1],
+        "ignoreDefaultValues": true,
+        "ignoreArrayIndexes": true,
+        "ignoreNumericLiteralTypes": true,
+        "ignoreEnums": true
+      }
+    ],
+    "typescript/no-explicit-any": "error",
+    "typescript/no-shadow": "error",
+    "typescript/consistent-type-imports": ["error", { "fixStyle": "separate-type-imports" }],
+    "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+    "typescript/consistent-type-exports": "error",
+    "typescript/ban-ts-comment": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-return": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/no-base-to-string": ["error", { "checkUnknown": false }],
+    "typescript/no-misused-promises": ["error", { "checksVoidReturn": { "attributes": false } }],
+    "typescript/no-floating-promises": ["error", { "ignoreVoid": false }],
+    "typescript/no-unnecessary-type-assertion": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/scripts/**", "**/test/**"],
+                "message": "src ships in the extension; scripts and tests don't."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      // The scripts run qmd and file steps in order on purpose.
+      "files": ["scripts/**"],
+      "rules": { "no-await-in-loop": "off" }
+    },
+    {
+      // Tests use literal fixtures, long tables of cases, parsed JSON (any),
+      // sequential awaits and no-op fakes for ports they don't check.
+      "files": ["test/**"],
+      "rules": {
+        "typescript/no-magic-numbers": "off",
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-member-access": "off",
+        "typescript/no-unsafe-argument": "off",
+        "typescript/no-unsafe-type-assertion": "off",
+        "max-lines": "off",
+        "max-lines-per-function": "off",
+        "no-await-in-loop": "off",
+        "no-empty-function": "off"
+      }
+    }
+  ]
 }
