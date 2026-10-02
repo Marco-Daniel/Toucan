@@ -1,4 +1,4 @@
-import { ConfigurationTarget, commands as vscodeCommands, window, workspace } from "vscode";
+import { commands as vscodeCommands, window, workspace } from "vscode";
 import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
 import { notify } from "../../core/notify.adapter.ts";
 import type { Log } from "../../core/log.adapter.ts";
@@ -10,6 +10,7 @@ import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import { configs } from "../../generated/meta.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "../../core/ids.consts.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
+import { writeUserSetting } from "../settings/settings.adapter.ts";
 
 /** workspaceState key for "the user closed the block here" (0013). */
 const CLOSED_KEY = "sidebarBlock.closed";
@@ -141,9 +142,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
       if (answer === "Turn On") {
         // Forget an earlier close; the settings change then reveals the block.
         await this.context.workspaceState.update(CLOSED_KEY, undefined);
-        await workspace
-          .getConfiguration()
-          .update(configs.sidebarBlockEnabled.key, true, ConfigurationTarget.Global);
+        await writeUserSetting({ key: configs.sidebarBlockEnabled.key, value: true });
         this.log.info("Turned on the sidebar block.");
       }
       return;

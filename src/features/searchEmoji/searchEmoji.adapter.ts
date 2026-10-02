@@ -1,10 +1,4 @@
-import {
-  ConfigurationTarget,
-  commands as vscodeCommands,
-  extensions,
-  window,
-  workspace,
-} from "vscode";
+import { commands as vscodeCommands, extensions, window, workspace } from "vscode";
 import type { Disposable, Event, ExtensionContext } from "vscode";
 import { notify } from "../../core/notify.adapter.ts";
 import type { Log } from "../../core/log.adapter.ts";
@@ -17,7 +11,7 @@ import type { TitleChange } from "./windowTitle.util.ts";
 import { configs } from "../../generated/meta.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
-import { overriddenInWorkspace } from "../settings/settings.adapter.ts";
+import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
 
 const WINDOW_TITLE = "window.title";
 /** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
@@ -225,12 +219,10 @@ function titlePorts({ context, log }: TitlePortsArgs): TitlePorts {
       await context.globalState.update(CHANGE_KEY, change);
     },
     writeTitle: async (value) => {
-      await workspace.getConfiguration().update(WINDOW_TITLE, value, ConfigurationTarget.Global);
+      await writeUserSetting({ key: WINDOW_TITLE, value });
     },
     disable: async () => {
-      await workspace
-        .getConfiguration()
-        .update(configs.experimentalSearchEmoji.key, false, ConfigurationTarget.Global);
+      await writeUserSetting({ key: configs.experimentalSearchEmoji.key, value: false });
     },
     ask: async (overridden) => {
       const answer = await window.showInformationMessage(

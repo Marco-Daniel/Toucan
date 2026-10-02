@@ -8,6 +8,17 @@ export function userValue(key: string): unknown {
   return workspace.getConfiguration().inspect(key)?.globalValue;
 }
 
+interface WriteUserSettingArgs {
+  key: string;
+  /** The new value; `undefined` removes the setting. */
+  value: unknown;
+}
+
+/** Writes a setting at user level (VS Code's own write, which drops comments). */
+export async function writeUserSetting({ key, value }: WriteUserSettingArgs): Promise<void> {
+  await workspace.getConfiguration().update(key, value, ConfigurationTarget.Global);
+}
+
 /** Whether this workspace or folder sets its own value for `key`, hiding the user-level one. */
 export function overriddenInWorkspace(key: string): boolean {
   const inspected = workspace.getConfiguration().inspect(key);
@@ -28,9 +39,7 @@ export function createSettingsWriter({
     files: settingsFiles(globalStoragePath),
     ports: {
       view: userValue,
-      update: async ({ key, value }) => {
-        await workspace.getConfiguration().update(key, value, ConfigurationTarget.Global);
-      },
+      update: writeUserSetting,
       // fsPath, not path: on Windows the path is "/c:/…", which realpath can't resolve.
       dirtyFiles: () =>
         workspace.textDocuments.filter((document) => document.isDirty).map((d) => d.uri.fsPath),

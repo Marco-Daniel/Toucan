@@ -1,9 +1,9 @@
-import { ConfigurationTarget, window, workspace } from "vscode";
+import { window, workspace } from "vscode";
 import type { ExtensionContext } from "vscode";
 import { AGENTS_CONTROL_OFFER } from "../../shared/messages/notifications.messages.ts";
 import type { Log } from "../../core/log.adapter.ts";
 import { AGENTS_CONTROL, agentsControlAction } from "./agentsControl.util.ts";
-import { overriddenInWorkspace } from "../settings/settings.adapter.ts";
+import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
 
 /** globalState key for "Not now" (per profile). */
 const DECLINED_KEY = "agentsControl.declined";
@@ -57,7 +57,7 @@ export class AgentsControlOffer {
 
     const answer = await window.showInformationMessage(AGENTS_CONTROL_OFFER, "Switch", "Not now");
     if (answer === "Switch") {
-      await configuration.update(AGENTS_CONTROL, "badge", ConfigurationTarget.Global);
+      await writeUserSetting({ key: AGENTS_CONTROL, value: "badge" });
       this.log.info(`Set ${AGENTS_CONTROL} to "badge".`);
     } else if (answer === "Not now") {
       await this.context.globalState.update(DECLINED_KEY, true);
