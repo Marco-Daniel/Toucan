@@ -12,6 +12,7 @@ import {
   startWorker,
   until,
   writeCacheFile,
+  stopWorkers,
 } from "../../helpers/qmd.ts";
 
 const HOOK = new URL("../../../scripts/qmd/docs-bootstrap-hook.mts", import.meta.url).pathname;
@@ -26,6 +27,7 @@ beforeEach(() => {
   lock = join(cache, "toucan.lock");
 });
 afterEach(() => {
+  stopWorkers({ script: HOOK, home: dir });
   rmSync(dir, { recursive: true, force: true });
 });
 

@@ -12,6 +12,7 @@ import {
   startWorker,
   until,
   writeCacheFile,
+  stopWorkers,
 } from "../../helpers/qmd.ts";
 
 const HOOK = new URL("../../../scripts/qmd/docs-reindex-hook.mts", import.meta.url).pathname;
@@ -29,6 +30,7 @@ beforeEach(() => {
   pending = join(cache, "toucan.pending");
 });
 afterEach(() => {
+  stopWorkers({ script: HOOK, home: dir });
   rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });
 

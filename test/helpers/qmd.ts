@@ -10,6 +10,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
+import { tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
 
 export const SYSTEM_PATH = "/usr/bin:/bin";
 
@@ -118,4 +119,32 @@ export function writeCacheFile({ dir, name, text }: WriteCacheFileArgs): void {
 export function isolateQmdCache(dir: string): void {
   vi.stubEnv("HOME", dir);
   vi.stubEnv("XDG_CACHE_HOME", dir);
+}
+
+interface StopWorkersArgs {
+  /** The hook script whose `--worker` processes to stop. */
+  script: string;
+  /** The test's HOME: only workers started with it are stopped. */
+  home: string;
+}
+
+/**
+ * Kills the detached `--worker` processes a test's hook started. A hook hands
+ * its work to a detached worker, which outlives the test (and a test runner's
+ * timeout); a mutant that makes the worker loop would leave it running.
+ */
+export function stopWorkers({ script, home }: StopWorkersArgs): void {
+  const listing = spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout;
+  for (const line of listing.split("\n")) {
+    const [, pid, command] = /^\s*(\d+)\s+(.*)$/.exec(line) ?? [];
+    if (pid === undefined || !command?.includes(`${script} --worker`)) {
+      continue;
+    }
+    // `ps eww` adds the environment, so only this test's workers match.
+    const withEnv = spawnSync("ps", ["eww", "-o", "command=", "-p", pid], { encoding: "utf8" });
+    if (withEnv.stdout.split(/\s+/).includes(`HOME=${home}`)) {
+      // Gone already is fine: the worker may finish on its own meanwhile.
+      tryCatchSync(() => process.kill(Number(pid), "SIGKILL"));
+    }
+  }
 }
