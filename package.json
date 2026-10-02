@@ -48,6 +48,7 @@
     "@types/node": "^22.0.0",
     "@types/vscode": "1.138.0",
     "@vscode/vsce": "^4.0.0",
+    "clipper-lib": "6.4.2",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
     "svg2ttf": "^6.1.0",
@@ -120,10 +121,19 @@
                       "bar",
                       "pill",
                       "circle",
-                      "double-circle",
+                      "toucan",
+                      "sun",
+                      "leaf",
+                      "drop",
+                      "moon",
+                      "alien",
+                      "ghost",
+                      "robot",
+                      "cat",
+                      "bolt",
                       "heart",
                       "star",
-                      "check-circle"
+                      "rocket"
                     ],
                     "description": "Shape of the status bar glyph."
                   },
@@ -202,6 +212,104 @@
         "default": {
           "fontPath": "./media/toucan-icons.woff",
           "fontCharacter": "\\E000"
+        }
+      },
+      "toucan-circle": {
+        "description": "Toucan circle glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E003"
+        }
+      },
+      "toucan-toucan": {
+        "description": "Toucan toucan glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E004"
+        }
+      },
+      "toucan-sun": {
+        "description": "Toucan sun glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E005"
+        }
+      },
+      "toucan-leaf": {
+        "description": "Toucan leaf glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E006"
+        }
+      },
+      "toucan-drop": {
+        "description": "Toucan drop glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E007"
+        }
+      },
+      "toucan-moon": {
+        "description": "Toucan moon glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E008"
+        }
+      },
+      "toucan-alien": {
+        "description": "Toucan alien glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E009"
+        }
+      },
+      "toucan-ghost": {
+        "description": "Toucan ghost glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E00A"
+        }
+      },
+      "toucan-robot": {
+        "description": "Toucan robot glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E00B"
+        }
+      },
+      "toucan-cat": {
+        "description": "Toucan cat glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E00C"
+        }
+      },
+      "toucan-bolt": {
+        "description": "Toucan bolt glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E00D"
+        }
+      },
+      "toucan-heart": {
+        "description": "Toucan heart glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E00E"
+        }
+      },
+      "toucan-star": {
+        "description": "Toucan star glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E00F"
+        }
+      },
+      "toucan-rocket": {
+        "description": "Toucan rocket glyph",
+        "default": {
+          "fontPath": "./media/toucan-icons.woff",
+          "fontCharacter": "\\E010"
         }
       }
     },

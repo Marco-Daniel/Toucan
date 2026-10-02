@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { FONT_CODEPOINTS, glyphIcon } from "../../src/core/glyphs.ts";
+import { FONT_CODEPOINTS, glyphIconId } from "../../src/core/glyphs.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_CONTAINER_ID, SIDEBAR_VIEW_ID } from "../../src/ids.ts";
 import { COMMAND_CENTER_KEYS, GLYPHS, SIDEBAR_VISIBILITIES } from "../../src/core/model.ts";
 
@@ -28,16 +28,26 @@ describe("package.json configuration schema", () => {
 });
 
 describe("package.json icon contributions", () => {
-  it("registers every font glyph at its codepoint", () => {
-    const icons = manifest.contributes.icons;
-    for (const [glyph, codepoint] of Object.entries(FONT_CODEPOINTS)) {
-      const id = glyphIcon(glyph as keyof typeof FONT_CODEPOINTS).slice(2, -1);
-      expect(icons[id].default).toEqual({
-        fontPath: "./media/toucan-icons.woff",
-        fontCharacter: `\\${codepoint.toString(16).toUpperCase()}`,
-      });
-    }
-    expect(Object.keys(icons)).toHaveLength(Object.keys(FONT_CODEPOINTS).length);
+  it("registers every glyph's icon at its codepoint in Toucan's font", () => {
+    const icons = manifest.contributes.icons as Record<
+      string,
+      { default: { fontPath: string; fontCharacter: string } }
+    >;
+    expect(new Set(Object.values(icons).map((icon) => icon.default.fontPath))).toEqual(
+      new Set(["./media/toucan-icons.woff"]),
+    );
+    expect(
+      Object.fromEntries(
+        Object.entries(icons).map(([id, icon]) => [id, icon.default.fontCharacter]),
+      ),
+    ).toEqual(
+      Object.fromEntries(
+        GLYPHS.map((glyph) => [
+          glyphIconId(glyph),
+          `\\${FONT_CODEPOINTS[glyph].toString(16).toUpperCase()}`,
+        ]),
+      ),
+    );
   });
 });
 

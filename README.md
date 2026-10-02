@@ -33,7 +33,7 @@ Click the status bar item to set a color, hover it for the other actions, or run
 
 - **Toucan: Set Color for This Repo**: type any CSS color, with a live preview on the status bar.
 - **Toucan: Pick Preset Color**: one of 16 toucan-themed colors.
-- **Toucan: Set Glyph**: the status bar shape (square, bar, pill, circle, double circle, heart, star or check circle).
+- **Toucan: Set Glyph**: the status bar shape, one of 17 in Toucan's own style, in four groups: shapes (square, bar, pill, circle), Toucan's world (toucan, sun, leaf, drop, moon), characters (alien, ghost, robot, cat) and fun & dev (bolt, heart, star, rocket).
 - **Toucan: Clear Color**: removes this repo's entry, asking first if it holds more than a color.
 - **Toucan: Toggle Sidebar Block**: shows or hides the sidebar block, offering to turn it on.
 
@@ -92,7 +92,7 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 | `pnpm test`            | Run the unit tests with vitest                                                      |
 | `pnpm build`           | Bundle `dist/extension.cjs` with tsdown                                             |
 | `pnpm gen`             | Regenerate `src/generated/meta.ts` and the settings table above from `package.json` |
-| `pnpm font`            | Rebuild the status bar glyph font in `media/` from the glyph shapes                 |
+| `pnpm font`            | Bake the glyph designs into paths and rebuild the glyph font in `media/`            |
 | `pnpm icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`             |
 | `pnpm check:generated` | Regenerate everything above and fail if anything changed (CI runs this)             |
 | `pnpm package`         | Build and package a VSIX                                                            |
@@ -101,4 +101,4 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 
 [MIT](LICENSE)
 
-Bundled third-party code and its licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The circle, double-circle, heart, star and check-circle glyph shapes are [Codicons](https://github.com/microsoft/vscode-codicons) by Microsoft, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Bundled third-party code and its licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -17,7 +17,7 @@ import {
 } from "./core/contrast.ts";
 import type { RepoConfig } from "./core/config.ts";
 import { handEditedKeys, withBackground, withGlyph, withoutRepo } from "./core/entries.ts";
-import { glyphSvg, svgDataUri } from "./core/glyphs.ts";
+import { glyphPickItems, glyphSvg, svgDataUri } from "./core/glyphs.ts";
 import {
   CLEAR_CONFIRMATION,
   NO_COLOR,
@@ -25,7 +25,7 @@ import {
   clearDetail,
   saveFailed,
 } from "./core/messages.ts";
-import { DEFAULT_GLYPH, GLYPHS, type Glyph, type Hex } from "./core/model.ts";
+import { DEFAULT_GLYPH, type Glyph, type Hex } from "./core/model.ts";
 import { PRESETS } from "./core/presets.ts";
 import { COLOR_CUSTOMIZATIONS } from "./focus.ts";
 import { commands, configs } from "./generated/meta.ts";
@@ -155,30 +155,21 @@ async function setGlyph(host: CommandHost, name: string): Promise<void> {
     }
     return;
   }
-  const items = GLYPHS.map((glyph) => {
-    const item: QuickPickItem & { glyph: Glyph } = {
-      label: glyph,
-      iconPath: swatch(glyph, repo.config.background),
-      glyph,
-    };
-    if (glyph === repo.config.glyph) {
-      item.description = "current";
-    }
-    return item;
-  });
+  const items: (QuickPickItem & { glyph?: Glyph })[] = glyphPickItems(repo.config.glyph, (glyph) =>
+    swatch(glyph, repo.config.background),
+  );
   const picked = await pickWithPreview(
     host,
     name,
     items,
     `Toucan: Glyph for ${name}`,
-    (item) => ({
-      glyph: item.glyph,
-    }),
+    // Separators can't become active or be picked, so every item here has a glyph.
+    (item) => (item.glyph ? { glyph: item.glyph } : {}),
     items.find((item) => item.glyph === repo.config.glyph),
   );
   if (picked) {
     await writeRepos(host, (repos) => {
-      const value = withGlyph(repos, name, picked.item.glyph);
+      const value = withGlyph(repos, name, picked.item.glyph ?? DEFAULT_GLYPH);
       // No entry anymore (cleared meanwhile): leave toucan.repos alone.
       return value && { value };
     });

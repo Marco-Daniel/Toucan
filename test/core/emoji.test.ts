@@ -48,11 +48,28 @@ describe("emojiFor", () => {
     expect(emojiFor(hex("#14939c"), "star")).toBe("🟦");
   });
 
-  it("uses circles for circle-like glyphs and squares for the rest", () => {
-    expect(emojiFor(hex("#14939c"), "double-circle")).toBe("🔵");
-    expect(emojiFor(hex("#14939c"), "check-circle")).toBe("🔵");
-    expect(emojiFor(hex("#14939c"), "bar")).toBe("🟦");
-    expect(emojiFor(hex("#14939c"), "pill")).toBe("🟦");
+  it("uses circles for circle, hearts for heart and squares for every other glyph", () => {
+    expect(
+      Object.fromEntries(GLYPHS.map((glyph) => [glyph, emojiFor(hex("#14939c"), glyph)])),
+    ).toEqual({
+      square: "🟦",
+      bar: "🟦",
+      pill: "🟦",
+      circle: "🔵",
+      toucan: "🟦",
+      sun: "🟦",
+      leaf: "🟦",
+      drop: "🟦",
+      moon: "🟦",
+      alien: "🟦",
+      ghost: "🟦",
+      robot: "🟦",
+      cat: "🟦",
+      bolt: "🟦",
+      heart: "💙",
+      star: "🟦",
+      rocket: "🟦",
+    });
   });
 
   // One color per category, in EMOJI_COLORS order.
