@@ -15,6 +15,7 @@
 // stryker.config.json points tsconfigFile at a file that doesn't exist on
 // purpose: Stryker's tsconfig rewrite needs the TypeScript JS API, which
 // TypeScript 7 doesn't ship, and this repo's tsconfig has nothing to rewrite.
+import { relative, resolve } from "node:path";
 import { Stryker } from "@stryker-mutator/core";
 
 const VITEST = "node node_modules/vitest/vitest.mjs";
@@ -27,7 +28,12 @@ function shellQuoted(path: string): string {
 const FIRST_ARGUMENT = 2;
 const files = process.argv.slice(FIRST_ARGUMENT);
 
-const qmdFiles = files.filter((file) => file.startsWith("scripts/qmd/"));
+/** Never mutated (see the header); also added to every explicit file list, which replaces the config's. */
+const EXCLUDED = "scripts/qmd/";
+// Compared as repo-relative paths, so "./scripts/qmd/…" and absolute paths are caught too.
+const qmdFiles = files.filter((file) =>
+  relative(process.cwd(), resolve(file)).startsWith(EXCLUDED),
+);
 if (qmdFiles.length > 0) {
   console.error(
     `Not mutating ${qmdFiles.join(", ")}: scripts/qmd/ is excluded from mutation testing, because its file locks, cache writes and detached processes could reach the real ~/.cache/qmd.`,
@@ -39,7 +45,9 @@ const options =
   files.length === 0
     ? {}
     : {
-        mutate: files,
+        // Explicit files replace the config's list, exclusion included: a glob
+        // such as scripts/**/*.mts must still leave scripts/qmd out.
+        mutate: [...files, `!${EXCLUDED}**`],
         commandRunner: { command: `${VITEST} related --run ${files.map(shellQuoted).join(" ")}` },
       };
 await new Stryker({ configFile: "stryker.config.json", ...options }).runMutationTest();
