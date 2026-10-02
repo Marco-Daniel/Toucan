@@ -7,19 +7,23 @@ import { randomUUID } from "node:crypto";
 import {
   closeSync,
   constants,
+  linkSync,
   lstatSync,
   mkdirSync,
   openSync,
   readFileSync,
   renameSync,
   rmSync,
+  utimesSync,
   writeSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-/** A lock older than this was left by a job that died, and is taken over. */
+/** A lock whose owner can't be checked counts as left behind after this. */
 const STALE_MS = 5 * 60_000;
+/** Even a live owner's lock counts as left behind after this (its pid may have been reused). */
+const MAX_AGE_MS = 60 * 60_000;
 const { O_CREAT, O_EXCL, O_NOFOLLOW, O_WRONLY, O_RDONLY } = constants;
 
 /** The shared folder, or undefined when it can't be trusted. */
@@ -74,8 +78,37 @@ export interface Lock {
   token: string;
 }
 
-/** Takes the lock, taking over a stale one; undefined when another job holds it. */
-export function takeLock(): Lock | undefined {
+/** Whether the process that wrote `token` (`<pid>-<uuid>`) is still running; undefined without a pid. */
+function ownerAlive(token: string | undefined): boolean | undefined {
+  const pid = Number(token?.split("-")[0]);
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return undefined;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+/**
+ * Whether a held lock was left by a job that's gone: its owner process has
+ * exited, or it's older than an hour (in case the pid was reused). A lock
+ * without an owner pid goes stale after STALE_MS.
+ */
+function isStale(token: string | undefined, mtimeMs: number): boolean {
+  const age = Date.now() - mtimeMs;
+  const alive = ownerAlive(token);
+  return alive === undefined ? age > STALE_MS : !alive || age > MAX_AGE_MS;
+}
+
+/**
+ * Takes the lock, taking over a stale one; undefined when another job holds
+ * it. `beforeTakeover` runs between judging a lock stale and moving it, so
+ * tests can replay a race.
+ */
+export function takeLock(beforeTakeover?: () => void): Lock | undefined {
   const dir = lockFolder();
   if (!dir) {
     return undefined;
@@ -85,31 +118,46 @@ export function takeLock(): Lock | undefined {
   if (create(lock, token)) {
     return { dir, token };
   }
-  // Held. Take it over only if it's stale, and only the lock we judged stale:
-  // move it aside atomically, then check it's still the same one.
-  let stat;
+  let judged;
   try {
-    stat = lstatSync(lock);
+    judged = lstatSync(lock);
   } catch {
+    // Released in the meantime.
     return create(lock, token) ? { dir, token } : undefined;
   }
-  if (!stat.isFile() || Date.now() - stat.mtimeMs <= STALE_MS) {
+  if (!judged.isFile() || !isStale(read(lock), judged.mtimeMs)) {
     return undefined;
   }
-  const stale = read(lock);
+  beforeTakeover?.();
+  // Move it aside atomically, then make sure it's the very lock judged stale.
   const aside = join(dir, `lock.${token}`);
   try {
     renameSync(lock, aside);
   } catch {
     return undefined;
   }
-  if (read(aside) !== stale) {
-    // Someone else took it over in between: leave theirs alone.
-    rmSync(aside, { force: true });
+  const moved = lstatSync(aside);
+  if (moved.ino !== judged.ino || moved.mtimeMs !== judged.mtimeMs) {
+    // Another job took it over in between: put its lock back.
+    try {
+      linkSync(aside, lock);
+      rmSync(aside);
+    } catch {
+      // A third job holds the lock now; leave the moved one where it is.
+    }
     return undefined;
   }
-  rmSync(aside, { force: true });
+  rmSync(aside);
   return create(lock, token) ? { dir, token } : undefined;
+}
+
+/** Marks a held lock as still in use, for jobs that run long. */
+export function touchLock({ dir, token }: Lock): void {
+  const lock = join(dir, "lock");
+  if (read(lock) === token) {
+    const now = new Date();
+    utimesSync(lock, now, now);
+  }
 }
 
 /** Releases the lock if it's still ours. */

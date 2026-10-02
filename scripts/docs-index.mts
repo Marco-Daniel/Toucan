@@ -9,7 +9,7 @@
 // Worktrees: the index points at the checkout that registered it, so a search
 // from another worktree sees that checkout's docs, not its own.
 import { QMD_INDEX, planIndex } from "./qmd-docs.mts";
-import { lockFolder, releaseLock, takeLock, type Lock } from "./qmd-lock.mts";
+import { lockFolder, releaseLock, takeLock, touchLock, type Lock } from "./qmd-lock.mts";
 import { currentState, drainPending, hasQmd, qmd } from "./qmd-run.mts";
 
 const WAIT_MS = 60_000;
@@ -44,6 +44,7 @@ try {
     console.warn(note);
   }
   for (const args of commands) {
+    touchLock(lock);
     console.log(`qmd ${args.join(" ")}`);
     if (qmd(args, true).status !== 0) {
       console.error(

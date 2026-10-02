@@ -27,5 +27,8 @@ if (process.argv[2] === "--worker") {
   spawn(process.execPath, [process.argv[1]!, "--worker"], {
     detached: true,
     stdio: "ignore",
-  }).unref();
+  })
+    // A failed spawn (say, a process limit) stays silent like everything else here.
+    .on("error", () => {})
+    .unref();
 }
