@@ -10,7 +10,8 @@ import type { SidebarSettings } from "../../../src/features/sidebar/sidebar.util
  * A fake secondary sidebar: reveal and close feed visibility back like VS Code
  * does, unless `silentClose` or `silentReveal` suppress that event. With
  * `holdReveals`, each reveal stays pending until `release()`. `failReveals`,
- * `failCloses` and `failWrites` make reveal, closeBar and writeClosed reject.
+ * `failCloses` and `failWrites` make reveal, closeBar and writeClosed reject;
+ * `failCloses: "sync"` makes closeBar throw before it returns a promise.
  * Warnings land in `state.warnings`.
  */
 function setup(
@@ -20,7 +21,7 @@ function setup(
     silentReveal?: boolean;
     holdReveals?: boolean;
     failReveals?: boolean;
-    failCloses?: boolean;
+    failCloses?: boolean | "sync";
     failWrites?: boolean;
   } = {},
 ) {
@@ -62,15 +63,21 @@ function setup(
           controller.visibilityChanged(true);
         }
       },
-      closeBar: async () => {
-        state.closes++;
-        if (failCloses) {
-          throw new Error("no secondary sidebar");
-        }
-        if (!silentClose) {
-          controller.visibilityChanged(false);
-        }
-      },
+      closeBar:
+        failCloses === "sync"
+          ? () => {
+              state.closes++;
+              throw new Error("closeBar threw before returning a promise");
+            }
+          : async () => {
+              state.closes++;
+              if (failCloses) {
+                throw new Error("no secondary sidebar");
+              }
+              if (!silentClose) {
+                controller.visibilityChanged(false);
+              }
+            },
       readClosed: () => state.closed,
       writeClosed: async (closed) => {
         if (failWrites) {
@@ -404,6 +411,16 @@ describe("SidebarController, failures", () => {
         controller.setFocused(true);
       },
       warning: "Closing the bar failed: Error: no secondary sidebar",
+    },
+    {
+      site: "a close that throws before it starts",
+      options: { visibility: "unfocused", failCloses: "sync" },
+      act: async ({ controller }: Setup) => {
+        controller.start(false);
+        await settle();
+        controller.setFocused(true);
+      },
+      warning: "Closing the bar failed: Error: closeBar threw before returning a promise",
     },
     {
       site: "forgetting a remembered close",

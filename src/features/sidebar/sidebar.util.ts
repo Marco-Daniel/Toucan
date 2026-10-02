@@ -87,7 +87,7 @@ export class SidebarController {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !focused) {
-      this.post("Revealing the block", this.reveal(visibility === "unfocused"));
+      this.post("Revealing the block", () => this.reveal(visibility === "unfocused"));
     }
   }
 
@@ -109,13 +109,13 @@ export class SidebarController {
       if (this.visible) {
         this.openedByToucan = false;
       } else {
-        this.post("Revealing the block", this.reveal(true));
+        this.post("Revealing the block", () => this.reveal(true));
       }
     } else if (this.openedByToucan && this.visible) {
       this.openedByToucan = false;
       this.closingByToucan = true; // cleared by its visibility event or the next focus change
       this.ports.debug("closing the bar Toucan opened");
-      this.post("Closing the bar", this.ports.closeBar());
+      this.post("Closing the bar", () => this.ports.closeBar());
     } else {
       this.openedByToucan = false;
     }
@@ -135,7 +135,7 @@ export class SidebarController {
       // Only the user's own open forgets their close, not Toucan's reveal.
       if (!this.revealing && this.ports.readClosed()) {
         this.ports.debug("block opened; forgetting the remembered close");
-        this.post("Forgetting the close", this.ports.writeClosed(false));
+        this.post("Forgetting the close", () => this.ports.writeClosed(false));
       }
       return;
     }
@@ -152,7 +152,7 @@ export class SidebarController {
         this.rememberTimer = undefined;
         if (!this.visible) {
           this.ports.debug("user closed the block; remembering");
-          this.post("Remembering the close", this.ports.writeClosed(true));
+          this.post("Remembering the close", () => this.ports.writeClosed(true));
         }
       }, REMEMBER_CLOSE_DELAY_MS);
     }
@@ -165,7 +165,7 @@ export class SidebarController {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !this.focused) {
-      this.post("Revealing the block", this.reveal(visibility === "unfocused"));
+      this.post("Revealing the block", () => this.reveal(visibility === "unfocused"));
     }
   }
 
@@ -203,13 +203,13 @@ export class SidebarController {
    * Finishes work started by a sync event handler or timer, which has no
    * caller to await it: a failure is logged, never left unhandled.
    */
-  private post(what: string, task: Promise<void>): void {
+  private post(what: string, task: () => Promise<void>): void {
     // oxlint-disable-next-line typescript/no-floating-promises -- no caller to await (see above); settle never rejects
     this.settle(what, task);
   }
 
-  private async settle(what: string, task: Promise<void>): Promise<void> {
-    const [, error] = await tryCatch(() => task);
+  private async settle(what: string, task: () => Promise<void>): Promise<void> {
+    const [, error] = await tryCatch(task);
     if (error !== null) {
       this.ports.warn(failure(what, error));
     }
