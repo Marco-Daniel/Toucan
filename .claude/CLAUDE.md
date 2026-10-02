@@ -53,6 +53,6 @@ Rules:
 - **Don't duplicate a test across files.** Copies drift, and a copy aimed at the wrong unit reports coverage the real one never got.
 - **Prove it can fail.** When adding or changing a test, break the line it protects (flip a comparison, drop a branch, return early) and check that the test goes red. Then restore it. If it stays green, the test is wrong.
 
-Mutation testing (StrykerJS with the vitest runner) measures this mechanically. It's not set up yet; if added, read the survived mutants, not the percentage.
+Mutation testing (StrykerJS) measures this mechanically. Run `pnpm mutate <files you changed>` (it runs only their related tests; a few minutes for a dozen files) and read every survived mutant: kill it with a test, or say why it's equivalent. Never chase the percentage. It's on demand only, not in CI or the pre-push hook.
 
 Review checklist for any change that touches tests: *would this test still pass if the production code were subtly broken?*

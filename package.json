@@ -38,7 +38,8 @@
     "check:generated": "\"$npm_execpath\" gen && \"$npm_execpath\" font && \"$npm_execpath\" icon && git diff --exit-code src/generated README.md media && test -z \"$(git status --porcelain src/generated README.md media)\"",
     "check:bundle": "node scripts/check-bundle.mts",
     "check:vsix": "node scripts/check-vsix.mts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "mutate": "node scripts/mutate.mts"
   },
   "dependencies": {
     "culori": "^4.0.2",
@@ -46,6 +47,8 @@
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "@stryker-mutator/core": "10.0.0",
+    "@stryker-mutator/vitest-runner": "10.0.0",
     "@types/culori": "^4.0.1",
     "@types/node": "^22.0.0",
     "@types/vscode": "1.138.0",
