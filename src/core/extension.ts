@@ -30,11 +30,15 @@ export async function activate(context: ExtensionContext): Promise<void> {
   let repo: ActiveRepo | undefined;
 
   const writer = createSettingsWriter(context.globalStorageUri.fsPath, log);
-  const focus = startFocusCoordinator(context, log, writer, () =>
-    repo
-      ? deriveColors({ background: repo.config.background, overrides: repo.config.overrides })
-      : undefined,
-  );
+  const focus = startFocusCoordinator({
+    context,
+    log,
+    writer,
+    desired: () =>
+      repo
+        ? deriveColors({ background: repo.config.background, overrides: repo.config.overrides })
+        : undefined,
+  });
   coordinator = focus;
 
   const sidebar = new SidebarBlock(context, log, () => repo);

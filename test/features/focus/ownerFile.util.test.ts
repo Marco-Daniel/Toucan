@@ -15,8 +15,8 @@ afterEach(async () => {
 describe("createOwnerFile", () => {
   it("round-trips the owner between windows", async () => {
     const storage = join(dir, "globalStorage"); // not created yet
-    await createOwnerFile(storage, "a").writeOwner("window-a");
-    expect(await createOwnerFile(storage, "b").readOwner()).toBe("window-a");
+    await createOwnerFile({ directory: storage, id: "a" }).writeOwner("window-a");
+    expect(await createOwnerFile({ directory: storage, id: "b" }).readOwner()).toBe("window-a");
     expect(JSON.parse(await readFile(join(storage, "owner.json"), "utf8"))).toEqual({
       window: "window-a",
     });
@@ -24,15 +24,15 @@ describe("createOwnerFile", () => {
   });
 
   it("lets the latest writer win", async () => {
-    await createOwnerFile(dir, "a").writeOwner("window-a");
-    await createOwnerFile(dir, "b").writeOwner("window-b");
-    expect(await createOwnerFile(dir, "a").readOwner()).toBe("window-b");
+    await createOwnerFile({ directory: dir, id: "a" }).writeOwner("window-a");
+    await createOwnerFile({ directory: dir, id: "b" }).writeOwner("window-b");
+    expect(await createOwnerFile({ directory: dir, id: "a" }).readOwner()).toBe("window-b");
   });
 
   it("lets windows write at the same time without sharing a temp file", async () => {
     const ids = Array.from({ length: 20 }, (_, i) => `window-${i}`);
-    await Promise.all(ids.map((id) => createOwnerFile(dir, id).writeOwner(id)));
-    expect(ids).toContain(await createOwnerFile(dir, "x").readOwner());
+    await Promise.all(ids.map((id) => createOwnerFile({ directory: dir, id }).writeOwner(id)));
+    expect(ids).toContain(await createOwnerFile({ directory: dir, id: "x" }).readOwner());
     expect(await readdir(dir)).toEqual(["owner.json"]);
   });
 
@@ -46,12 +46,14 @@ describe("createOwnerFile", () => {
     if (text !== undefined) {
       await writeFile(join(dir, "owner.json"), text);
     }
-    expect(await createOwnerFile(dir, "a").readOwner()).toBeUndefined();
+    expect(await createOwnerFile({ directory: dir, id: "a" }).readOwner()).toBeUndefined();
   });
 
   it("fails a write it can't make and leaves no temp file", async () => {
     await mkdir(join(dir, "owner.json")); // the rename onto it fails
-    await expect(createOwnerFile(dir, "a").writeOwner("window-a")).rejects.toMatchObject({
+    await expect(
+      createOwnerFile({ directory: dir, id: "a" }).writeOwner("window-a"),
+    ).rejects.toMatchObject({
       code: "EISDIR",
     });
     expect(await readdir(dir)).toEqual(["owner.json"]);

@@ -17,35 +17,46 @@ const APPLIED_KEY = "commandCenter.applied";
 /** Debug lines name the window by the start of its id. */
 const SHORT_ID_LENGTH = 8;
 
+interface StartFocusCoordinatorArgs {
+  context: ExtensionContext;
+  log: Log;
+  writer: SettingsWriter;
+  /** This window's colors, or `undefined` for an unconfigured repo. */
+  desired: () => CommandCenterColors | undefined;
+}
+
 /**
  * Wires the focus coordinator to VS Code: the owner file in global storage
  * (shared by all local windows, since Toucan is a UI extension) and the
  * user-level color customizations. The caller feeds it focus changes,
  * starting with the initial state once its repo is resolved.
  */
-export function startFocusCoordinator(
-  context: ExtensionContext,
-  log: Log,
-  writer: SettingsWriter,
-  desired: () => CommandCenterColors | undefined,
-): FocusCoordinator {
+export function startFocusCoordinator({
+  context,
+  log,
+  writer,
+  desired,
+}: StartFocusCoordinatorArgs): FocusCoordinator {
   const id = randomUUID();
-  return new FocusCoordinator(id, ownerFilePorts(context, id, log, writer), desired);
+  return new FocusCoordinator({ id, ports: ownerFilePorts({ context, id, log, writer }), desired });
 }
 
-function ownerFilePorts(
-  context: ExtensionContext,
-  id: string,
-  log: Log,
-  writer: SettingsWriter,
-): FocusPorts {
+interface OwnerFilePortsArgs {
+  context: ExtensionContext;
+  /** This window's id. */
+  id: string;
+  log: Log;
+  writer: SettingsWriter;
+}
+
+function ownerFilePorts({ context, id, log, writer }: OwnerFilePortsArgs): FocusPorts {
   // A guess: a profile can share the default global state and keep its own
   // settings (or the reverse), so this may be the wrong file. See
   // readCustomizationsFromDisk.
   const settingsFile = writer.file("profile");
 
   return {
-    ...createOwnerFile(context.globalStorageUri.fsPath, id),
+    ...createOwnerFile({ directory: context.globalStorageUri.fsPath, id }),
     readCustomizations() {
       return userValue(COLOR_CUSTOMIZATIONS);
     },

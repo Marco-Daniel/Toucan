@@ -57,9 +57,9 @@ class World {
 
   window(id: string, background: string | undefined | (() => string)): FocusCoordinator {
     const desired = typeof background === "function" ? background : () => background;
-    return new FocusCoordinator(
+    return new FocusCoordinator({
       id,
-      {
+      ports: {
         readOwner: async () => this.owner,
         writeOwner: async (owner) => {
           this.owner = owner;
@@ -97,11 +97,11 @@ class World {
         warn: (message) => this.warnings.push(`${id}: ${message}`),
         debug: () => {},
       },
-      () => {
+      desired: () => {
         const value = desired();
         return value ? colors(value) : undefined;
       },
-    );
+    });
   }
 
   get background(): unknown {
@@ -315,9 +315,9 @@ describe("FocusCoordinator", () => {
 
   it("applies the colors even when recording the owner fails", async () => {
     const world = new World();
-    const a = new FocusCoordinator(
-      "A",
-      {
+    const a = new FocusCoordinator({
+      id: "A",
+      ports: {
         hasApplied: () => true,
         markApplied: async () => {},
         readOwner: async () => undefined,
@@ -335,8 +335,8 @@ describe("FocusCoordinator", () => {
         warn: (message) => world.warnings.push(message),
         debug: () => {},
       },
-      () => colors("#aa0000"),
-    );
+      desired: () => colors("#aa0000"),
+    });
     a.setFocused(true);
     await settle();
     expect(world.background).toBe("#aa0000");
@@ -609,9 +609,9 @@ describe("FocusCoordinator", () => {
 
   it("logs a task that fails outside its own error handling", async () => {
     const warnings: string[] = [];
-    const a = new FocusCoordinator(
-      "A",
-      {
+    const a = new FocusCoordinator({
+      id: "A",
+      ports: {
         hasApplied: () => true,
         markApplied: async () => {},
         // dispose() reads the owner before clearing; nothing in that task catches this.
@@ -625,16 +625,16 @@ describe("FocusCoordinator", () => {
         warn: (message) => warnings.push(message),
         debug: () => {},
       },
-      () => undefined,
-    );
+      desired: () => undefined,
+    });
     await a.dispose();
     expect(warnings).toEqual(["Focus handling failed: Error: owner file locked"]);
   });
 
   it("never rejects, even when logging a failure throws", async () => {
-    const a = new FocusCoordinator(
-      "A",
-      {
+    const a = new FocusCoordinator({
+      id: "A",
+      ports: {
         hasApplied: () => true,
         markApplied: async () => {},
         readOwner: async () => "A",
@@ -649,8 +649,8 @@ describe("FocusCoordinator", () => {
         },
         debug: () => {},
       },
-      () => undefined,
-    );
+      desired: () => undefined,
+    });
     await expect(a.dispose()).resolves.toBeUndefined();
   });
 

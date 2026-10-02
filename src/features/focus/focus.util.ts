@@ -52,6 +52,14 @@ export interface FocusPorts {
   debug(message: string): void;
 }
 
+interface FocusCoordinatorArgs {
+  /** This window's id, written to the owner file. */
+  id: string;
+  ports: FocusPorts;
+  /** This window's colors, or `undefined` for an unconfigured repo. */
+  desired: () => CommandCenterColors | undefined;
+}
+
 /**
  * Applies this window's Command Center colors while it's focused and clears
  * them after it loses focus, unless another window has taken over (0002).
@@ -74,7 +82,7 @@ export class FocusCoordinator {
   /** This window's colors, or `undefined` for an unconfigured repo. */
   private readonly desired: () => CommandCenterColors | undefined;
 
-  constructor(id: string, ports: FocusPorts, desired: () => CommandCenterColors | undefined) {
+  constructor({ id, ports, desired }: FocusCoordinatorArgs) {
     this.id = id;
     this.ports = ports;
     this.desired = desired;
@@ -177,7 +185,7 @@ export class FocusCoordinator {
       return;
     }
     const view = this.ports.readCustomizations();
-    const result = mergeCustomizations(view, colors);
+    const result = mergeCustomizations({ current: view, colors });
     if (result.changed) {
       // A real change makes any earlier file snapshot meaningless.
       this.staleSnapshot = undefined;
@@ -187,7 +195,8 @@ export class FocusCoordinator {
       // missed it. If the file is another profile's, it stays "stale"; the
       // snapshot check limits that to one redundant write per file change.
       const disk = await this.ports.readCustomizationsFromDisk();
-      const stale = disk !== undefined && mergeCustomizations(disk.value, colors).changed;
+      const stale =
+        disk !== undefined && mergeCustomizations({ current: disk.value, colors }).changed;
       // Wrapped, so a file where the setting is gone ("undefined") still
       // gives a snapshot distinct from "none yet".
       const snapshot = stale ? JSON.stringify([disk.value]) : undefined;
@@ -210,7 +219,7 @@ export class FocusCoordinator {
     const [, error] = await tryCatch(() =>
       // Toucan's keys merged onto whatever the user value is when it's written.
       this.ports
-        .writeCustomizations((current) => customizationsFor(current, colors))
+        .writeCustomizations((current) => customizationsFor({ current, colors }))
         .then(() => {
           this.ports.debug(colors ? `applied ${colors.background}` : "cleared");
           this.failing = false;

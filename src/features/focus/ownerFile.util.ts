@@ -4,15 +4,21 @@ import type { FocusPorts } from "./focus.util.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
+interface CreateOwnerFileArgs {
+  directory: string;
+  /** This window's id. */
+  id: string;
+}
+
 /**
  * The owner file shared by all local windows: which window last took focus
  * (0002). `id` names this window's temp file, so two windows writing at once
  * never share one.
  */
-export function createOwnerFile(
-  directory: string,
-  id: string,
-): Pick<FocusPorts, "readOwner" | "writeOwner"> {
+export function createOwnerFile({
+  directory,
+  id,
+}: CreateOwnerFileArgs): Pick<FocusPorts, "readOwner" | "writeOwner"> {
   const file = join(directory, "owner.json");
   return {
     async readOwner() {
