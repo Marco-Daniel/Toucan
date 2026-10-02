@@ -1,4 +1,5 @@
-import { MarkdownString, StatusBarAlignment, window, type Disposable } from "vscode";
+import { MarkdownString, StatusBarAlignment, window } from "vscode";
+import type { Disposable } from "vscode";
 import { escapeIcons, glyphIcon, glyphSvg, svgDataUri } from "./core/glyphs.ts";
 import { accessibilityLabel } from "./core/labels.ts";
 import { commands } from "./generated/meta.ts";

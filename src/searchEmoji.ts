@@ -4,16 +4,16 @@ import {
   extensions,
   window,
   workspace,
-  type Disposable,
-  type Event,
-  type ExtensionContext,
 } from "vscode";
+import type { Disposable, Event, ExtensionContext } from "vscode";
 import { notify } from "./notify.ts";
 import type { Log } from "./log.ts";
 import { emojiFor } from "./core/emoji.ts";
 import { titleChangeFailed } from "./core/messages.ts";
-import { TitleSetup, type TitlePorts } from "./core/titleSetup.ts";
-import { repoVariableValue, shouldLabel, type TitleChange } from "./core/windowTitle.ts";
+import { TitleSetup } from "./core/titleSetup.ts";
+import type { TitlePorts } from "./core/titleSetup.ts";
+import { repoVariableValue, shouldLabel } from "./core/windowTitle.ts";
+import type { TitleChange } from "./core/windowTitle.ts";
 import { configs } from "./generated/meta.ts";
 import type { ActiveRepo } from "./repo.ts";
 

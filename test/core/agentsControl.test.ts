@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { agentsControlAction, type AgentsControlState } from "../../src/core/agentsControl.ts";
+import { agentsControlAction } from "../../src/core/agentsControl.ts";
+import type { AgentsControlState } from "../../src/core/agentsControl.ts";
 
 const base: AgentsControlState = {
   registered: true,

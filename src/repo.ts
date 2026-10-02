@@ -1,5 +1,6 @@
 import { workspace } from "vscode";
-import { parseRepos, type RepoConfig } from "./core/config.ts";
+import { parseRepos } from "./core/config.ts";
+import type { RepoConfig } from "./core/config.ts";
 import type { IssueReporter } from "./core/issues.ts";
 import { configs } from "./generated/meta.ts";
 

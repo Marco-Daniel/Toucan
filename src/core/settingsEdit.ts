@@ -8,10 +8,8 @@ import {
   modify,
   parse,
   parseTree,
-  type Edit,
-  type JSONScanner,
-  type ParseError,
 } from "jsonc-parser/lib/esm/main.js";
+import type { Edit, JSONScanner, ParseError } from "jsonc-parser/lib/esm/main.js";
 import { isRecord } from "./records.ts";
 
 const CRLF = "\r\n";

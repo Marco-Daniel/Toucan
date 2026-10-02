@@ -1,4 +1,5 @@
-import { window, type Disposable } from "vscode";
+import { window } from "vscode";
+import type { Disposable } from "vscode";
 
 /** Toucan's log. Never throws, so it's safe to use during shutdown. */
 export interface Log {

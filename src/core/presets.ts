@@ -1,4 +1,5 @@
-import { asHex, type Hex } from "./model.ts";
+import { asHex } from "./model.ts";
+import type { Hex } from "./model.ts";
 
 export interface Preset {
   name: string;

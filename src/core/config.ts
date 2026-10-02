@@ -5,11 +5,8 @@ import {
   GLYPHS,
   RETIRED_GLYPHS,
   SIDEBAR_VISIBILITIES,
-  type ColorOverrides,
-  type Glyph,
-  type Hex,
-  type SidebarVisibility,
 } from "./model.ts";
+import type { ColorOverrides, Glyph, Hex, SidebarVisibility } from "./model.ts";
 import { isRecord } from "./records.ts";
 
 export interface RepoConfig {

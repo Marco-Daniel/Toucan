@@ -1,10 +1,6 @@
 import { tryCatch } from "./tryCatch.ts";
-import {
-  SIDEBAR_STYLES,
-  SIDEBAR_VISIBILITIES,
-  type SidebarStyle,
-  type SidebarVisibility,
-} from "./model.ts";
+import { SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "./model.ts";
+import type { SidebarStyle, SidebarVisibility } from "./model.ts";
 
 /** How long a user close must last before it's remembered (see `visibilityChanged`). */
 export const REMEMBER_CLOSE_DELAY_MS = 1500;

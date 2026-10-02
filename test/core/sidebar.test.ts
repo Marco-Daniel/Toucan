@@ -3,8 +3,8 @@ import {
   REMEMBER_CLOSE_DELAY_MS,
   resolveSidebarSettings,
   SidebarController,
-  type SidebarSettings,
 } from "../../src/core/sidebar.ts";
+import type { SidebarSettings } from "../../src/core/sidebar.ts";
 
 /**
  * A fake secondary sidebar: reveal and close feed visibility back like VS Code

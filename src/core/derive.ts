@@ -1,4 +1,5 @@
-import { wcagContrast, type Color } from "culori/fn";
+import { wcagContrast } from "culori/fn";
+import type { Color } from "culori/fn";
 import { fromHex, toHex, toOklch } from "./color.ts";
 import type { ColorOverrides, CommandCenterColors, Hex } from "./model.ts";
 

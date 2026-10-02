@@ -15,7 +15,8 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { SettingsFileWriter, type Clock } from "../../src/core/settingsWrite.ts";
+import { SettingsFileWriter } from "../../src/core/settingsWrite.ts";
+import type { Clock } from "../../src/core/settingsWrite.ts";
 
 const KEY = "toucan.repos";
 const BEFORE = `{

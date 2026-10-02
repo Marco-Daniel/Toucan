@@ -1,4 +1,5 @@
-import { window, workspace, type ExtensionContext } from "vscode";
+import { window, workspace } from "vscode";
+import type { ExtensionContext } from "vscode";
 import { AgentsControlOffer } from "./agentsControl.ts";
 import { registerCommands } from "./commands.ts";
 import { deriveColors } from "./core/derive.ts";
@@ -7,7 +8,8 @@ import { IssueReporter } from "./core/issues.ts";
 import { COLOR_CUSTOMIZATIONS, startFocusCoordinator } from "./focus.ts";
 import { configs } from "./generated/meta.ts";
 import { createLog } from "./log.ts";
-import { resolveActiveRepo, type ActiveRepo } from "./repo.ts";
+import { resolveActiveRepo } from "./repo.ts";
+import type { ActiveRepo } from "./repo.ts";
 import { SearchEmoji } from "./searchEmoji.ts";
 import { createSettingsWriter } from "./settingsWriter.ts";
 import { SidebarBlock } from "./sidebar.ts";

@@ -3,8 +3,8 @@ import {
   titleToRestore,
   titleWithRepoVariable,
   unappliedChange,
-  type TitleChange,
 } from "./windowTitle.ts";
+import type { TitleChange } from "./windowTitle.ts";
 
 /** `window.title` as `inspect()` reports it. */
 export interface TitleSettings {

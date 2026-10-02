@@ -1,4 +1,5 @@
-import { COMMAND_CENTER_KEYS, type CommandCenterColors } from "./model.ts";
+import { COMMAND_CENTER_KEYS } from "./model.ts";
+import type { CommandCenterColors } from "./model.ts";
 import { isRecord } from "./records.ts";
 
 const PREFIX = "commandCenter.";

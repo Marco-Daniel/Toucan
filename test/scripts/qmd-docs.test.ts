@@ -6,8 +6,8 @@ import {
   parseCollectionList,
   parseCollectionShow,
   planIndex,
-  type IndexState,
 } from "../../scripts/qmd-docs.mts";
+import type { IndexState } from "../../scripts/qmd-docs.mts";
 
 const DOCS_CONTEXT = DOCS_COLLECTIONS[0]!.contexts;
 const GUIDES_CONTEXT = DOCS_COLLECTIONS[1]!.contexts;

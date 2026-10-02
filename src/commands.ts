@@ -5,9 +5,8 @@ import {
   commands as vscodeCommands,
   window,
   workspace,
-  type Disposable,
-  type QuickPickItem,
 } from "vscode";
+import type { Disposable, QuickPickItem } from "vscode";
 import { notify } from "./notify.ts";
 import { NEUTRAL_GRAY, validateColorInput } from "./core/color.ts";
 import {
@@ -26,12 +25,14 @@ import {
   clearDetail,
   saveFailed,
 } from "./core/messages.ts";
-import { DEFAULT_GLYPH, type Glyph, type Hex } from "./core/model.ts";
+import { DEFAULT_GLYPH } from "./core/model.ts";
+import type { Glyph, Hex } from "./core/model.ts";
 import { PRESETS } from "./core/presets.ts";
 import { COLOR_CUSTOMIZATIONS } from "./focus.ts";
 import { commands, configs } from "./generated/meta.ts";
 import type { ActiveRepo } from "./repo.ts";
-import { userValue, type SettingsUpdate, type SettingsWriter } from "./settingsWriter.ts";
+import { userValue } from "./settingsWriter.ts";
+import type { SettingsUpdate, SettingsWriter } from "./settingsWriter.ts";
 import type { SidebarBlock } from "./sidebar.ts";
 import type { StatusBarIndicator } from "./statusBar.ts";
 import { isRecord } from "./core/records.ts";

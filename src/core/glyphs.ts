@@ -1,6 +1,7 @@
 import { GLYPH_PATHS } from "../generated/glyphPaths.ts";
 import { HEIGHT, shapeSvg } from "./glyphFont.ts";
-import { GLYPH_GROUPS, type Glyph, type Hex } from "./model.ts";
+import { GLYPH_GROUPS } from "./model.ts";
+import type { Glyph, Hex } from "./model.ts";
 
 export { FONT_CODEPOINTS } from "./glyphFont.ts";
 
