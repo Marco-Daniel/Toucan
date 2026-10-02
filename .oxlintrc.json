@@ -42,6 +42,7 @@
     "no-case-declarations": "error",
     "no-prototype-builtins": "error",
     "no-empty": "error",
+    "no-void": ["error", { "allowAsStatement": false }],
     "typescript/no-magic-numbers": [
       "error",
       {
@@ -65,12 +66,7 @@
     "typescript/no-base-to-string": ["error", { "checkUnknown": false }],
     "typescript/no-misused-promises": ["error", { "checksVoidReturn": { "attributes": false } }],
     "typescript/no-floating-promises": ["error", { "ignoreVoid": false }],
-    "typescript/no-unnecessary-type-assertion": "off",
-    "typescript/no-empty-interface": "off",
-    "typescript/no-misused-spread": "off",
-    "typescript/no-useless-default-assignment": "off",
-    "unicorn/no-useless-spread": "off",
-    "import/namespace": "off"
+    "typescript/no-unnecessary-type-assertion": "error"
   },
   "overrides": [
     {
@@ -90,24 +86,24 @@
       }
     },
     {
+      // The scripts run qmd and file steps in order on purpose.
       "files": ["scripts/**"],
       "rules": { "no-await-in-loop": "off" }
     },
     {
+      // Tests use literal fixtures, long tables of cases, parsed JSON (any),
+      // sequential awaits and no-op fakes for ports they don't check.
       "files": ["test/**"],
       "rules": {
         "typescript/no-magic-numbers": "off",
         "typescript/no-unsafe-assignment": "off",
-        "typescript/no-unsafe-call": "off",
         "typescript/no-unsafe-member-access": "off",
-        "typescript/no-unsafe-return": "off",
         "typescript/no-unsafe-argument": "off",
         "typescript/no-unsafe-type-assertion": "off",
         "max-lines": "off",
         "max-lines-per-function": "off",
         "no-await-in-loop": "off",
-        "no-empty-function": "off",
-        "typescript/no-empty-function": "off"
+        "no-empty-function": "off"
       }
     }
   ]

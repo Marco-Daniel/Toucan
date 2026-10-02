@@ -1,13 +1,13 @@
 import { converter, parseHex, wcagContrast } from "culori/fn";
 import { describe, expect, it } from "vitest";
 import { deriveColors } from "../../src/core/derive.ts";
-import { COMMAND_CENTER_KEYS, type ColorOverrides, type Hex } from "../../src/core/model.ts";
+import { COMMAND_CENTER_KEYS, type Hex } from "../../src/core/model.ts";
 
 const toOklch = converter("oklch");
 // Test inputs are written as valid hex, which the parser would produce.
 const asHex = (value: string) => value as Hex;
 const derive = (background: string, overrides: Record<string, string> = {}) =>
-  deriveColors(asHex(background), overrides as ColorOverrides);
+  deriveColors(asHex(background), overrides);
 const lightness = (hex: string) => toOklch(parseHex(hex))!.l;
 
 // Every preset from 0014, plus the extremes.
