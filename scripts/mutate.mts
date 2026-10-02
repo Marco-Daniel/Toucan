@@ -17,6 +17,7 @@
 // stryker.config.json points tsconfigFile at a file that doesn't exist on
 // purpose: Stryker's tsconfig rewrite needs the TypeScript JS API, which
 // TypeScript 7 doesn't ship, and this repo's tsconfig has nothing to rewrite.
+// import libraries
 import { relative, resolve } from "node:path";
 import { Stryker } from "@stryker-mutator/core";
 import { createVitest } from "vitest/node";

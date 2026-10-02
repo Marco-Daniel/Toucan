@@ -4,13 +4,18 @@
 // draw), writes the SVG sources to media/icons, and builds the icon font
 // media/toucan-icons.woff from them, so the font and the swatches can't drift
 // apart.
+// import libraries
 import { mkdirSync, writeFileSync } from "node:fs";
-import { GLYPH_DESIGNS } from "../src/features/glyphs/glyphDesign.consts.ts";
+
+// import utils
 import { FONT_CODEPOINTS, shapeSvg } from "../src/features/glyphs/glyphFont.util.ts";
-import { GLYPHS } from "../src/shared/model/model.consts.ts";
 import { asHex } from "../src/shared/color/hex.util.ts";
 import { bakeGlyph } from "./bake-glyphs.mts";
 import { buildFont } from "./font.mts";
+
+// import consts
+import { GLYPH_DESIGNS } from "../src/features/glyphs/glyphDesign.consts.ts";
+import { GLYPHS } from "../src/shared/model/model.consts.ts";
 
 const ROOT = new URL("../", import.meta.url);
 const MEDIA = new URL("media/", ROOT);

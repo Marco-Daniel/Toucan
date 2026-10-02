@@ -1,17 +1,22 @@
 // Running qmd for Toucan's scripts: the repo root, calls on Toucan's own index,
 // what is registered there now, and running jobs one at a time. Shared by
 // `pnpm docs:index` and the hooks, so all of them plan and lock the same way.
+// import libraries
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+// import utils
 import {
   DOCS_COLLECTIONS,
   QMD_INDEX,
   parseCollectionList,
   parseCollectionShow,
 } from "./qmd-docs.mts";
-import type { IndexState } from "./qmd-docs.mts";
 import { isPending, releaseLock, takeLock, takePending } from "./qmd-lock.mts";
+
+// import types
+import type { IndexState } from "./qmd-docs.mts";
 
 /** The repo root at runtime (qmd stores real paths), so no path is committed. */
 export const ROOT = realpathSync(fileURLToPath(new URL("../..", import.meta.url)));

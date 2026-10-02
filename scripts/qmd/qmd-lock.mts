@@ -3,6 +3,7 @@
 // cache folder, next to Toucan's index, and are created exclusively, which
 // never follows a symlink. A lock older than STALE_MS was left by a job that
 // died; long jobs refresh theirs.
+// import libraries
 import {
   closeSync,
   constants,
@@ -15,6 +16,8 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+
+// import utils
 import { tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
 
 /** A lock older than this (10 minutes) was left by a job that died. */

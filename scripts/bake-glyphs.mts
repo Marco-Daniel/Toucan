@@ -5,11 +5,18 @@
 // out with opposite winding, so they read the same under the nonzero rule that
 // SVG and TrueType fonts both use. Font tools drop strokes and masks; this
 // doesn't need either (glyph-set/0004).
+// import libraries
 import ClipperLib from "clipper-lib";
-import type { Path, Paths } from "clipper-lib";
-import { HOLE_SOFTENING } from "../src/features/glyphs/glyphDesign.consts.ts";
-import type { GlyphDesign, Point } from "../src/features/glyphs/glyphDesign.consts.ts";
+
+// import utils
 import { roundToHundredths } from "../src/shared/math/round.util.ts";
+
+// import consts
+import { HOLE_SOFTENING } from "../src/features/glyphs/glyphDesign.consts.ts";
+
+// import types
+import type { Path, Paths } from "clipper-lib";
+import type { GlyphDesign, Point } from "../src/features/glyphs/glyphDesign.consts.ts";
 
 /** Clipper works in integers: 1/1000 of a glyph unit. */
 const SCALE = 1000;

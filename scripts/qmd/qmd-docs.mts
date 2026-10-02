@@ -5,6 +5,7 @@
 // index, so sharing one would re-index and prune other projects' collections.
 // Collection names stay `toucan-*` as a second guard. No qmd calls in this
 // module: the CLI scripts run what it plans.
+// import libraries
 import { matchesGlob, relative } from "node:path";
 
 export interface DocsCollection {

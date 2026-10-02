@@ -4,6 +4,7 @@
 // manual step. No embeddings (and no model download): those come with an
 // explicit `pnpm docs:index`. Silent and never blocking; it shares the lock
 // with the other qmd jobs, so only one runs at a time.
+// import utils
 import { planIndex } from "./qmd-docs.mts";
 import { allRegistered, currentState, exclusive, hasQmd, qmd, spawnWorker } from "./qmd-run.mts";
 

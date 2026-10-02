@@ -7,7 +7,10 @@
 //
 // Worktrees: the index points at the checkout that registered it, so a search
 // from another worktree sees that checkout's docs, not its own.
+// import libraries
 import { spawn } from "node:child_process";
+
+// import utils
 import { QMD_INDEX, planIndex } from "./qmd-docs.mts";
 import { touchLock } from "./qmd-lock.mts";
 import { currentState, exclusive, hasQmd } from "./qmd-run.mts";

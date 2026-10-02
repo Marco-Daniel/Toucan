@@ -8,7 +8,10 @@
 // shared lock until no edit is pending. If another job holds the lock, that
 // job picks the edit up; if the collections aren't registered yet, the edit
 // stays pending for the session-start bootstrap.
+// import libraries
 import { text } from "node:stream/consumers";
+
+// import utils
 import { tryCatch } from "../../src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../src/shared/records/records.util.ts";
 import { isIndexedDoc } from "./qmd-docs.mts";
