@@ -1,4 +1,5 @@
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+import { roundToHundredths } from "../../shared/math/round.util.ts";
 
 // What `pnpm font` needs from the glyph code. Kept apart from glyphs.ts, which
 // imports the generated paths that `pnpm font` rewrites, so a missing or broken
@@ -30,13 +31,6 @@ export const FONT_CODEPOINTS: Record<Glyph, number> = {
 
 /** Every glyph is 16 units high. */
 export const HEIGHT = 16;
-/** Coordinates are kept to hundredths of a unit. */
-const HUNDREDTHS = 100;
-
-function round(value: number): number {
-  return Math.round(value * HUNDREDTHS) / HUNDREDTHS;
-}
-
 interface ShapeSvgArgs {
   width: number;
   d: string;
@@ -46,7 +40,7 @@ interface ShapeSvgArgs {
 
 /** The SVG for one baked glyph path; `pnpm font` uses it for the font sources too. */
 export function shapeSvg({ width, d, color, height = HEIGHT }: ShapeSvgArgs): string {
-  const pixelWidth = round((width / HEIGHT) * height);
+  const pixelWidth = roundToHundredths((width / HEIGHT) * height);
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${pixelWidth}" height="${height}" ` +
     `viewBox="0 0 ${width} ${HEIGHT}" fill="${color}"><path d="${d}"/></svg>`

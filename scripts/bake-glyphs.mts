@@ -9,6 +9,7 @@ import ClipperLib from "clipper-lib";
 import type { Path, Paths } from "clipper-lib";
 import { HOLE_SOFTENING } from "../src/features/glyphs/glyphDesign.consts.ts";
 import type { GlyphDesign, Point } from "../src/features/glyphs/glyphDesign.consts.ts";
+import { roundToHundredths } from "../src/shared/math/round.util.ts";
 
 /** Clipper works in integers: 1/1000 of a glyph unit. */
 const SCALE = 1000;
@@ -22,8 +23,6 @@ const STROKE_REACH = 0.5;
 const CLEAN_DISTANCE = 0.005;
 /** Fewer points than this aren't a polygon. */
 const MIN_POLYGON_POINTS = 3;
-/** Path coordinates are written to hundredths of a unit. */
-const HUNDREDTHS = 100;
 
 const toPath = (points: readonly Point[]): Path =>
   points.map(([x, y]) => ({ X: Math.round(x * SCALE), Y: Math.round(y * SCALE) }));
@@ -48,7 +47,7 @@ function grow({ polygons, by }: GrowArgs): Paths {
 }
 
 function format(value: number): string {
-  return String(Math.round((value / SCALE) * HUNDREDTHS) / HUNDREDTHS);
+  return String(roundToHundredths(value / SCALE));
 }
 
 /** The design as an SVG path `d`. */
