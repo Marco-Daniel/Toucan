@@ -6,7 +6,7 @@ import { saveFailed } from "../../shared/messages/notifications.messages.ts";
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 import { COLOR_CUSTOMIZATIONS } from "../focus/focus.adapter.ts";
 import { configs } from "../../generated/meta.ts";
-import type { SettingsUpdate } from "../settings/settings.adapter.ts";
+import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import type { CommandHost } from "./commands.adapter.ts";
 
 /** A quick pick swatch is drawn 16 px high. */

@@ -3,8 +3,6 @@ import { HEIGHT, shapeSvg } from "./glyphFont.util.ts";
 import { GLYPH_GROUPS } from "../../shared/model/model.consts.ts";
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
-export { FONT_CODEPOINTS } from "./glyphFont.util.ts";
-
 /**
  * Solid codicon used where no glyph applies (0005). VS Code gives extensions
  * no signal when a contributed icon font fails to load, so don't try to

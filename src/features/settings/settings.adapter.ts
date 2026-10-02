@@ -3,8 +3,6 @@ import type { Log } from "../../core/log.adapter.ts";
 import { settingsFiles } from "./settingsEdit.util.ts";
 import { SettingsFileWriter } from "./settingsWrite.util.ts";
 
-export type { SettingsTarget, SettingsUpdate } from "./settingsWrite.util.ts";
-
 /** The user-level value of a setting: never get(), which merges defaults and workspace values. */
 export function userValue(key: string): unknown {
   return workspace.getConfiguration().inspect(key)?.globalValue;
