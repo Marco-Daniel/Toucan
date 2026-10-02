@@ -43,7 +43,12 @@ const input = (file: unknown) =>
 
 /** Runs the hook as Claude Code would, with `stdin` as its input. */
 function hook(stdin: string, path: string) {
-  return spawnSync(process.execPath, [HOOK], { input: stdin, env: env(path), encoding: "utf8" });
+  return spawnSync(process.execPath, [HOOK], {
+    input: stdin,
+    env: env(path),
+    encoding: "utf8",
+    timeout: 10_000,
+  });
 }
 
 /**
@@ -169,7 +174,11 @@ describe("the docs re-index worker", () => {
     const path = fakeQmd(dir, { collections: REGISTERED });
     writeFileSync(join(dir, "hold"), "");
     note();
-    const first = spawn(process.execPath, [HOOK, "--worker"], { env: env(path), stdio: "ignore" });
+    const first = spawn(process.execPath, [HOOK, "--worker"], {
+      env: env(path),
+      stdio: "ignore",
+      timeout: 10_000,
+    });
     const exited = new Promise((resolve) => first.on("close", resolve));
     await vi.waitFor(
       () => {

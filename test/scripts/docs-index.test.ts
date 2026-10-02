@@ -1,5 +1,14 @@
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -32,6 +41,8 @@ function docsIndex(path: string, extra: Record<string, string> = {}): Promise<Ex
   const child = spawn(process.execPath, [SCRIPT], {
     env: { PATH: path, HOME: dir, XDG_CACHE_HOME: dir, ...extra },
     stdio: ["ignore", "pipe", "pipe"],
+    // A run that hangs (a broken lock, say) is killed and fails, not left hanging.
+    timeout: 10_000,
   });
   let stdout = "";
   let stderr = "";
@@ -44,6 +55,27 @@ const lines = () =>
   existsSync(join(dir, "qmd.log"))
     ? readFileSync(join(dir, "qmd.log"), "utf8").trim().split("\n")
     : [];
+
+/** Waits until `condition` holds. */
+async function until(condition: () => boolean): Promise<void> {
+  await vi.waitFor(
+    () => {
+      if (!condition()) {
+        throw new Error("not yet");
+      }
+    },
+    { timeout: 5000, interval: 20 },
+  );
+}
+
+/** Starts docs:index with the update held open and a fast heartbeat; resolves once the update runs. */
+async function slowUpdate(): Promise<{ exit: Promise<Exit> }> {
+  writeFileSync(join(dir, "hold"), "");
+  const exit = docsIndex(fakeQmd(dir), { TOUCAN_QMD_HEARTBEAT_MS: "50" });
+  await until(() => lines().includes("update start"));
+  // Wrapped: an async function returning `exit` itself would wait for it.
+  return { exit };
+}
 
 /** Holds the lock as another job would. */
 function holdLock(): void {
@@ -118,5 +150,26 @@ describe("pnpm docs:index", () => {
     expect(exit.code).toBe(1);
     expect(exit.stderr).toContain("qmd isn't installed.");
     expect(existsSync(join(dir, "qmd"))).toBe(false);
+  });
+
+  it("keeps its lock fresh while a qmd command runs long", async () => {
+    const { exit } = await slowUpdate();
+    const halfAnHourAgo = new Date(Date.now() - 30 * 60_000);
+    utimesSync(lock, halfAnHourAgo, halfAnHourAgo);
+    await until(() => Date.now() - statSync(lock).mtimeMs < 60_000);
+    rmSync(join(dir, "hold"));
+    expect(await exit).toMatchObject({ code: 0 });
+  });
+
+  it("carries on when its lock is removed while it runs", async () => {
+    const { exit } = await slowUpdate();
+    rmSync(lock);
+    // Several heartbeats (every 50 ms) find the lock gone; only how long decides
+    // whether a crashing heartbeat gets caught, never whether a correct run passes.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    rmSync(join(dir, "hold"));
+    const { code, stderr } = await exit;
+    expect({ code, stderr }).toEqual({ code: 0, stderr: "" });
+    expect(lines().slice(-1)).toEqual(["embed"]);
   });
 });

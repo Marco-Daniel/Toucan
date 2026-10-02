@@ -11,7 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   isPending,
   markPending,
@@ -21,18 +21,17 @@ import {
   touchLock,
 } from "../../scripts/qmd-lock.mts";
 
-const saved = process.env.XDG_CACHE_HOME;
 let dir: string;
 let cache: string;
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "toucan-lock-"));
   // qmd's cache, and so the lock, in this test's dir: never the real one.
-  process.env.XDG_CACHE_HOME = dir;
+  vi.stubEnv("XDG_CACHE_HOME", dir);
   cache = join(dir, "qmd");
 });
 afterEach(() => {
-  process.env.XDG_CACHE_HOME = saved;
+  vi.unstubAllEnvs();
   rmSync(dir, { recursive: true, force: true });
 });
 

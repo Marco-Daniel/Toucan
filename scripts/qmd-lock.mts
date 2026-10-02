@@ -48,9 +48,16 @@ export function takeLock(): string | undefined {
   return create(lock) ? lock : undefined;
 }
 
+/** Keeps a held lock fresh. One that's gone (removed by hand, say) stays gone. */
 export function touchLock(lock: string): void {
   const now = new Date();
-  utimesSync(lock, now, now);
+  try {
+    utimesSync(lock, now, now);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
+    }
+  }
 }
 
 export function releaseLock(lock: string): void {

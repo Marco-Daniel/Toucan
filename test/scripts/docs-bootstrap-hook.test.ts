@@ -29,12 +29,17 @@ function start(path: string) {
     input: JSON.stringify({ hook_event_name: "SessionStart", source: "startup" }),
     env: env(path),
     encoding: "utf8",
+    timeout: 10_000,
   });
 }
 
 /** Runs the worker itself and waits for it, so its outcome is known when this returns. */
 function work(path: string) {
-  return spawnSync(process.execPath, [HOOK, "--worker"], { env: env(path), encoding: "utf8" });
+  return spawnSync(process.execPath, [HOOK, "--worker"], {
+    env: env(path),
+    encoding: "utf8",
+    timeout: 10_000,
+  });
 }
 
 const read = () =>
@@ -109,6 +114,7 @@ describe("the docs bootstrap worker", () => {
     const worker = spawn(process.execPath, [HOOK, "--worker"], {
       env: env(fakeQmd(dir)),
       stdio: "ignore",
+      timeout: 10_000,
     });
     const exited = new Promise((resolve) => worker.on("close", resolve));
     // Longer than the worker takes to start and find the lock taken: one that

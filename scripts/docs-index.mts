@@ -20,6 +20,10 @@ const run = (args: readonly string[]) =>
       .on("close", (code) => resolve(code === 0));
   });
 
+// The TOUCAN_QMD_* overrides shorten the waits in tests.
+const WAIT_MS = Number(process.env.TOUCAN_QMD_WAIT_MS) || 60_000;
+const HEARTBEAT_MS = Number(process.env.TOUCAN_QMD_HEARTBEAT_MS) || 60_000;
+
 if (!hasQmd()) {
   console.error(
     "qmd isn't installed. Working on Toucan uses it for docs search: `npm i -g @tobilu/qmd` (see README, Development), then rerun `pnpm docs:index`.",
@@ -30,7 +34,7 @@ if (!hasQmd()) {
 const ran = await exclusive(
   async (lock) => {
     // A single qmd command can run long (the first embed downloads models): keep the lock fresh.
-    const heartbeat = setInterval(() => touchLock(lock), 60_000);
+    const heartbeat = setInterval(() => touchLock(lock), HEARTBEAT_MS);
     try {
       const { commands, notes } = planIndex(currentState(process.argv.includes("--force")));
       for (const note of notes) {
@@ -52,8 +56,7 @@ const ran = await exclusive(
       clearInterval(heartbeat);
     }
   },
-  // TOUCAN_QMD_WAIT_MS shortens the wait in tests.
-  { waitMs: Number(process.env.TOUCAN_QMD_WAIT_MS) || 60_000 },
+  { waitMs: WAIT_MS },
 );
 if (!ran) {
   console.error(

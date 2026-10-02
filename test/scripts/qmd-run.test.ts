@@ -1,27 +1,22 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isPending, markPending, releaseLock, takeLock } from "../../scripts/qmd-lock.mts";
 import { exclusive } from "../../scripts/qmd-run.mts";
 import { fakeQmd } from "./fake-qmd.ts";
 
-const saved = {
-  PATH: process.env.PATH,
-  HOME: process.env.HOME,
-  XDG_CACHE_HOME: process.env.XDG_CACHE_HOME,
-};
 let dir: string;
 
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "toucan-run-"));
   // Only the fake qmd, and the lock in this test's dir.
-  process.env.PATH = fakeQmd(dir, { collections: "'toucan-docs (qmd://toucan-docs/)'" });
-  process.env.HOME = dir;
-  process.env.XDG_CACHE_HOME = dir;
+  vi.stubEnv("PATH", fakeQmd(dir, { collections: "'toucan-docs (qmd://toucan-docs/)'" }));
+  vi.stubEnv("HOME", dir);
+  vi.stubEnv("XDG_CACHE_HOME", dir);
 });
 afterEach(() => {
-  Object.assign(process.env, saved);
+  vi.unstubAllEnvs();
   rmSync(dir, { recursive: true, force: true });
 });
 
