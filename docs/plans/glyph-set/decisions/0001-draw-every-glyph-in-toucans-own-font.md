@@ -23,3 +23,7 @@ Chosen: **redraw all in Toucan's style**, because one source gives one consisten
 - Good: a consistent size, weight and baseline. No third-party glyph paths, so the codicon attribution can go. `FALLBACK_ICON` stays a codicon, because it is a built-in icon, not a copied path.
 - Bad: 16 shapes to draw and keep up instead of 3.
 - Follow-ups: remove the codicon attribution from README and THIRD_PARTY_NOTICES where it covers glyphs.
+
+## Amendment (2026-10-02)
+
+The `FALLBACK_ICON` constant (`circle-large-filled`) was removed as unused. The reason no fallback is wired up still stands: VS Code gives extensions no signal when a contributed icon font fails to load, so Toucan doesn't try to detect that and swap a codicon in.

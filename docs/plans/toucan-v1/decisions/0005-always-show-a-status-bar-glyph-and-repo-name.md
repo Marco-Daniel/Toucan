@@ -23,3 +23,7 @@ Chosen: **always-on status bar item with a custom icon font glyph plus the repo 
 - Good: per-window, works unfocused, stable API, no settings writes.
 - Bad: only the glyph/text is colored; dark colors on a dark status bar are hard to see; ships a small font.
 - Follow-ups: glyph shape and font pipeline (commit `.woff` or generate from SVG); possible low-contrast warning.
+
+## Amendment (2026-10-02)
+
+The `FALLBACK_ICON` constant (`circle-large-filled`) was removed as unused. The reason no fallback is wired up still stands: VS Code gives extensions no signal when a contributed icon font fails to load, so Toucan doesn't try to detect that and swap a codicon in.
