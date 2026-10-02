@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: layout
+- Decided in: [architecture-maintenance/0017](../plans/architecture-maintenance/decisions/0017-name-files-by-role-and-import-vscode-only-from-adapters.md)
 
 ## Context and Problem
 

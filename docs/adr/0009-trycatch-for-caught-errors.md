@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: errors
+- Decided in: [architecture-maintenance/0013](../plans/architecture-maintenance/decisions/0013-await-every-promise-and-catch-errors-through-trycatch.md)
 
 ## Context and Problem
 

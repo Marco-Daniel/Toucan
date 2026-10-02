@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: releases
+- Decided in: [architecture-maintenance/0008](../plans/architecture-maintenance/decisions/0008-ship-every-github-release-with-release-notes.md)
 
 ## Context and Problem
 

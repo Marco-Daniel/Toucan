@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: testing
+- Decided in: [architecture-maintenance/0025](../plans/architecture-maintenance/decisions/0025-run-strykerjs-on-demand-excluding-the-qmd-scripts.md)
 
 ## Context and Problem
 

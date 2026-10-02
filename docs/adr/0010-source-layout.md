@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: layout
+- Decided in: [architecture-maintenance/0016](../plans/architecture-maintenance/decisions/0016-organise-src-as-core-shared-and-features.md), [architecture-maintenance/0017](../plans/architecture-maintenance/decisions/0017-name-files-by-role-and-import-vscode-only-from-adapters.md), [architecture-maintenance/0019](../plans/architecture-maintenance/decisions/0019-use-no-barrel-files.md)
 
 ## Context and Problem
 

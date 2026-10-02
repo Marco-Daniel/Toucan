@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: settings
+- Lifted by: [architecture-maintenance/0001](../plans/architecture-maintenance/decisions/0001-lift-system-shaping-decisions-into-a-repo-level-adr-log.md)
 
 ## Context and Problem
 

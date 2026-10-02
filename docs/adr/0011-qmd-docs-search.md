@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: docs
+- Decided in: [architecture-maintenance/0005](../plans/architecture-maintenance/decisions/0005-require-qmd-docs-search-with-its-own-index.md)
 
 ## Context and Problem
 

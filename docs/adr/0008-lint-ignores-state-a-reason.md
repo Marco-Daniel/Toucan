@@ -6,6 +6,7 @@
 - Kind: direction
 - Area: tooling
 - Migration: tracked
+- Decided in: [architecture-maintenance/0012](../plans/architecture-maintenance/decisions/0012-fix-lint-findings-first-and-give-every-ignore-a-reason.md)
 
 ## Context and Problem
 

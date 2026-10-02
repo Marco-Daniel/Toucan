@@ -5,6 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: tooling
+- Decided in: [architecture-maintenance/0009](../plans/architecture-maintenance/decisions/0009-allow-no-lint-warnings.md)
 
 ## Context and Problem
 
