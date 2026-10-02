@@ -4,6 +4,11 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-10-02 — The implementer, ADR check and CLAUDE.md (PR #7, `rules-and-adrs`)
+- Did: a test keeps the ADR log whole: numbered without gaps, each with a title, kind and status, all listed in the index as their files say, and every cited `ADR-NNNN` existing and not superseded (`1a4ee14`).
+- Did: CLAUDE.md rewritten as lean rules plus pointers, the ADR log first (`a7090b6`).
+- Next: the post-merge checks (hooks firing, the MCP server, `enabledMcpjsonServers`), then re-indexing qmd on the main checkout.
+
 ## 2026-10-02 — The implementer, mutation testing (PR #9, `dry-upkeep`)
 - Did: `pnpm mutate [files…]` runs StrykerJS on demand with the command runner (Stryker's Vitest runner doesn't work with Vitest 5), and the unused vitest runner is gone (`7c9574a`, `ec0d37c`, `6910c0e`). `scripts/qmd/` stays out of mutation however files are named, and `pnpm mutate` refuses glob patterns and files no test covers (`4646707`, `85c25c2`, `7f2b46b`).
 - Did: test isolation for it: every test worker and every test run gets its own temp HOME and qmd cache, the qmd lock tests stay out of the real `~/.cache/qmd`, and detached hook workers a test leaves running are stopped (`f4bf489`, `3be12a3`, `951957b`, `a625425`).
