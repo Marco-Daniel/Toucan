@@ -1,10 +1,15 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import {
   handEditedKeys,
   withBackground,
   withGlyph,
   withoutRepo,
 } from "../../../src/features/commands/entries.util.ts";
+
+// import types
 import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const RED = "#ff0000" as Hex;

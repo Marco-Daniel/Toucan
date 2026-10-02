@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { errorText, tryCatch, tryCatchSync } from "../../../src/shared/async/tryCatch.util.ts";
 
 describe("tryCatch", () => {

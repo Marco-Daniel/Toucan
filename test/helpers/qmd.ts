@@ -6,10 +6,13 @@
 // `<dir>/hold` exists, so tests decide when an update finishes. With `tag`,
 // each log line ends in ` @` plus that file's contents at the time of the call
 // (nothing if it's missing), so a test can tell whose lock a call ran under.
+// import libraries
 import { spawn, spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
+
+// import utils
 import { tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
 
 export const SYSTEM_PATH = "/usr/bin:/bin";

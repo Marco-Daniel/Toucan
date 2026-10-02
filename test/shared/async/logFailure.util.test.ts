@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { logFailure } from "../../../src/shared/async/logFailure.util.ts";
 
 describe("logFailure", () => {

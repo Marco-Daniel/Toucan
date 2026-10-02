@@ -1,11 +1,16 @@
+// import libraries
 import { converter, parseHex } from "culori/fn";
 import { describe, expect, it } from "vitest";
+
+// import utils
 import {
   NEUTRAL_GRAY,
   fromHex,
   normalizeColor,
   validateColorInput,
 } from "../../../src/shared/color/color.util.ts";
+
+// import types
 import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const oklch = converter("oklch");

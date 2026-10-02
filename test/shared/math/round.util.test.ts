@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { roundToHundredths } from "../../../src/shared/math/round.util.ts";
 
 describe("roundToHundredths", () => {

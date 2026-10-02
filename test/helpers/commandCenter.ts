@@ -1,4 +1,7 @@
+// import utils
 import { asHex } from "../../src/shared/color/hex.util.ts";
+
+// import types
 import type { CommandCenterColors } from "../../src/shared/model/model.types.ts";
 
 /** Command Center colors with `background`; the other keys are fixed. */

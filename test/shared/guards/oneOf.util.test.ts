@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { isOneOf } from "../../../src/shared/guards/oneOf.util.ts";
 
 const MODES = ["always", "unfocused"] as const;

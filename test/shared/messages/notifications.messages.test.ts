@@ -1,6 +1,9 @@
+// import libraries
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+// import messages
 import * as messages from "../../../src/shared/messages/notifications.messages.ts";
 
 describe("messages", () => {

@@ -1,3 +1,4 @@
+// import libraries
 import {
   chmod,
   link,
@@ -15,9 +16,13 @@ import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+// import utils
 import { SettingsFileWriter } from "../../../src/features/settings/settingsWrite.util.ts";
-import type { Clock } from "../../../src/features/settings/settingsWrite.util.ts";
 import { parseSettingsForTest } from "../../helpers/settings.ts";
+
+// import types
+import type { Clock } from "../../../src/features/settings/settingsWrite.util.ts";
 
 const KEY = "toucan.repos";
 const BEFORE = `{

@@ -1,4 +1,7 @@
+// import libraries
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// import utils
 import {
   BLUR_DEBOUNCE_MS,
   FocusCoordinator,

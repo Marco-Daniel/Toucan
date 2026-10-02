@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { parseRepos } from "../../../src/shared/config/config.util.ts";
 
 describe("parseRepos", () => {

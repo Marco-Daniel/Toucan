@@ -1,5 +1,10 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { agentsControlAction } from "../../../src/features/agentsControl/agentsControl.util.ts";
+
+// import types
 import type { AgentsControlState } from "../../../src/features/agentsControl/agentsControl.util.ts";
 
 const base: AgentsControlState = {

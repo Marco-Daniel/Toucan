@@ -1,7 +1,12 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { emojiColor, emojiFor } from "../../../src/features/searchEmoji/emoji.util.ts";
-import { GLYPHS } from "../../../src/shared/model/model.consts.ts";
 import { asHex } from "../../../src/shared/color/hex.util.ts";
+
+// import consts
+import { GLYPHS } from "../../../src/shared/model/model.consts.ts";
 
 describe("emojiColor", () => {
   // The toucan-v1/0014 presets, plus a few common colors that are hard to classify.

@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import consts
 import { PRESETS } from "../../../src/shared/color/presets.consts.ts";
 
 describe("PRESETS", () => {

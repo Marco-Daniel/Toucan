@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { asHex, isHex } from "../../../src/shared/color/hex.util.ts";
 
 describe("isHex", () => {

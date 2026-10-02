@@ -1,6 +1,9 @@
+// import libraries
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
+
+// import utils
 import {
   escapeIcons,
   glyphIcon,
@@ -10,8 +13,12 @@ import {
   svgDataUri,
 } from "../../../src/features/glyphs/glyphs.util.ts";
 import { FONT_CODEPOINTS } from "../../../src/features/glyphs/glyphFont.util.ts";
+
+// import consts
 import { GLYPH_PATHS } from "../../../src/generated/glyphPaths.ts";
 import { GLYPH_GROUPS, GLYPHS } from "../../../src/shared/model/model.consts.ts";
+
+// import types
 import type { Glyph, Hex } from "../../../src/shared/model/model.types.ts";
 
 const RED = "#ff0000" as Hex;

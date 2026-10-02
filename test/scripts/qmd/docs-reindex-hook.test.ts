@@ -1,8 +1,11 @@
+// import libraries
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+// import utils
 import {
   SYSTEM_PATH,
   fakeQmd,

@@ -1,5 +1,8 @@
+// import libraries
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
+// import utils
 import {
   DOCS_COLLECTIONS,
   isIndexedDoc,
@@ -7,6 +10,8 @@ import {
   parseCollectionShow,
   planIndex,
 } from "../../../scripts/qmd/qmd-docs.mts";
+
+// import types
 import type { IndexState } from "../../../scripts/qmd/qmd-docs.mts";
 
 const DOCS_CONTEXT = DOCS_COLLECTIONS[0]!.contexts;

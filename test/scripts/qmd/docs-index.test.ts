@@ -1,3 +1,4 @@
+// import libraries
 import { spawn } from "node:child_process";
 import {
   existsSync,
@@ -11,6 +12,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+// import utils
 import {
   SYSTEM_PATH,
   fakeQmd,

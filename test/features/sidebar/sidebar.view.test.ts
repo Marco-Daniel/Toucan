@@ -1,7 +1,14 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { deriveColors } from "../../../src/shared/color/derive.util.ts";
-import type { Hex } from "../../../src/shared/model/model.types.ts";
+
+// import views
 import { sidebarBlockHtml } from "../../../src/features/sidebar/sidebar.view.ts";
+
+// import types
+import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const colors = deriveColors({ background: "#14939c" as Hex });
 

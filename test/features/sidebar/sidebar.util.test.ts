@@ -1,9 +1,14 @@
+// import libraries
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// import utils
 import {
   REMEMBER_CLOSE_DELAY_MS,
   resolveSidebarSettings,
   SidebarController,
 } from "../../../src/features/sidebar/sidebar.util.ts";
+
+// import types
 import type { SidebarSettings } from "../../../src/features/sidebar/sidebar.util.ts";
 
 /**

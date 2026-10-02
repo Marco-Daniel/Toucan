@@ -1,9 +1,14 @@
+// import libraries
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type * as FsPromises from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// import utils
 import { writeAtomically } from "../../../src/shared/fs/atomicWrite.util.ts";
+
+// import types
+import type * as FsPromises from "node:fs/promises";
 
 /** The temp file's permission bits each time chmod is about to change them. */
 const modesBeforeChmod = vi.hoisted((): number[] => []);
