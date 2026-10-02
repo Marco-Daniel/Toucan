@@ -12,7 +12,7 @@ import { spawnSync } from "node:child_process";
 import { errorText, tryCatchSync } from "../src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../src/shared/records/records.util.ts";
 
-export const DEFAULT_SINCE = "docs-sync/last";
+const DEFAULT_SINCE = "docs-sync/last";
 
 /** Where `--since`'s value sits after the flag. */
 const VALUE_OFFSET = 1;
@@ -39,7 +39,7 @@ export interface AdrStatusChange {
   to: string | null;
 }
 
-export interface DocsSyncReport {
+interface DocsSyncReport {
   since: string;
   head: string;
   full: false;
@@ -51,7 +51,7 @@ export interface DocsSyncReport {
   symbols: NameChanges;
 }
 
-export interface FullSweep {
+interface FullSweep {
   since: null;
   head: string;
   full: true;
@@ -248,7 +248,7 @@ interface DocsSyncArgs {
 }
 
 /** The report for `since..HEAD`, or a full sweep when that range can't be diffed. */
-export function docsSync({ since }: DocsSyncArgs): DocsSyncReport | FullSweep {
+function docsSync({ since }: DocsSyncArgs): DocsSyncReport | FullSweep {
   const head = git(["rev-parse", "HEAD"])?.trim();
   if (head === undefined) {
     throw new Error("docs-sync needs a git checkout with a HEAD commit");
