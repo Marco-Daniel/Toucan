@@ -109,6 +109,8 @@ One-time setup:
 1. Install it globally: `npm i -g @tobilu/qmd` (2.8 or newer). It has native dependencies and downloads about 2 GB of models on first use, which is why it isn't a devDependency. Install it under the Node version your editor and Claude Code use (with nvm, the one that's active there), so `qmd` is on their `PATH`. If npm skips the install scripts, the prebuilt binaries usually work; otherwise reinstall with `--allow-scripts`.
 2. Start a Claude Code session here. A session-start hook registers Toucan's two collections in the `toucan` index, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and builds the keyword index in the background. Then run `pnpm docs:index` once for semantic search: it also refreshes the embeddings (downloading qmd's models on first use). It's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
 
+The first search downloads qmd's models (about 2 GB, once), even before `pnpm docs:index`: qmd uses them to expand and rerank queries. That's expected, and the much better search is worth it.
+
 After that, a hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
 
 The index points at the checkout that registered it, so a search from another worktree sees that checkout's docs.
