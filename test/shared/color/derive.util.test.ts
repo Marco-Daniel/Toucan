@@ -1,8 +1,8 @@
 import { converter, parseHex, wcagContrast } from "culori/fn";
 import { describe, expect, it } from "vitest";
 import { deriveColors } from "../../../src/shared/color/derive.util.ts";
-import type { Hex } from "../../../src/shared/model/model.types.ts";
 import { COMMAND_CENTER_KEYS } from "../../../src/shared/model/model.consts.ts";
+import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const toOklch = converter("oklch");
 // Test inputs are written as valid hex, which the parser would produce.

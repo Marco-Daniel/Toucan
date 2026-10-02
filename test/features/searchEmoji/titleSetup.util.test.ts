@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TitleSetup } from "../../../src/features/searchEmoji/titleSetup.util.ts";
-import {
-  PENDING_STALE_MS,
-  type TitleChange,
-} from "../../../src/features/searchEmoji/windowTitle.util.ts";
+import { PENDING_STALE_MS } from "../../../src/features/searchEmoji/windowTitle.util.ts";
+import type { TitleChange } from "../../../src/features/searchEmoji/windowTitle.util.ts";
 
 const DEFAULT = "${activeEditorShort}${separator}${rootName}";
 const MINE = "${rootName} — ${activeEditorShort}";

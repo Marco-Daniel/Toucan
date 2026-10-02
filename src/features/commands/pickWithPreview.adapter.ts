@@ -1,4 +1,5 @@
-import { window, type QuickPickItem } from "vscode";
+import { window } from "vscode";
+import type { QuickPickItem } from "vscode";
 import type { RepoConfig } from "../../shared/config/config.util.ts";
 import type { CommandHost } from "./commands.adapter.ts";
 import { Preview } from "./preview.adapter.ts";

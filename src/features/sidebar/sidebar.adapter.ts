@@ -1,17 +1,10 @@
-import {
-  ConfigurationTarget,
-  commands as vscodeCommands,
-  window,
-  workspace,
-  type Disposable,
-  type ExtensionContext,
-  type WebviewView,
-  type WebviewViewProvider,
-} from "vscode";
+import { ConfigurationTarget, commands as vscodeCommands, window, workspace } from "vscode";
+import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
 import { notify } from "../../core/notify.adapter.ts";
 import type { Log } from "../../core/log.adapter.ts";
 import { deriveColors } from "../../shared/color/derive.util.ts";
-import { resolveSidebarSettings, SidebarController, type SidebarSettings } from "./sidebar.util.ts";
+import { resolveSidebarSettings, SidebarController } from "./sidebar.util.ts";
+import type { SidebarSettings } from "./sidebar.util.ts";
 import { sidebarBlockHtml } from "./sidebar.view.ts";
 import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import { configs } from "../../generated/meta.ts";

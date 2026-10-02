@@ -1,4 +1,5 @@
-import { ConfigurationTarget, window, workspace, type ExtensionContext } from "vscode";
+import { ConfigurationTarget, window, workspace } from "vscode";
+import type { ExtensionContext } from "vscode";
 import { AGENTS_CONTROL_OFFER } from "../../shared/messages/notifications.messages.ts";
 import type { Log } from "../../core/log.adapter.ts";
 import { AGENTS_CONTROL, agentsControlAction } from "./agentsControl.util.ts";

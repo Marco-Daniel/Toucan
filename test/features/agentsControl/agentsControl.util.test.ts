@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  agentsControlAction,
-  type AgentsControlState,
-} from "../../../src/features/agentsControl/agentsControl.util.ts";
+import { agentsControlAction } from "../../../src/features/agentsControl/agentsControl.util.ts";
+import type { AgentsControlState } from "../../../src/features/agentsControl/agentsControl.util.ts";
 
 const base: AgentsControlState = {
   registered: true,

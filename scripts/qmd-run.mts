@@ -9,8 +9,8 @@ import {
   QMD_INDEX,
   parseCollectionList,
   parseCollectionShow,
-  type IndexState,
 } from "./qmd-docs.mts";
+import type { IndexState } from "./qmd-docs.mts";
 import { isPending, releaseLock, takeLock, takePending } from "./qmd-lock.mts";
 
 /** The repo root at runtime (qmd stores real paths), so no path is committed. */

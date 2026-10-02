@@ -1,4 +1,5 @@
-import { commands as vscodeCommands, window, type QuickPickItem } from "vscode";
+import { commands as vscodeCommands, window } from "vscode";
+import type { QuickPickItem } from "vscode";
 import { withGlyph } from "./entries.util.ts";
 import { glyphPickItems } from "../glyphs/glyphs.util.ts";
 import { NO_COLOR_YET } from "../../shared/messages/notifications.messages.ts";

@@ -1,4 +1,5 @@
-import { commands as vscodeCommands, type Disposable } from "vscode";
+import { commands as vscodeCommands } from "vscode";
+import type { Disposable } from "vscode";
 import { notify } from "../../core/notify.adapter.ts";
 import { commands } from "../../generated/meta.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";

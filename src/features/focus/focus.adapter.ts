@@ -2,10 +2,12 @@ import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import type { ExtensionContext } from "vscode";
 import type { Log } from "../../core/log.adapter.ts";
-import { FocusCoordinator, type FocusPorts } from "./focus.util.ts";
+import { FocusCoordinator } from "./focus.util.ts";
+import type { FocusPorts } from "./focus.util.ts";
 import { createOwnerFile } from "./ownerFile.util.ts";
 import { settingInText } from "../settings/settingsEdit.util.ts";
-import { userValue, type SettingsWriter } from "../settings/settings.adapter.ts";
+import { userValue } from "../settings/settings.adapter.ts";
+import type { SettingsWriter } from "../settings/settings.adapter.ts";
 import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 
 export const COLOR_CUSTOMIZATIONS = "workbench.colorCustomizations";
