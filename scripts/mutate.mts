@@ -1,7 +1,9 @@
 // `pnpm mutate [file…]`: mutation testing with StrykerJS, on demand only (not
 // in CI or the pre-push hook). With no files it mutates all of src/ and
 // scripts/; with files it mutates just those and runs only the tests related
-// to them, which is what a change needs. Reports land in reports/stryker/.
+// to them, which is what a change needs. Reports land in reports/stryker/;
+// delete reports/stryker after changing what's excluded, or the incremental
+// file carries the old results into later reports.
 //
 // Why the command runner rather than @stryker-mutator/vitest-runner: under
 // Vitest 5 that runner never switched mutants on inside functions, so nearly
