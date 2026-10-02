@@ -4,26 +4,9 @@ import {
   FocusCoordinator,
   VERIFY_DELAY_MS,
 } from "../../../src/features/focus/focus.util.ts";
-import type { CommandCenterColors, Hex } from "../../../src/shared/model/model.types.ts";
+import { asCustomizations, commandCenterColors } from "../../helpers/commandCenter.ts";
 
-const colors = (background: string): CommandCenterColors => {
-  const hex = background as Hex;
-  return {
-    background: hex,
-    foreground: hex,
-    activeBackground: hex,
-    activeForeground: hex,
-    border: hex,
-    activeBorder: hex,
-    inactiveForeground: hex,
-    inactiveBorder: hex,
-  };
-};
-
-const applied = (background: string) =>
-  Object.fromEntries(
-    Object.entries(colors(background)).map(([key, value]) => [`commandCenter.${key}`, value]),
-  );
+const applied = (background: string) => asCustomizations(commandCenterColors(background));
 
 /** Shared state of several simulated windows: the owner file and user settings. */
 class World {
@@ -99,7 +82,7 @@ class World {
       },
       desired: () => {
         const value = desired();
-        return value ? colors(value) : undefined;
+        return value ? commandCenterColors(value) : undefined;
       },
     });
   }
@@ -335,7 +318,7 @@ describe("FocusCoordinator", () => {
         warn: (message) => world.warnings.push(message),
         debug: () => {},
       },
-      desired: () => colors("#aa0000"),
+      desired: () => commandCenterColors("#aa0000"),
     });
     a.setFocused(true);
     await settle();
