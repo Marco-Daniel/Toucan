@@ -7,6 +7,11 @@ import { AGENTS_CONTROL, agentsControlAction } from "./agentsControl.util.ts";
 /** globalState key for "Not now" (per profile). */
 const DECLINED_KEY = "agentsControl.declined";
 
+interface AgentsControlOfferArgs {
+  context: ExtensionContext;
+  log: Log;
+}
+
 /**
  * Offers once to switch Agents control to "badge" so the Command Center can
  * show Toucan's background (0016). Never changes it without asking, never
@@ -19,7 +24,7 @@ export class AgentsControlOffer {
   private readonly context: ExtensionContext;
   private readonly log: Log;
 
-  constructor(context: ExtensionContext, log: Log) {
+  constructor({ context, log }: AgentsControlOfferArgs) {
     this.context = context;
     this.log = log;
   }
