@@ -143,6 +143,7 @@ export class SearchEmoji implements Disposable {
     }
     this.timer = setTimeout(() => {
       this.timer = undefined;
+      // A .catch, not tryCatch: a timer has no caller to await the assert.
       this.assert().catch((error: unknown) => {
         this.log.warn(`Couldn't set the search emoji: ${String(error)}`);
       });
