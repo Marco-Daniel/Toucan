@@ -1,11 +1,26 @@
-import { ConfigurationTarget, window, workspace } from "vscode";
-import type { ExtensionContext } from "vscode";
-import { AGENTS_CONTROL_OFFER } from "../../shared/messages/notifications.messages.ts";
-import type { Log } from "../../core/log.adapter.ts";
+// import vscode
+import { window, workspace } from "vscode";
+
+// import adapters
+import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
+
+// import utils
 import { AGENTS_CONTROL, agentsControlAction } from "./agentsControl.util.ts";
+
+// import messages
+import { AGENTS_CONTROL_OFFER } from "../../shared/messages/notifications.messages.ts";
+
+// import types
+import type { ExtensionContext } from "vscode";
+import type { Log } from "../../core/log.adapter.ts";
 
 /** globalState key for "Not now" (per profile). */
 const DECLINED_KEY = "agentsControl.declined";
+
+interface AgentsControlOfferArgs {
+  context: ExtensionContext;
+  log: Log;
+}
 
 /**
  * Offers once to switch Agents control to "badge" so the Command Center can
@@ -19,7 +34,7 @@ export class AgentsControlOffer {
   private readonly context: ExtensionContext;
   private readonly log: Log;
 
-  constructor(context: ExtensionContext, log: Log) {
+  constructor({ context, log }: AgentsControlOfferArgs) {
     this.context = context;
     this.log = log;
   }
@@ -36,8 +51,7 @@ export class AgentsControlOffer {
     const action = agentsControlAction({
       registered: inspected?.defaultValue !== undefined,
       effective: configuration.get(AGENTS_CONTROL),
-      workspaceDecides:
-        inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined,
+      workspaceDecides: overriddenInWorkspace(AGENTS_CONTROL),
       declined: this.context.globalState.get<boolean>(DECLINED_KEY, false),
     });
 
@@ -52,7 +66,7 @@ export class AgentsControlOffer {
 
     const answer = await window.showInformationMessage(AGENTS_CONTROL_OFFER, "Switch", "Not now");
     if (answer === "Switch") {
-      await configuration.update(AGENTS_CONTROL, "badge", ConfigurationTarget.Global);
+      await writeUserSetting({ key: AGENTS_CONTROL, value: "badge" });
       this.log.info(`Set ${AGENTS_CONTROL} to "badge".`);
     } else if (answer === "Not now") {
       await this.context.globalState.update(DECLINED_KEY, true);

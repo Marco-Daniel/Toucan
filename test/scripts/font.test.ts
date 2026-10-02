@@ -1,14 +1,21 @@
+// import libraries
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+// import utils
 import { FONT_CODEPOINTS } from "../../src/features/glyphs/glyphFont.util.ts";
 import { glyphSvg } from "../../src/features/glyphs/glyphs.util.ts";
+import { buildFont } from "../../scripts/font.mts";
+
+// import consts
 import { GLYPH_PATHS } from "../../src/generated/glyphPaths.ts";
 import { GLYPHS } from "../../src/shared/model/model.consts.ts";
+
+// import types
 import type { Glyph, Hex } from "../../src/shared/model/model.types.ts";
-import { buildFont } from "../../scripts/font.mts";
 
 const BLACK = "#000000" as Hex;
 /** Pixels per glyph unit: a glyph is 16 units, so 160 px high. */
@@ -35,8 +42,13 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+interface InkArgs {
+  svg: string;
+  fontFiles?: string[];
+}
+
 /** Opaque-pixel mask of an SVG rendered at its own size. */
-function ink(svg: string, fontFiles: string[] = []): { width: number; mask: boolean[] } {
+function ink({ svg, fontFiles = [] }: InkArgs): { width: number; mask: boolean[] } {
   const image = new Resvg(svg, { font: { fontFiles, loadSystemFonts: false } }).render();
   // `pixels` copies the whole buffer on every access: read it once.
   const { pixels, width, height } = image;
@@ -54,7 +66,7 @@ const PAD = 2;
  */
 function swatchGlyph(glyph: Glyph): string {
   const { width } = GLYPH_PATHS[glyph];
-  const swatch = glyphSvg(glyph, BLACK, 16 * SCALE).replace(
+  const swatch = glyphSvg({ glyph, color: BLACK, height: 16 * SCALE }).replace(
     '<svg xmlns="http://www.w3.org/2000/svg" ',
     `<svg x="${PAD * SCALE}" y="${PAD * SCALE}" `,
   );
@@ -77,8 +89,8 @@ function fontGlyph(glyph: Glyph): string {
 
 describe("the icon font", () => {
   it.each(GLYPHS)("draws %s like its SVG, holes included", (glyph) => {
-    const expected = ink(swatchGlyph(glyph));
-    const actual = ink(fontGlyph(glyph), [fontFile]);
+    const expected = ink({ svg: swatchGlyph(glyph) });
+    const actual = ink({ svg: fontGlyph(glyph), fontFiles: [fontFile] });
     let both = 0;
     let either = 0;
     for (let i = 0; i < expected.mask.length; i++) {

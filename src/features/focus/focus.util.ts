@@ -1,8 +1,14 @@
+// import utils
 import { createLock } from "../../shared/async/lock.util.ts";
 import { customizationsFor, mergeCustomizations } from "./merge.util.ts";
+import { isRecord } from "../../shared/records/records.util.ts";
+import { errorText, tryCatch, tryCatchSync } from "../../shared/async/tryCatch.util.ts";
+import { createTimer } from "../../shared/async/timer.util.ts";
+import { logFailure } from "../../shared/async/logFailure.util.ts";
+
+// import types
 import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
-import { isRecord } from "../../shared/records/records.util.ts";
 
 /**
  * Delay before an unfocused window clears the Command Center colors. Switching
@@ -51,6 +57,14 @@ export interface FocusPorts {
   debug(message: string): void;
 }
 
+interface FocusCoordinatorArgs {
+  /** This window's id, written to the owner file. */
+  id: string;
+  ports: FocusPorts;
+  /** This window's colors, or `undefined` for an unconfigured repo. */
+  desired: () => CommandCenterColors | undefined;
+}
+
 /**
  * Applies this window's Command Center colors while it's focused and clears
  * them after it loses focus, unless another window has taken over (toucan-v1/0002).
@@ -60,8 +74,8 @@ export interface FocusPorts {
  */
 export class FocusCoordinator {
   private focused = false;
-  private blurTimer: ReturnType<typeof setTimeout> | undefined;
-  private verifyTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly blurTimer = createTimer();
+  private readonly verifyTimer = createTimer();
   /** This window's own focus tasks run one at a time. */
   private readonly lock = createLock();
   private failing = false;
@@ -73,7 +87,7 @@ export class FocusCoordinator {
   /** This window's colors, or `undefined` for an unconfigured repo. */
   private readonly desired: () => CommandCenterColors | undefined;
 
-  constructor(id: string, ports: FocusPorts, desired: () => CommandCenterColors | undefined) {
+  constructor({ id, ports, desired }: FocusCoordinatorArgs) {
     this.id = id;
     this.ports = ports;
     this.desired = desired;
@@ -87,14 +101,14 @@ export class FocusCoordinator {
     this.focused = focused;
     this.ports.debug(focused ? "focused" : "blurred");
     if (focused) {
-      this.cancel("blur");
+      this.blurTimer.cancel();
       this.post(() => this.takeOver());
     } else {
-      this.cancel("verify");
-      this.blurTimer = setTimeout(() => {
-        this.blurTimer = undefined;
-        this.post(() => this.clearIfOwner());
-      }, BLUR_DEBOUNCE_MS);
+      this.verifyTimer.cancel();
+      this.blurTimer.start({
+        ms: BLUR_DEBOUNCE_MS,
+        run: () => this.post(() => this.clearIfOwner()),
+      });
     }
   }
 
@@ -120,8 +134,8 @@ export class FocusCoordinator {
 
   /** Best-effort clear on deactivate; the window may close before it finishes. */
   async dispose(): Promise<void> {
-    this.cancel("blur");
-    this.cancel("verify");
+    this.blurTimer.cancel();
+    this.verifyTimer.cancel();
     this.focused = false;
     await this.enqueue(() => this.clearIfOwner());
   }
@@ -135,20 +149,16 @@ export class FocusCoordinator {
       return;
     }
     // Owner first: another window's pending blur checks it before clearing.
-    try {
-      await this.ports.writeOwner(this.id);
-      this.ports.debug("took ownership");
-    } catch (error) {
+    const [, ownerError] = await tryCatch(() =>
+      this.ports.writeOwner(this.id).then(() => this.ports.debug("took ownership")),
+    );
+    if (ownerError !== null) {
       // Apply the colors anyway: better colored now than waiting for the next
       // focus change; the verify step heals if another window clears them.
-      this.ports.warn(`Couldn't record this window as the color owner: ${String(error)}`);
+      this.ports.warn(`Couldn't record this window as the color owner: ${errorText(ownerError)}`);
     }
     await this.write(colors);
-    this.cancel("verify");
-    this.verifyTimer = setTimeout(() => {
-      this.verifyTimer = undefined;
-      this.post(() => this.verify());
-    }, VERIFY_DELAY_MS);
+    this.verifyTimer.start({ ms: VERIFY_DELAY_MS, run: () => this.post(() => this.verify()) });
   }
 
   /** Re-applies if a racing blur from another window wiped this window's colors. */
@@ -176,7 +186,7 @@ export class FocusCoordinator {
       return;
     }
     const view = this.ports.readCustomizations();
-    const result = mergeCustomizations(view, colors);
+    const result = mergeCustomizations({ current: view, colors });
     if (result.changed) {
       // A real change makes any earlier file snapshot meaningless.
       this.staleSnapshot = undefined;
@@ -186,7 +196,8 @@ export class FocusCoordinator {
       // missed it. If the file is another profile's, it stays "stale"; the
       // snapshot check limits that to one redundant write per file change.
       const disk = await this.ports.readCustomizationsFromDisk();
-      const stale = disk !== undefined && mergeCustomizations(disk.value, colors).changed;
+      const stale =
+        disk !== undefined && mergeCustomizations({ current: disk.value, colors }).changed;
       // Wrapped, so a file where the setting is gone ("undefined") still
       // gives a snapshot distinct from "none yet".
       const snapshot = stale ? JSON.stringify([disk.value]) : undefined;
@@ -206,17 +217,21 @@ export class FocusCoordinator {
       this.staleSnapshot = snapshot;
       this.ports.debug("settings view is stale; rewriting");
     }
-    try {
+    const [, error] = await tryCatch(() =>
       // Toucan's keys merged onto whatever the user value is when it's written.
-      await this.ports.writeCustomizations((current) => customizationsFor(current, colors));
-      this.ports.debug(colors ? `applied ${colors.background}` : "cleared");
-      this.failing = false;
-    } catch (error) {
+      this.ports
+        .writeCustomizations((current) => customizationsFor({ current, colors }))
+        .then(() => {
+          this.ports.debug(colors ? `applied ${colors.background}` : "cleared");
+          this.failing = false;
+        }),
+    );
+    if (error !== null) {
       // Log once per failure streak, e.g. while settings.json has unsaved edits.
       const first = !this.failing;
       this.failing = true;
       if (first) {
-        this.ports.warn(`Couldn't update workbench.colorCustomizations: ${String(error)}`);
+        this.ports.warn(`Couldn't update workbench.colorCustomizations: ${errorText(error)}`);
       }
       return;
     }
@@ -228,22 +243,9 @@ export class FocusCoordinator {
     if (!colors || this.ports.hasApplied()) {
       return;
     }
-    try {
-      await this.ports.markApplied();
-    } catch (error) {
-      this.ports.warn(`Couldn't record that Toucan applied a color: ${String(error)}`);
-    }
-  }
-
-  private cancel(timer: "blur" | "verify"): void {
-    const handle = timer === "blur" ? this.blurTimer : this.verifyTimer;
-    if (handle !== undefined) {
-      clearTimeout(handle);
-    }
-    if (timer === "blur") {
-      this.blurTimer = undefined;
-    } else {
-      this.verifyTimer = undefined;
+    const [, error] = await tryCatch(() => this.ports.markApplied());
+    if (error !== null) {
+      this.ports.warn(`Couldn't record that Toucan applied a color: ${errorText(error)}`);
     }
   }
 
@@ -260,14 +262,10 @@ export class FocusCoordinator {
   /** Runs tasks one at a time, so this window's own writes never interleave. */
   private enqueue(task: () => Promise<void>): Promise<void> {
     return this.lock(async () => {
-      try {
-        await task();
-      } catch (error) {
-        try {
-          this.ports.warn(`Focus handling failed: ${String(error)}`);
-        } catch {
-          // Logging can fail during shutdown; the queue must keep going.
-        }
+      const [, error] = await tryCatch(() => task());
+      if (error !== null) {
+        // Logging can fail during shutdown; the queue must keep going.
+        tryCatchSync(() => logFailure({ log: this.ports, what: "Focus handling", error }));
       }
     });
   }

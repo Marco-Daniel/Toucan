@@ -1,3 +1,4 @@
+// import utils
 import {
   CHANNEL_MAX,
   isTranslucent,
@@ -6,6 +7,10 @@ import {
   parseColor,
   toHex,
 } from "../color/color.util.ts";
+import { isRecord } from "../records/records.util.ts";
+import { isOneOf } from "../guards/oneOf.util.ts";
+
+// import consts
 import {
   COMMAND_CENTER_KEYS,
   DEFAULT_GLYPH,
@@ -13,8 +18,9 @@ import {
   RETIRED_GLYPHS,
   SIDEBAR_VISIBILITIES,
 } from "../model/model.consts.ts";
+
+// import types
 import type { ColorOverrides, Glyph, Hex, SidebarVisibility } from "../model/model.types.ts";
-import { isRecord } from "../records/records.util.ts";
 
 export interface RepoConfig {
   /** Command Center background, always opaque. */
@@ -57,7 +63,7 @@ export function parseRepos(raw: unknown): ParsedConfig {
 
   for (const [repo, value] of Object.entries(raw)) {
     const report = (message: string) => issues.push({ repo, message });
-    const entry = parseEntry(value, report);
+    const entry = parseEntry({ value, report });
     if (entry) {
       repos.set(repo, entry);
     }
@@ -65,9 +71,14 @@ export function parseRepos(raw: unknown): ParsedConfig {
   return { repos, issues };
 }
 
-function parseEntry(value: unknown, report: (message: string) => void): RepoConfig | undefined {
+interface ParseArgs<T> {
+  value: T;
+  report: (message: string) => void;
+}
+
+function parseEntry({ value, report }: ParseArgs<unknown>): RepoConfig | undefined {
   if (typeof value === "string") {
-    const background = parseBackground(value, report);
+    const background = parseBackground({ value, report });
     return background === undefined
       ? undefined
       : { background, overrides: {}, glyph: DEFAULT_GLYPH };
@@ -88,7 +99,7 @@ function parseEntry(value: unknown, report: (message: string) => void): RepoConf
     report(`background ${JSON.stringify(rawBackground)} is not a color string.`);
     return undefined;
   }
-  const background = parseBackground(rawBackground, report);
+  const background = parseBackground({ value: rawBackground, report });
   if (!background) {
     return undefined;
   }
@@ -139,7 +150,7 @@ function parseEntry(value: unknown, report: (message: string) => void): RepoConf
  * The background must be opaque: the foreground is picked for contrast against
  * it, and the status bar glyph and sidebar block are painted with it.
  */
-function parseBackground(value: string, report: (message: string) => void): Hex | undefined {
+function parseBackground({ value, report }: ParseArgs<string>): Hex | undefined {
   const color = parseColor(value);
   if (!color) {
     report(`background "${value}" is not a valid color.`);
@@ -154,8 +165,4 @@ function parseBackground(value: string, report: (message: string) => void): Hex 
     return toHex(opaque(color));
   }
   return toHex(color);
-}
-
-function isOneOf<T extends string>(options: readonly T[], value: unknown): value is T {
-  return typeof value === "string" && (options as readonly string[]).includes(value);
 }

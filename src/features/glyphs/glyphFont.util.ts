@@ -1,9 +1,12 @@
+// import utils
+import { roundToHundredths } from "../../shared/math/round.util.ts";
+
+// import types
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 // What `pnpm font` needs from the glyph code. Kept apart from glyphs.ts, which
 // imports the generated paths that `pnpm font` rewrites, so a missing or broken
 // generated file can't stop it from being regenerated.
-
 /**
  * Private-use codepoints of the glyphs in Toucan's icon font. pill, square and
  * bar keep their original codepoints; the rest follow in group order.
@@ -30,16 +33,16 @@ export const FONT_CODEPOINTS: Record<Glyph, number> = {
 
 /** Every glyph is 16 units high. */
 export const HEIGHT = 16;
-/** Coordinates are kept to hundredths of a unit. */
-const HUNDREDTHS = 100;
-
-function round(value: number): number {
-  return Math.round(value * HUNDREDTHS) / HUNDREDTHS;
+interface ShapeSvgArgs {
+  width: number;
+  d: string;
+  color: Hex;
+  height?: number;
 }
 
 /** The SVG for one baked glyph path; `pnpm font` uses it for the font sources too. */
-export function shapeSvg(width: number, d: string, color: Hex, height = HEIGHT): string {
-  const pixelWidth = round((width / HEIGHT) * height);
+export function shapeSvg({ width, d, color, height = HEIGHT }: ShapeSvgArgs): string {
+  const pixelWidth = roundToHundredths((width / HEIGHT) * height);
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${pixelWidth}" height="${height}" ` +
     `viewBox="0 0 ${width} ${HEIGHT}" fill="${color}"><path d="${d}"/></svg>`

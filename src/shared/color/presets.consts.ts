@@ -1,4 +1,7 @@
+// import utils
 import { asHex } from "./hex.util.ts";
+
+// import types
 import type { Hex } from "../model/model.types.ts";
 
 export interface Preset {

@@ -1,9 +1,16 @@
+// import types
 import type { ConfigIssue } from "./config.util.ts";
 
 /** The part of VS Code's `LogOutputChannel` the reporter uses. */
 export interface IssueLog {
   info(message: string): void;
   warn(message: string): void;
+}
+
+interface IssueReporterArgs {
+  log: IssueLog;
+  /** The setting's key, named in every message. */
+  setting: string;
 }
 
 /** Logs config issues, once per change, so every refresh doesn't repeat them. */
@@ -14,7 +21,7 @@ export class IssueReporter {
   private readonly log: IssueLog;
   private readonly setting: string;
 
-  constructor(log: IssueLog, setting: string) {
+  constructor({ log, setting }: IssueReporterArgs) {
     this.log = log;
     this.setting = setting;
   }

@@ -1,20 +1,25 @@
+// import libraries
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
+// import utils
 import {
   DOCS_COLLECTIONS,
   isIndexedDoc,
   parseCollectionList,
   parseCollectionShow,
   planIndex,
-} from "../../scripts/qmd-docs.mts";
-import type { IndexState } from "../../scripts/qmd-docs.mts";
+} from "../../../scripts/qmd/qmd-docs.mts";
+
+// import types
+import type { IndexState } from "../../../scripts/qmd/qmd-docs.mts";
 
 const DOCS_CONTEXT = DOCS_COLLECTIONS[0]!.contexts;
 const GUIDES_CONTEXT = DOCS_COLLECTIONS[1]!.contexts;
 
 /** The plan with each command's leading `--index toucan` checked and stripped. */
 function plan(overrides: Partial<IndexState> = {}) {
-  const { commands, notes } = planIndex(state(overrides));
+  const { commands, notes } = planIndex({ state: state(overrides) });
   for (const command of commands) {
     expect(command.slice(0, 2)).toEqual(["--index", "toucan"]);
   }
@@ -56,7 +61,7 @@ describe("planIndex", () => {
   });
 
   it("leaves out the embedding when asked for keyword search only", () => {
-    const { commands } = planIndex(state(), { embed: false });
+    const { commands } = planIndex({ state: state(), embed: false });
     expect(commands.at(-1)).toEqual(["--index", "toucan", "update"]);
     expect(commands.some((command) => command.includes("embed"))).toBe(false);
   });
@@ -140,7 +145,7 @@ describe("planIndex", () => {
   it("notes a docs subfolder without a context", () => {
     const { notes } = plan({ subfolders: (dir) => (dir === "docs" ? ["plans", "guides"] : []) });
     expect(notes).toEqual([
-      "docs/guides has no context yet: add one to DOCS_COLLECTIONS in scripts/qmd-docs.mts.",
+      "docs/guides has no context yet: add one to DOCS_COLLECTIONS in scripts/qmd/qmd-docs.mts.",
     ]);
   });
 
@@ -170,7 +175,7 @@ describe("planIndex", () => {
 
 describe(".mcp.json", () => {
   it("starts qmd's MCP server on Toucan's own index", () => {
-    const config = JSON.parse(readFileSync(new URL("../../.mcp.json", import.meta.url), "utf8"));
+    const config = JSON.parse(readFileSync(new URL("../../../.mcp.json", import.meta.url), "utf8"));
     expect(config).toEqual({
       mcpServers: { qmd: { type: "stdio", command: "qmd", args: ["--index", "toucan", "mcp"] } },
     });
@@ -231,6 +236,6 @@ describe("isIndexedDoc", () => {
     ["/repo/src/README.md", false],
     ["/elsewhere/docs/plan.md", false],
   ])("%s → %s", (file, indexed) => {
-    expect(isIndexedDoc(file, "/repo")).toBe(indexed);
+    expect(isIndexedDoc({ file, root: "/repo" })).toBe(indexed);
   });
 });

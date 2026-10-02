@@ -1,6 +1,7 @@
 // Fails when the VSIX would ship anything other than the expected files, so a
 // .vscodeignore or manifest change can't slip extra (or missing) files into a
 // release unnoticed.
+// import libraries
 import { execFileSync } from "node:child_process";
 
 const EXPECTED = [

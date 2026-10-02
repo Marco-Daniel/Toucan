@@ -1,4 +1,7 @@
+// import utils
 import { fromHex, toOklch } from "../../shared/color/color.util.ts";
+
+// import types
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 /** The color categories emoji come in. */
@@ -103,8 +106,13 @@ export function emojiColor(hex: Hex): EmojiColor {
   return nearestHue(h);
 }
 
+interface EmojiForArgs {
+  hex: Hex;
+  glyph: Glyph;
+}
+
 /** The emoji for a repo's color in its glyph's shape (toucan-v1/0007, toucan-v1/0012). */
-export function emojiFor(hex: Hex, glyph: Glyph): string {
+export function emojiFor({ hex, glyph }: EmojiForArgs): string {
   return family(glyph)[emojiColor(hex)];
 }
 

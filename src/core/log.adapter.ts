@@ -1,4 +1,10 @@
+// import vscode
 import { window } from "vscode";
+
+// import utils
+import { tryCatchSync } from "../shared/async/tryCatch.util.ts";
+
+// import types
 import type { Disposable } from "vscode";
 
 /** Toucan's log. Never throws, so it's safe to use during shutdown. */
@@ -25,10 +31,7 @@ export function createLog(): Log & Disposable {
 
 function guarded(write: (message: string) => void): (message: string) => void {
   return (message) => {
-    try {
-      write(message);
-    } catch {
-      // The channel is gone; there's nobody left to read the message.
-    }
+    // A failure means the channel is gone; there's nobody left to read the message.
+    tryCatchSync(() => write(message));
   };
 }

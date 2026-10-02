@@ -1,10 +1,14 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import {
   planEdit,
   settingInText,
   settingsFiles,
   viewReflects,
 } from "../../../src/features/settings/settingsEdit.util.ts";
+import { parseSettingsForTest } from "../../helpers/settings.ts";
 
 const KEY = "workbench.colorCustomizations";
 
@@ -21,9 +25,6 @@ const FILE = `{
 
 const VIEW = { "editor.background": "#101010", "commandCenter.background": "#aa0000" };
 
-/** The file's value, parsed independently of the code under test. */
-const parseSettingsForTest = (text: string): unknown =>
-  JSON.parse(text.replace(/\/\/.*$/gm, "").replace(/,(\s*[}\]])/g, "$1"));
 const commentsOf = (text: string) => text.match(/\/\/.*$/gm) ?? [];
 
 describe("planEdit", () => {
@@ -356,15 +357,19 @@ describe("viewReflects", () => {
   it("checks only the changed properties", () => {
     const desired = { a: 1, b: 2 };
     expect(
-      viewReflects({ a: 1, b: 2, other: "changed by someone else" }, desired, ["a", "b"]),
+      viewReflects({
+        view: { a: 1, b: 2, other: "changed by someone else" },
+        desired,
+        changed: ["a", "b"],
+      }),
     ).toBe(true);
-    expect(viewReflects({ a: 1, b: 3 }, desired, ["a", "b"])).toBe(false);
+    expect(viewReflects({ view: { a: 1, b: 3 }, desired, changed: ["a", "b"] })).toBe(false);
   });
 
   it("treats removed properties as reflected when they're gone", () => {
-    expect(viewReflects({}, undefined, ["a"])).toBe(true);
-    expect(viewReflects(undefined, undefined, ["a"])).toBe(true);
-    expect(viewReflects({ a: 1 }, undefined, ["a"])).toBe(false);
+    expect(viewReflects({ view: {}, desired: undefined, changed: ["a"] })).toBe(true);
+    expect(viewReflects({ view: undefined, desired: undefined, changed: ["a"] })).toBe(true);
+    expect(viewReflects({ view: { a: 1 }, desired: undefined, changed: ["a"] })).toBe(false);
   });
 });
 
@@ -432,21 +437,21 @@ describe("planEdit, clearing every key", () => {
 
 describe("settingInText", () => {
   it("reads the setting from commented JSON", () => {
-    expect(settingInText(`{\n  // c\n  "${KEY}": { "a": 1 },\n}`, KEY)).toEqual({
+    expect(settingInText({ text: `{\n  // c\n  "${KEY}": { "a": 1 },\n}`, key: KEY })).toEqual({
       value: { a: 1 },
     });
   });
 
   it("reports an absent key as an undefined value", () => {
-    expect(settingInText("{}", KEY)).toEqual({ value: undefined });
+    expect(settingInText({ text: "{}", key: KEY })).toEqual({ value: undefined });
   });
 
   it("gives nothing for text that doesn't parse", () => {
-    expect(settingInText("{ oops", KEY)).toBeUndefined();
+    expect(settingInText({ text: "{ oops", key: KEY })).toBeUndefined();
   });
 
   it("gives nothing for a file that isn't an object", () => {
-    expect(settingInText(`["${KEY}"]`, KEY)).toBeUndefined();
-    expect(settingInText("null", KEY)).toBeUndefined();
+    expect(settingInText({ text: `["${KEY}"]`, key: KEY })).toBeUndefined();
+    expect(settingInText({ text: "null", key: KEY })).toBeUndefined();
   });
 });

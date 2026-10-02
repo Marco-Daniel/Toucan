@@ -5,9 +5,17 @@
 // out with opposite winding, so they read the same under the nonzero rule that
 // SVG and TrueType fonts both use. Font tools drop strokes and masks; this
 // doesn't need either (glyph-set/0004).
+// import libraries
 import ClipperLib from "clipper-lib";
-import type { Path, Paths } from "clipper-lib";
+
+// import utils
+import { roundToHundredths } from "../src/shared/math/round.util.ts";
+
+// import consts
 import { HOLE_SOFTENING } from "../src/features/glyphs/glyphDesign.consts.ts";
+
+// import types
+import type { Path, Paths } from "clipper-lib";
 import type { GlyphDesign, Point } from "../src/features/glyphs/glyphDesign.consts.ts";
 
 /** Clipper works in integers: 1/1000 of a glyph unit. */
@@ -22,13 +30,17 @@ const STROKE_REACH = 0.5;
 const CLEAN_DISTANCE = 0.005;
 /** Fewer points than this aren't a polygon. */
 const MIN_POLYGON_POINTS = 3;
-/** Path coordinates are written to hundredths of a unit. */
-const HUNDREDTHS = 100;
 
 const toPath = (points: readonly Point[]): Path =>
   points.map(([x, y]) => ({ X: Math.round(x * SCALE), Y: Math.round(y * SCALE) }));
 
-function grow(polygons: readonly (readonly Point[])[], by: number): Paths {
+interface GrowArgs {
+  polygons: readonly (readonly Point[])[];
+  /** How far every edge moves out, in glyph units. */
+  by: number;
+}
+
+function grow({ polygons, by }: GrowArgs): Paths {
   // Same orientation for every input, so overlapping fills unite under nonzero.
   const paths = polygons.map((points) => {
     const path = toPath(points);
@@ -42,19 +54,19 @@ function grow(polygons: readonly (readonly Point[])[], by: number): Paths {
 }
 
 function format(value: number): string {
-  return String(Math.round((value / SCALE) * HUNDREDTHS) / HUNDREDTHS);
+  return String(roundToHundredths(value / SCALE));
 }
 
 /** The design as an SVG path `d`. */
 export function bakeGlyph(design: GlyphDesign): string {
   const clipper = new ClipperLib.Clipper();
   clipper.AddPaths(
-    grow(design.fills, design.softening * STROKE_REACH),
+    grow({ polygons: design.fills, by: design.softening * STROKE_REACH }),
     ClipperLib.PolyType.ptSubject,
     true,
   );
   clipper.AddPaths(
-    grow(design.holes, HOLE_SOFTENING * STROKE_REACH),
+    grow({ polygons: design.holes, by: HOLE_SOFTENING * STROKE_REACH }),
     ClipperLib.PolyType.ptClip,
     true,
   );

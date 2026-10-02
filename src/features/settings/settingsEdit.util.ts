@@ -1,3 +1,4 @@
+// import libraries
 import { isDeepStrictEqual } from "node:util";
 // The ESM build: the package's UMD main loads its modules with a dynamic
 // require that the bundler can't follow.
@@ -9,8 +10,12 @@ import {
   parse,
   parseTree,
 } from "jsonc-parser/lib/esm/main.js";
-import type { Edit, JSONScanner, ParseError } from "jsonc-parser/lib/esm/main.js";
+
+// import utils
 import { isRecord } from "../../shared/records/records.util.ts";
+
+// import types
+import type { Edit, JSONScanner, ParseError } from "jsonc-parser/lib/esm/main.js";
 
 const CRLF = "\r\n";
 /** `globalStorage/<extension id>`, under a profile's folder. */
@@ -51,8 +56,13 @@ function parseSettings(text: string): Record<string, unknown> | undefined {
   return errors.length === 0 && isRecord(settings) ? settings : undefined;
 }
 
+interface SettingInTextArgs {
+  text: string;
+  key: string;
+}
+
 /** The setting's value in a settings file's text, or `undefined` when the text doesn't parse. */
-export function settingInText(text: string, key: string): { value: unknown } | undefined {
+export function settingInText({ text, key }: SettingInTextArgs): { value: unknown } | undefined {
   const settings = parseSettings(text);
   return settings && { value: settings[key] };
 }
@@ -74,14 +84,14 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
   }
 
   const next = desired ?? {};
-  const changed = changedKeys(current, next);
+  const changed = changedKeys({ before: current, after: next });
   if (changed.length === 0) {
     return { kind: "noop" };
   }
 
   // Edit as deep as both sides stay objects (a repo entry's fields), so
   // comments inside an entry survive a change to one of its fields.
-  const paths = changedPaths(current, next, [key]);
+  const paths = changedPaths({ before: current, after: next, prefix: [key] });
 
   const formattingOptions = detectFormatting(text);
   let edited = text;
@@ -90,7 +100,8 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
   for (const { path, value } of paths) {
     const edits =
       value === undefined
-        ? (removeLines(edited, path) ?? modify(edited, path, undefined, { formattingOptions }))
+        ? (removeLines({ text: edited, path }) ??
+          modify(edited, path, undefined, { formattingOptions }))
         : modify(edited, path, value, { formattingOptions });
     edited = applyEdits(edited, edits);
   }
@@ -100,13 +111,7 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
   if (!result || !isDeepStrictEqual(result[key], next)) {
     return { kind: "fallback", reason: "the in-place edit didn't produce the expected value" };
   }
-  if (
-    !keepsComments(
-      text,
-      edited,
-      paths.map(({ path }) => path),
-    )
-  ) {
+  if (!keepsComments({ text, edited, paths: paths.map(({ path }) => path) })) {
     return { kind: "fallback", reason: "the in-place edit would drop a comment" };
   }
   return { kind: "edit", text: edited, changed };
@@ -130,6 +135,11 @@ function scan(scanner: JSONScanner): number {
   return scanner.scan();
 }
 
+interface RemoveLinesArgs {
+  text: string;
+  path: string[];
+}
+
 /**
  * Removes a property by deleting its whole lines, so comments on the lines
  * around it stay. jsonc-parser's own removal deletes everything from the end
@@ -142,7 +152,7 @@ function scan(scanner: JSONScanner): number {
  * `undefined` when the property doesn't have its lines to itself; the caller
  * then uses jsonc-parser, and the comment check catches any loss.
  */
-function removeLines(text: string, path: string[]): Edit[] | undefined {
+function removeLines({ text, path }: RemoveLinesArgs): Edit[] | undefined {
   const root = parseTree(text);
   const node = root && findNodeAtLocation(root, path)?.parent;
   if (node?.type !== "property") {
@@ -167,7 +177,7 @@ function removeLines(text: string, path: string[]): Edit[] | undefined {
   }
   let comment = "";
   if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
-    comment = tokenText(text, scanner);
+    comment = tokenText({ text, scanner });
     token = scan(scanner);
     if (token === SyntaxKind.Trivia) {
       token = scan(scanner);
@@ -206,11 +216,17 @@ function removeLines(text: string, path: string[]): Edit[] | undefined {
   return [move, removal];
 }
 
+interface KeepsCommentsArgs {
+  text: string;
+  edited: string;
+  paths: string[][];
+}
+
 /**
  * Whether `edited` still has every comment of `text` that isn't inside the
  * value of a changed property (those go with the value they annotate).
  */
-function keepsComments(text: string, edited: string, paths: string[][]): boolean {
+function keepsComments({ text, edited, paths }: KeepsCommentsArgs): boolean {
   const root = parseTree(text);
   const replaced = paths.flatMap((path) => {
     const node = root && findNodeAtLocation(root, path);
@@ -235,40 +251,52 @@ function comments(text: string): { offset: number; value: string }[] {
   const found: { offset: number; value: string }[] = [];
   for (let token = scan(scanner); token !== SyntaxKind.EOF; token = scan(scanner)) {
     if (token === SyntaxKind.LineCommentTrivia || token === SyntaxKind.BlockCommentTrivia) {
-      found.push({ offset: scanner.getTokenOffset(), value: tokenText(text, scanner) });
+      found.push({ offset: scanner.getTokenOffset(), value: tokenText({ text, scanner }) });
     }
   }
   return found;
 }
 
+interface ChangedPathsArgs {
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+  prefix: string[];
+}
+
 /** The paths to every changed value, descending while both sides are objects. */
-function changedPaths(
-  before: Record<string, unknown>,
-  after: Record<string, unknown>,
-  prefix: string[],
-): { path: string[]; value: unknown }[] {
-  return changedKeys(before, after).flatMap((property) => {
+function changedPaths({ before, after, prefix }: ChangedPathsArgs): {
+  path: string[];
+  value: unknown;
+}[] {
+  return changedKeys({ before, after }).flatMap((property) => {
     const from = before[property];
     const to = after[property];
     return isRecord(from) && isRecord(to)
-      ? changedPaths(from, to, [...prefix, property])
+      ? changedPaths({ before: from, after: to, prefix: [...prefix, property] })
       : [{ path: [...prefix, property], value: to }];
   });
 }
 
+interface ChangedKeysArgs {
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
+}
+
 /** The keys whose values differ between two objects, in `before`'s order, then new ones. */
-function changedKeys(before: Record<string, unknown>, after: Record<string, unknown>): string[] {
+function changedKeys({ before, after }: ChangedKeysArgs): string[] {
   return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
     (property) => !isDeepStrictEqual(before[property], after[property]),
   );
 }
 
+interface ViewReflectsArgs {
+  view: unknown;
+  desired: Record<string, unknown> | undefined;
+  changed: readonly string[];
+}
+
 /** Whether VS Code's view shows the edited properties (others may change concurrently). */
-export function viewReflects(
-  view: unknown,
-  desired: Record<string, unknown> | undefined,
-  changed: readonly string[],
-): boolean {
+export function viewReflects({ view, desired, changed }: ViewReflectsArgs): boolean {
   const seen = isRecord(view) ? view : {};
   return changed.every((property) => isDeepStrictEqual(seen[property], desired?.[property]));
 }
@@ -303,8 +331,13 @@ function detectFormatting(text: string): { insertSpaces: boolean; tabSize: numbe
     : { insertSpaces: true, tabSize: indent.length };
 }
 
+interface TokenTextArgs {
+  text: string;
+  scanner: JSONScanner;
+}
+
 /** The scanner's current token as written; `getTokenValue()` also includes whitespace before a comment. */
-function tokenText(text: string, scanner: JSONScanner): string {
+function tokenText({ text, scanner }: TokenTextArgs): string {
   const start = scanner.getTokenOffset();
   return text.slice(start, start + scanner.getTokenLength());
 }

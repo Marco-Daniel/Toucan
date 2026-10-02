@@ -1,25 +1,36 @@
+// import vscode
 import { window } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
+import { userValue } from "../settings/settings.adapter.ts";
+import { writeRepos } from "./commandUi.adapter.ts";
+
+// import utils
 import { handEditedKeys, withoutRepo } from "./entries.util.ts";
+import { isRecord } from "../../shared/records/records.util.ts";
+
+// import consts
+import { configs } from "../../generated/meta.ts";
+
+// import messages
 import {
   CLEAR_CONFIRMATION,
   NO_COLOR,
   clearDetail,
 } from "../../shared/messages/notifications.messages.ts";
-import { configs } from "../../generated/meta.ts";
-import { userValue } from "../settings/settings.adapter.ts";
-import { isRecord } from "../../shared/records/records.util.ts";
-import type { CommandHost } from "./commands.adapter.ts";
-import { writeRepos } from "./commandUi.adapter.ts";
 
-export async function clearColor(host: CommandHost, name: string): Promise<void> {
+// import types
+import type { CommandArgs } from "./commands.adapter.ts";
+
+export async function clearColor({ host, name }: CommandArgs): Promise<void> {
   const raw = readRepos();
   if (!isRecord(raw) || !Object.hasOwn(raw, name)) {
-    notify("info", NO_COLOR);
+    notify({ level: "info", message: NO_COLOR });
     return;
   }
   // Only a bare color is cheap to set again; anything more was typed by hand.
-  const handEdited = handEditedKeys(raw, name);
+  const handEdited = handEditedKeys({ raw, repo: name });
   if (handEdited.length > 0) {
     const answer = await window.showWarningMessage(
       CLEAR_CONFIRMATION,
@@ -32,7 +43,10 @@ export async function clearColor(host: CommandHost, name: string): Promise<void>
   }
   // From the settings at write time, not `raw`: the dialog may have been open
   // while another window changed a different repo.
-  await writeRepos(host, (repos) => ({ value: withoutRepo(repos, name) }));
+  await writeRepos({
+    host,
+    update: (repos) => ({ value: withoutRepo({ raw: repos, repo: name }) }),
+  });
 }
 
 /**

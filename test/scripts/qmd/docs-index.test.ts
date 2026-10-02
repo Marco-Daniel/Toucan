@@ -1,7 +1,7 @@
+// import libraries
 import { spawn } from "node:child_process";
 import {
   existsSync,
-  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -11,10 +11,19 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SYSTEM_PATH, fakeQmd } from "./fake-qmd.ts";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const SCRIPT = new URL("../../scripts/docs-index.mts", import.meta.url).pathname;
+// import utils
+import {
+  SYSTEM_PATH,
+  fakeQmd,
+  qmdEnv,
+  readQmdLog,
+  until,
+  writeCacheFile,
+} from "../../helpers/qmd.ts";
+
+const SCRIPT = new URL("../../../scripts/qmd/docs-index.mts", import.meta.url).pathname;
 
 let dir: string;
 let lock: string;
@@ -36,10 +45,15 @@ interface Exit {
   stderr: string;
 }
 
+interface DocsIndexArgs {
+  path: string;
+  extra?: Record<string, string>;
+}
+
 /** Starts `pnpm docs:index` as a child, with only the fake qmd and this test's dir for home and cache. */
-function docsIndex(path: string, extra: Record<string, string> = {}): Promise<Exit> {
+function docsIndex({ path, extra = {} }: DocsIndexArgs): Promise<Exit> {
   const child = spawn(process.execPath, [SCRIPT], {
-    env: { PATH: path, HOME: dir, XDG_CACHE_HOME: dir, ...extra },
+    env: { ...qmdEnv({ dir, path }), ...extra },
     stdio: ["ignore", "pipe", "pipe"],
     // A run that hangs (a broken lock, say) is killed and fails, not left hanging.
     timeout: 10_000,
@@ -51,27 +65,15 @@ function docsIndex(path: string, extra: Record<string, string> = {}): Promise<Ex
   return new Promise((resolve) => child.on("close", (code) => resolve({ code, stdout, stderr })));
 }
 
-const lines = () =>
-  existsSync(join(dir, "qmd.log"))
-    ? readFileSync(join(dir, "qmd.log"), "utf8").trim().split("\n")
-    : [];
-
-/** Waits until `condition` holds. */
-async function until(condition: () => boolean): Promise<void> {
-  await vi.waitFor(
-    () => {
-      if (!condition()) {
-        throw new Error("not yet");
-      }
-    },
-    { timeout: 5000, interval: 20 },
-  );
-}
+const lines = () => {
+  const log = readQmdLog(dir);
+  return log === "" ? [] : log.trim().split("\n");
+};
 
 /** Starts docs:index with the update held open and a fast heartbeat; resolves once the update runs. */
 async function slowUpdate(): Promise<{ exit: Promise<Exit> }> {
   writeFileSync(join(dir, "hold"), "");
-  const exit = docsIndex(fakeQmd(dir), { TOUCAN_QMD_HEARTBEAT_MS: "50" });
+  const exit = docsIndex({ path: fakeQmd({ dir }), extra: { TOUCAN_QMD_HEARTBEAT_MS: "50" } });
   await until(() => lines().includes("update start"));
   // Wrapped: an async function returning `exit` itself would wait for it.
   return { exit };
@@ -79,13 +81,12 @@ async function slowUpdate(): Promise<{ exit: Promise<Exit> }> {
 
 /** Holds the lock as another job would. */
 function holdLock(): void {
-  mkdirSync(join(dir, "qmd"), { recursive: true });
-  writeFileSync(lock, "another job");
+  writeCacheFile({ dir, name: "toucan.lock", text: "another job" });
 }
 
 describe("pnpm docs:index", () => {
   it("runs every qmd call on Toucan's own index", async () => {
-    expect(await docsIndex(fakeQmd(dir))).toMatchObject({ code: 0 });
+    expect(await docsIndex({ path: fakeQmd({ dir }) })).toMatchObject({ code: 0 });
     const log = lines();
     expect(log.filter((line) => line.startsWith("wrong index"))).toEqual([]);
     // It did run the whole plan, on the right index.
@@ -95,15 +96,8 @@ describe("pnpm docs:index", () => {
 
   it("waits for a job holding the lock, then runs", async () => {
     holdLock();
-    const exit = docsIndex(fakeQmd(dir, { tag: lock }));
-    await vi.waitFor(
-      () => {
-        if (!lines().includes("version @another job")) {
-          throw new Error("not started");
-        }
-      },
-      { timeout: 5000, interval: 20 },
-    );
+    const exit = docsIndex({ path: fakeQmd({ dir, tag: lock }) });
+    await until(() => lines().includes("version @another job"));
     // Hold it through a few of its retries (every 250 ms). How long only decides whether a
     // broken wait gets caught: every call is tagged with the lock it ran under, below.
     await new Promise((resolve) => setTimeout(resolve, 600));
@@ -117,9 +111,8 @@ describe("pnpm docs:index", () => {
   });
 
   it("re-indexes once more for an edit noted while it ran", async () => {
-    mkdirSync(join(dir, "qmd"), { recursive: true });
-    writeFileSync(pending, "");
-    expect(await docsIndex(fakeQmd(dir))).toMatchObject({ code: 0 });
+    writeCacheFile({ dir, name: "toucan.pending", text: "" });
+    expect(await docsIndex({ path: fakeQmd({ dir }) })).toMatchObject({ code: 0 });
     expect(lines().slice(-5)).toEqual([
       "update start",
       "update end",
@@ -131,14 +124,14 @@ describe("pnpm docs:index", () => {
   });
 
   it("lets go of the lock when it's done", async () => {
-    expect(await docsIndex(fakeQmd(dir))).toMatchObject({ code: 0 });
+    expect(await docsIndex({ path: fakeQmd({ dir }) })).toMatchObject({ code: 0 });
     // It did take it: the cache folder is there, the lock isn't.
     expect([existsSync(join(dir, "qmd")), existsSync(lock)]).toEqual([true, false]);
   });
 
   it("gives up when the lock stays held", async () => {
     holdLock();
-    const exit = await docsIndex(fakeQmd(dir), { TOUCAN_QMD_WAIT_MS: "300" });
+    const exit = await docsIndex({ path: fakeQmd({ dir }), extra: { TOUCAN_QMD_WAIT_MS: "300" } });
     expect(exit.code).toBe(1);
     expect(exit.stderr).toContain("Try again in a minute.");
     expect(lines()).toEqual(["version"]);
@@ -146,7 +139,7 @@ describe("pnpm docs:index", () => {
   });
 
   it("says how to install qmd when it's missing", async () => {
-    const exit = await docsIndex(SYSTEM_PATH);
+    const exit = await docsIndex({ path: SYSTEM_PATH });
     expect(exit.code).toBe(1);
     expect(exit.stderr).toContain("qmd isn't installed.");
     expect(existsSync(join(dir, "qmd"))).toBe(false);
@@ -174,7 +167,7 @@ describe("pnpm docs:index", () => {
   });
 
   it("stops at the first qmd command that fails", async () => {
-    const { code, stderr } = await docsIndex(fakeQmd(dir, { failAdd: true }));
+    const { code, stderr } = await docsIndex({ path: fakeQmd({ dir, failAdd: true }) });
     expect(code).toBe(1);
     expect(stderr).toContain("qmd collection add failed; stopping.");
     const log = lines();

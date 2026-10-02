@@ -1,19 +1,36 @@
+// import vscode
 import { ColorThemeKind, Uri, window, workspace } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
+import { COLOR_CUSTOMIZATIONS } from "../focus/focus.adapter.ts";
+
+// import utils
 import { activeThemeName, statusBarBackground } from "../../shared/color/contrast.util.ts";
 import { glyphSvg, svgDataUri } from "../glyphs/glyphs.util.ts";
-import { saveFailed } from "../../shared/messages/notifications.messages.ts";
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
-import { COLOR_CUSTOMIZATIONS } from "../focus/focus.adapter.ts";
+import { tryCatch } from "../../shared/async/tryCatch.util.ts";
+
+// import consts
 import { configs } from "../../generated/meta.ts";
+
+// import messages
+import { saveFailed } from "../../shared/messages/notifications.messages.ts";
+
+// import types
+import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import type { CommandHost } from "./commands.adapter.ts";
 
 /** A quick pick swatch is drawn 16 px high. */
 const SWATCH_PX = 16;
 
-export function swatch(glyph: Glyph, hex: Hex): Uri {
-  return Uri.parse(svgDataUri(glyphSvg(glyph, hex, SWATCH_PX)));
+interface SwatchArgs {
+  glyph: Glyph;
+  hex: Hex;
+}
+
+export function swatch({ glyph, hex }: SwatchArgs): Uri {
+  return Uri.parse(svgDataUri(glyphSvg({ glyph, color: hex, height: SWATCH_PX })));
 }
 
 /** The status bar background to check picked colors against (toucan-v1/0018). */
@@ -40,11 +57,17 @@ export function statusBarAgainst(): Hex | undefined {
   });
 }
 
-export async function writeRepos(host: CommandHost, update: SettingsUpdate): Promise<void> {
-  try {
-    // Application-scoped, so VS Code keeps it in the default profile's file.
-    await host.writer.write(configs.repos.key, update, "defaultProfile");
-  } catch (error) {
-    notify("error", saveFailed(error));
+interface WriteReposArgs {
+  host: CommandHost;
+  update: SettingsUpdate;
+}
+
+export async function writeRepos({ host, update }: WriteReposArgs): Promise<void> {
+  // Application-scoped, so VS Code keeps it in the default profile's file.
+  const [, error] = await tryCatch(() =>
+    host.writer.write({ key: configs.repos.key, update, target: "defaultProfile" }),
+  );
+  if (error !== null) {
+    notify({ level: "error", message: saveFailed(error) });
   }
 }

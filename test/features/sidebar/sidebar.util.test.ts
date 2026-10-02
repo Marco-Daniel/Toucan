@@ -1,16 +1,22 @@
+// import libraries
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// import utils
 import {
   REMEMBER_CLOSE_DELAY_MS,
   resolveSidebarSettings,
   SidebarController,
 } from "../../../src/features/sidebar/sidebar.util.ts";
+
+// import types
 import type { SidebarSettings } from "../../../src/features/sidebar/sidebar.util.ts";
 
 /**
  * A fake secondary sidebar: reveal and close feed visibility back like VS Code
  * does, unless `silentClose` or `silentReveal` suppress that event. With
  * `holdReveals`, each reveal stays pending until `release()`. `failReveals`,
- * `failCloses` and `failWrites` make reveal, closeBar and writeClosed reject.
+ * `failCloses` and `failWrites` make reveal, closeBar and writeClosed reject;
+ * `failCloses: "sync"` makes closeBar throw before it returns a promise.
  * Warnings land in `state.warnings`.
  */
 function setup(
@@ -20,7 +26,7 @@ function setup(
     silentReveal?: boolean;
     holdReveals?: boolean;
     failReveals?: boolean;
-    failCloses?: boolean;
+    failCloses?: boolean | "sync";
     failWrites?: boolean;
   } = {},
 ) {
@@ -48,8 +54,8 @@ function setup(
     warnings: [] as string[],
   };
   let controller!: SidebarController;
-  controller = new SidebarController(
-    {
+  controller = new SidebarController({
+    ports: {
       reveal: async () => {
         state.reveals++;
         if (failReveals) {
@@ -62,15 +68,21 @@ function setup(
           controller.visibilityChanged(true);
         }
       },
-      closeBar: async () => {
-        state.closes++;
-        if (failCloses) {
-          throw new Error("no secondary sidebar");
-        }
-        if (!silentClose) {
-          controller.visibilityChanged(false);
-        }
-      },
+      closeBar:
+        failCloses === "sync"
+          ? () => {
+              state.closes++;
+              throw new Error("closeBar threw before returning a promise");
+            }
+          : async () => {
+              state.closes++;
+              if (failCloses) {
+                throw new Error("no secondary sidebar");
+              }
+              if (!silentClose) {
+                controller.visibilityChanged(false);
+              }
+            },
       readClosed: () => state.closed,
       writeClosed: async (closed) => {
         if (failWrites) {
@@ -81,8 +93,8 @@ function setup(
       warn: (message) => state.warnings.push(message),
       debug: () => {},
     },
-    () => settings,
-  );
+    settings: () => settings,
+  });
   return { controller, settings, state, release };
 }
 
@@ -365,6 +377,16 @@ describe("resolveSidebarSettings", () => {
   });
 });
 
+describe("SidebarController, hand-off timing", () => {
+  // The reveal starts within the triggering call, so its `revealing` guard is
+  // set before anything else can run, not a tick later.
+  it("calls the reveal port before the triggering call returns", () => {
+    const { controller, state } = setup();
+    controller.start(true);
+    expect(state.reveals).toBe(1);
+  });
+});
+
 describe("SidebarController, failures", () => {
   // Every place the controller starts async work from an event or timer.
   it.each([
@@ -404,6 +426,16 @@ describe("SidebarController, failures", () => {
         controller.setFocused(true);
       },
       warning: "Closing the bar failed: Error: no secondary sidebar",
+    },
+    {
+      site: "a close that throws before it starts",
+      options: { visibility: "unfocused", failCloses: "sync" },
+      act: async ({ controller }: Setup) => {
+        controller.start(false);
+        await settle();
+        controller.setFocused(true);
+      },
+      warning: "Closing the bar failed: Error: closeBar threw before returning a promise",
     },
     {
       site: "forgetting a remembered close",

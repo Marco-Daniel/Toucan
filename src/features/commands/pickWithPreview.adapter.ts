@@ -1,22 +1,36 @@
+// import vscode
 import { window } from "vscode";
+
+// import adapters
+import { Preview } from "./preview.adapter.ts";
+
+// import types
 import type { QuickPickItem } from "vscode";
 import type { RepoConfig } from "../../shared/config/config.util.ts";
-import type { CommandHost } from "./commands.adapter.ts";
-import { Preview } from "./preview.adapter.ts";
+import type { CommandArgs } from "./commands.adapter.ts";
+
+interface PickWithPreviewArgs<T> extends CommandArgs {
+  items: T[];
+  title: string;
+  /** The preview for an item. */
+  change: (item: T) => Partial<RepoConfig>;
+  /** The item to start on. */
+  active: T | undefined;
+}
 
 /**
  * A quick pick that previews the active item on the status bar. On cancel the
  * preview ends; after a pick the caller saves and then calls `done`.
  */
-export function pickWithPreview<T extends QuickPickItem>(
-  host: CommandHost,
-  name: string,
-  items: T[],
-  title: string,
-  change: (item: T) => Partial<RepoConfig>,
-  active: T | undefined,
-): Promise<{ item: T; done: () => void } | undefined> {
-  const preview = new Preview(host, name);
+export function pickWithPreview<T extends QuickPickItem>({
+  host,
+  name,
+  items,
+  title,
+  change,
+  active,
+}: PickWithPreviewArgs<T>): Promise<{ item: T; done: () => void } | undefined> {
+  const preview = new Preview({ host, name });
   const pick = window.createQuickPick<T>();
   pick.title = title;
   pick.items = items;

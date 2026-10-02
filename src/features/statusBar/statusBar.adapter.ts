@@ -1,9 +1,16 @@
+// import vscode
 import { MarkdownString, StatusBarAlignment, window } from "vscode";
-import type { Disposable } from "vscode";
+
+// import utils
 import { escapeIcons, glyphIcon, glyphSvg, svgDataUri } from "../glyphs/glyphs.util.ts";
 import { accessibilityLabel } from "./labels.util.ts";
+
+// import consts
 import { commands } from "../../generated/meta.ts";
 import { STATUS_ITEM_ID } from "../../core/ids.consts.ts";
+
+// import types
+import type { Disposable } from "vscode";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
 const TOOLTIP_SWATCH_HEIGHT = 32;
@@ -52,7 +59,7 @@ export class StatusBarIndicator implements Disposable {
     const { name, config } = repo;
     this.item.text = `${glyphIcon(config.glyph)} ${escapeIcons(name)}`;
     this.item.color = config.background;
-    this.item.accessibilityInformation = { label: accessibilityLabel(name, config) };
+    this.item.accessibilityInformation = { label: accessibilityLabel({ name, config }) };
     this.item.tooltip = tooltip(repo);
     this.item.show();
   }
@@ -63,7 +70,9 @@ export class StatusBarIndicator implements Disposable {
 }
 
 function tooltip({ name, config }: ActiveRepo): MarkdownString {
-  const swatch = svgDataUri(glyphSvg(config.glyph, config.background, TOOLTIP_SWATCH_HEIGHT));
+  const swatch = svgDataUri(
+    glyphSvg({ glyph: config.glyph, color: config.background, height: TOOLTIP_SWATCH_HEIGHT }),
+  );
   const markdown = new MarkdownString();
   // Before appendText: it escapes $(…) in the repo name only when this is on.
   markdown.supportThemeIcons = true;

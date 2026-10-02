@@ -1,6 +1,11 @@
-import { COMMAND_CENTER_KEYS } from "../../shared/model/model.consts.ts";
-import type { CommandCenterColors } from "../../shared/model/model.types.ts";
+// import utils
 import { isRecord } from "../../shared/records/records.util.ts";
+
+// import consts
+import { COMMAND_CENTER_KEYS } from "../../shared/model/model.consts.ts";
+
+// import types
+import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 
 const PREFIX = "commandCenter.";
 
@@ -12,6 +17,12 @@ export type MergeResult =
       value: Record<string, unknown> | undefined;
     };
 
+/** The user's current `workbench.colorCustomizations` and this window's colors (or none). */
+interface MergeArgs {
+  current: unknown;
+  colors: CommandCenterColors | undefined;
+}
+
 /**
  * Merges Toucan's colors into the user-level `workbench.colorCustomizations`
  * (ADR-0002). Toucan owns every top-level `commandCenter.*` key: they are replaced
@@ -22,10 +33,7 @@ export type MergeResult =
  * callers can skip the settings write. A current value that isn't an object
  * is left alone rather than overwritten.
  */
-export function mergeCustomizations(
-  current: unknown,
-  colors: CommandCenterColors | undefined,
-): MergeResult {
+export function mergeCustomizations({ current, colors }: MergeArgs): MergeResult {
   if (current !== undefined && !isRecord(current)) {
     return { changed: false };
   }
@@ -52,14 +60,14 @@ export function mergeCustomizations(
  * changes something, else `current` as it is. `undefined` when `current` isn't
  * an object and must be left alone.
  */
-export function customizationsFor(
-  current: unknown,
-  colors: CommandCenterColors | undefined,
-): { value: Record<string, unknown> | undefined } | undefined {
+export function customizationsFor({
+  current,
+  colors,
+}: MergeArgs): { value: Record<string, unknown> | undefined } | undefined {
   if (current !== undefined && !isRecord(current)) {
     return undefined;
   }
-  const result = mergeCustomizations(current, colors);
+  const result = mergeCustomizations({ current, colors });
   return { value: result.changed ? result.value : current };
 }
 

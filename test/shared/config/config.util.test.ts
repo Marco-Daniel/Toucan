@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { parseRepos } from "../../../src/shared/config/config.util.ts";
 
 describe("parseRepos", () => {
@@ -130,5 +133,22 @@ describe("parseRepos", () => {
     const raw = Object.create({ inherited: "#fff" }) as Record<string, unknown>;
     raw["own"] = "#000";
     expect([...parseRepos(raw).repos.keys()]).toEqual(["own"]);
+  });
+
+  it.each([[42], [true], [["#fff"]]])(
+    "drops an entry that's neither a color nor an object: %j",
+    (entry) => {
+      const { repos, issues } = parseRepos({ r: entry });
+      expect(repos.size).toBe(0);
+      expect(issues).toEqual([
+        { repo: "r", message: "Expected a color string or an object with a background." },
+      ]);
+    },
+  );
+
+  it("drops an entry whose background isn't a color, and says so", () => {
+    const { repos, issues } = parseRepos({ r: "nope" });
+    expect(repos.size).toBe(0);
+    expect(issues).toEqual([{ repo: "r", message: 'background "nope" is not a valid color.' }]);
   });
 });

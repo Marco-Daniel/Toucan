@@ -1,3 +1,4 @@
+// import libraries
 import {
   converter,
   displayable,
@@ -24,8 +25,12 @@ import {
   toGamut,
   useMode,
 } from "culori/fn";
-import type { Color } from "culori/fn";
+
+// import utils
 import { asHex } from "./hex.util.ts";
+
+// import types
+import type { Color } from "culori/fn";
 import type { Hex } from "../model/model.types.ts";
 
 // The color spaces CSS Color 4 can express, so `parse` accepts any CSS color

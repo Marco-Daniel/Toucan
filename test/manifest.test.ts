@@ -1,7 +1,12 @@
+// import libraries
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { FONT_CODEPOINTS } from "../src/features/glyphs/glyphFont.util.ts";
 import { glyphIconId } from "../src/features/glyphs/glyphs.util.ts";
+
+// import consts
 import {
   SIDEBAR_AVAILABLE_CONTEXT,
   SIDEBAR_CONTAINER_ID,

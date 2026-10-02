@@ -1,9 +1,16 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { deriveColors } from "../../../src/shared/color/derive.util.ts";
-import type { Hex } from "../../../src/shared/model/model.types.ts";
+
+// import views
 import { sidebarBlockHtml } from "../../../src/features/sidebar/sidebar.view.ts";
 
-const colors = deriveColors("#14939c" as Hex);
+// import types
+import type { Hex } from "../../../src/shared/model/model.types.ts";
+
+const colors = deriveColors({ background: "#14939c" as Hex });
 
 describe("sidebarBlockHtml", () => {
   it("allows no scripts and only inline styles", () => {

@@ -1,9 +1,13 @@
+// import utils
 import {
   searchEmojiStep,
   titleToRestore,
   titleWithRepoVariable,
   unappliedChange,
 } from "./windowTitle.util.ts";
+import { tryCatch } from "../../shared/async/tryCatch.util.ts";
+
+// import types
 import type { TitleChange } from "./windowTitle.util.ts";
 
 /** `window.title` as `inspect()` reports it. */
@@ -53,15 +57,18 @@ export class TitleSetup {
     const focused = ports.focused();
     let change = ports.readChange();
     // Only the focused window heals: it's the one that may have crashed mid-write.
-    if (focused && change && unappliedChange(change, ports.title().global, ports.now())) {
+    if (
+      focused &&
+      change &&
+      unappliedChange({ change, currentTitle: ports.title().global, now: ports.now() })
+    ) {
       await ports.writeChange(undefined);
       change = undefined;
     }
     const step = searchEmojiStep({ enabled, focused, change });
     if (step === "ask") {
-      try {
-        await this.askAndApply();
-      } catch (error) {
+      const [, error] = await tryCatch(() => this.askAndApply());
+      if (error !== null) {
         // The record was cleared again in askAndApply; just tell the user.
         ports.failed(error);
       }
@@ -97,9 +104,8 @@ export class TitleSetup {
       if (written === undefined) {
         return;
       }
-      try {
-        await ports.writeTitle(written);
-      } catch (error) {
+      const [, error] = await tryCatch(() => ports.writeTitle(written));
+      if (error !== null) {
         await ports.writeChange(undefined);
         throw error;
       }
@@ -116,7 +122,7 @@ export class TitleSetup {
   }
 
   private async restore(change: TitleChange): Promise<void> {
-    const result = titleToRestore(change, this.ports.title().global);
+    const result = titleToRestore({ change, current: this.ports.title().global });
     if (result.restore) {
       await this.ports.writeTitle(result.value);
       this.ports.info("Restored window.title.");

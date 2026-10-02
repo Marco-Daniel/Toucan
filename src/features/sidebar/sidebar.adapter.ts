@@ -1,18 +1,37 @@
-import { ConfigurationTarget, commands as vscodeCommands, window, workspace } from "vscode";
-import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
+// import vscode
+import { commands as vscodeCommands, window, workspace } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
-import type { Log } from "../../core/log.adapter.ts";
+import { writeUserSetting } from "../settings/settings.adapter.ts";
+
+// import utils
 import { deriveColors } from "../../shared/color/derive.util.ts";
 import { resolveSidebarSettings, SidebarController } from "./sidebar.util.ts";
-import type { SidebarSettings } from "./sidebar.util.ts";
+
+// import views
 import { sidebarBlockHtml } from "./sidebar.view.ts";
-import type { SidebarStyle } from "../../shared/model/model.types.ts";
+
+// import consts
 import { configs } from "../../generated/meta.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "../../core/ids.consts.ts";
+
+// import types
+import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
+import type { Log } from "../../core/log.adapter.ts";
+import type { SidebarSettings } from "./sidebar.util.ts";
+import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
 /** workspaceState key for "the user closed the block here" (toucan-v1/0013). */
 const CLOSED_KEY = "sidebarBlock.closed";
+
+interface SidebarBlockArgs {
+  context: ExtensionContext;
+  log: Log;
+  /** This window's repo, read fresh on every refresh. */
+  repo: () => ActiveRepo | undefined;
+}
 
 /**
  * The opt-in sidebar block (toucan-v1/0006, toucan-v1/0013): renders the repo color in a webview
@@ -27,12 +46,12 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   private readonly log: Log;
   private readonly repo: () => ActiveRepo | undefined;
 
-  constructor(context: ExtensionContext, log: Log, repo: () => ActiveRepo | undefined) {
+  constructor({ context, log, repo }: SidebarBlockArgs) {
     this.context = context;
     this.log = log;
     this.repo = repo;
-    this.controller = new SidebarController(
-      {
+    this.controller = new SidebarController({
+      ports: {
         reveal: async () => {
           await vscodeCommands.executeCommand(`${SIDEBAR_VIEW_ID}.focus`, { preserveFocus: true });
         },
@@ -46,8 +65,8 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         warn: (message) => log.warn(`[sidebar] ${message}`),
         debug: (message) => log.debug(`[sidebar] ${message}`),
       },
-      () => this.settings(),
-    );
+      settings: () => this.settings(),
+    });
     this.disposables.push(window.registerWebviewViewProvider(SIDEBAR_VIEW_ID, this));
   }
 
@@ -97,7 +116,10 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
     this.view.webview.html = sidebarBlockHtml({
       name: repo.name,
       glyph: repo.config.glyph,
-      colors: deriveColors(repo.config.background, repo.config.overrides),
+      colors: deriveColors({
+        background: repo.config.background,
+        overrides: repo.config.overrides,
+      }),
       style: this.settings().style,
     });
   }
@@ -120,7 +142,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
    */
   async toggle(): Promise<void> {
     if (!this.repo()) {
-      notify("info", "Set a Toucan color for this repo first.");
+      notify({ level: "info", message: "Set a Toucan color for this repo first." });
       return;
     }
     if (!workspace.getConfiguration().get(configs.sidebarBlockEnabled.key, false)) {
@@ -131,9 +153,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
       if (answer === "Turn On") {
         // Forget an earlier close; the settings change then reveals the block.
         await this.context.workspaceState.update(CLOSED_KEY, undefined);
-        await workspace
-          .getConfiguration()
-          .update(configs.sidebarBlockEnabled.key, true, ConfigurationTarget.Global);
+        await writeUserSetting({ key: configs.sidebarBlockEnabled.key, value: true });
         this.log.info("Turned on the sidebar block.");
       }
       return;

@@ -1,4 +1,7 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import {
   repoVariableValue,
   searchEmojiStep,
@@ -24,27 +27,33 @@ describe("titleToRestore", () => {
   const written = `\${activeRepositoryName}\${separator}${DEFAULT}`;
 
   it("restores the previous value while the title is still Toucan's", () => {
-    expect(titleToRestore({ previous: "${rootName}", written }, written)).toEqual({
+    expect(
+      titleToRestore({ change: { previous: "${rootName}", written }, current: written }),
+    ).toEqual({
       restore: true,
       value: "${rootName}",
     });
   });
 
   it("restores an unset title as unset", () => {
-    expect(titleToRestore({ previous: undefined, written }, written)).toEqual({
+    expect(titleToRestore({ change: { previous: undefined, written }, current: written })).toEqual({
       restore: true,
       value: undefined,
     });
   });
 
   it("keeps the user's own edit", () => {
-    expect(titleToRestore({ previous: undefined, written }, "${rootName} edited")).toEqual({
+    expect(
+      titleToRestore({ change: { previous: undefined, written }, current: "${rootName} edited" }),
+    ).toEqual({
       restore: false,
     });
   });
 
   it("has nothing to restore when Toucan changed nothing", () => {
-    expect(titleToRestore({ previous: "x", written: undefined }, "x")).toEqual({ restore: false });
+    expect(titleToRestore({ change: { previous: "x", written: undefined }, current: "x" })).toEqual(
+      { restore: false },
+    );
   });
 });
 
@@ -52,13 +61,19 @@ describe("repoVariableValue", () => {
   const repo = { name: "webshop", emoji: "🟦" };
 
   it("is the emoji and a space when Toucan added the variable", () => {
-    expect(repoVariableValue({ previous: undefined, written: "x" }, repo)).toBe("🟦 ");
-    expect(repoVariableValue({ previous: undefined, written: "x" }, undefined)).toBe("");
+    expect(repoVariableValue({ change: { previous: undefined, written: "x" }, repo })).toBe("🟦 ");
+    expect(
+      repoVariableValue({ change: { previous: undefined, written: "x" }, repo: undefined }),
+    ).toBe("");
   });
 
   it("is emoji and name when the user's own title uses the variable", () => {
-    expect(repoVariableValue({ previous: "y", written: undefined }, repo)).toBe("🟦 webshop");
-    expect(repoVariableValue({ previous: "y", written: undefined }, undefined)).toBeUndefined();
+    expect(repoVariableValue({ change: { previous: "y", written: undefined }, repo })).toBe(
+      "🟦 webshop",
+    );
+    expect(
+      repoVariableValue({ change: { previous: "y", written: undefined }, repo: undefined }),
+    ).toBeUndefined();
   });
 });
 
@@ -87,9 +102,9 @@ describe("searchEmojiStep", () => {
 describe("shouldLabel", () => {
   it("labels only while on and consented", () => {
     const change = { previous: undefined, written: undefined };
-    expect(shouldLabel(true, change)).toBe(true);
-    expect(shouldLabel(true, undefined)).toBe(false);
-    expect(shouldLabel(false, change)).toBe(false);
+    expect(shouldLabel({ enabled: true, change })).toBe(true);
+    expect(shouldLabel({ enabled: true, change: undefined })).toBe(false);
+    expect(shouldLabel({ enabled: false, change })).toBe(false);
   });
 });
 
@@ -100,33 +115,51 @@ describe("unappliedChange", () => {
 
   it("drops a pending change older than 30 s whose title write never happened", () => {
     expect(
-      unappliedChange({ previous: undefined, written, pendingSince: longAgo }, undefined, now),
+      unappliedChange({
+        change: { previous: undefined, written, pendingSince: longAgo },
+        currentTitle: undefined,
+        now,
+      }),
     ).toBe(true);
     expect(
-      unappliedChange(
-        { previous: "${rootName}", written, pendingSince: longAgo },
-        "${rootName}",
+      unappliedChange({
+        change: { previous: "${rootName}", written, pendingSince: longAgo },
+        currentTitle: "${rootName}",
         now,
-      ),
+      }),
     ).toBe(true);
   });
 
   it("keeps a recent pending change: its write may still be under way", () => {
     expect(
-      unappliedChange({ previous: undefined, written, pendingSince: now - 30_000 }, undefined, now),
+      unappliedChange({
+        change: { previous: undefined, written, pendingSince: now - 30_000 },
+        currentTitle: undefined,
+        now,
+      }),
     ).toBe(false);
   });
 
   it("never drops a settled change, even when this window's title view lags", () => {
-    expect(unappliedChange({ previous: undefined, written }, undefined, now)).toBe(false);
+    expect(
+      unappliedChange({ change: { previous: undefined, written }, currentTitle: undefined, now }),
+    ).toBe(false);
   });
 
   it("keeps a pending change whose title was written, or that needed no write", () => {
     expect(
-      unappliedChange({ previous: undefined, written, pendingSince: longAgo }, written, now),
+      unappliedChange({
+        change: { previous: undefined, written, pendingSince: longAgo },
+        currentTitle: written,
+        now,
+      }),
     ).toBe(false);
     expect(
-      unappliedChange({ previous: "x", written: undefined, pendingSince: longAgo }, "x", now),
+      unappliedChange({
+        change: { previous: "x", written: undefined, pendingSince: longAgo },
+        currentTitle: "x",
+        now,
+      }),
     ).toBe(false);
   });
 });

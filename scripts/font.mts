@@ -1,5 +1,6 @@
 // Turns glyph SVGs into Toucan's icon font. Shared by `pnpm font` and the
 // test that checks the font draws what the SVGs draw.
+// import libraries
 import { Readable } from "node:stream";
 import svg2ttf from "svg2ttf";
 import { SVGIcons2SVGFontStream } from "svgicons2svgfont";

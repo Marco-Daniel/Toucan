@@ -1,6 +1,11 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { TitleSetup } from "../../../src/features/searchEmoji/titleSetup.util.ts";
 import { PENDING_STALE_MS } from "../../../src/features/searchEmoji/windowTitle.util.ts";
+
+// import types
 import type { TitleChange } from "../../../src/features/searchEmoji/windowTitle.util.ts";
 
 const DEFAULT = "${activeEditorShort}${separator}${rootName}";

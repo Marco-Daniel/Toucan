@@ -1,20 +1,29 @@
-import {
-  ConfigurationTarget,
-  commands as vscodeCommands,
-  extensions,
-  window,
-  workspace,
-} from "vscode";
-import type { Disposable, Event, ExtensionContext } from "vscode";
+// import vscode
+import { commands as vscodeCommands, extensions, window, workspace } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
-import type { Log } from "../../core/log.adapter.ts";
+import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
+
+// import utils
 import { emojiFor } from "./emoji.util.ts";
-import { titleChangeFailed } from "../../shared/messages/notifications.messages.ts";
 import { TitleSetup } from "./titleSetup.util.ts";
-import type { TitlePorts } from "./titleSetup.util.ts";
 import { repoVariableValue, shouldLabel } from "./windowTitle.util.ts";
-import type { TitleChange } from "./windowTitle.util.ts";
+import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
+import { createTimer } from "../../shared/async/timer.util.ts";
+import { logFailure } from "../../shared/async/logFailure.util.ts";
+
+// import consts
 import { configs } from "../../generated/meta.ts";
+
+// import messages
+import { titleChangeFailed } from "../../shared/messages/notifications.messages.ts";
+
+// import types
+import type { Disposable, Event, ExtensionContext } from "vscode";
+import type { Log } from "../../core/log.adapter.ts";
+import type { TitlePorts } from "./titleSetup.util.ts";
+import type { TitleChange } from "./windowTitle.util.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
 const WINDOW_TITLE = "window.title";
@@ -30,6 +39,12 @@ interface GitApi {
   repositories: { state: { onDidChange: Event<void> } }[];
   onDidOpenRepository: Event<{ state: { onDidChange: Event<void> } }>;
   onDidCloseRepository: Event<unknown>;
+}
+
+interface SearchEmojiArgs {
+  context: ExtensionContext;
+  log: Log;
+  repo: () => ActiveRepo | undefined;
 }
 
 /**
@@ -48,18 +63,18 @@ export class SearchEmoji implements Disposable {
   private labelled = false;
   /** Whether the workspace's own window.title was logged, so it's logged once per change. */
   private reportedOverride = false;
-  private timer: ReturnType<typeof setTimeout> | undefined;
+  private readonly timer = createTimer();
 
   private readonly context: ExtensionContext;
   private readonly log: Log;
   private readonly repo: () => ActiveRepo | undefined;
   private readonly title: TitleSetup;
 
-  constructor(context: ExtensionContext, log: Log, repo: () => ActiveRepo | undefined) {
+  constructor({ context, log, repo }: SearchEmojiArgs) {
     this.context = context;
     this.log = log;
     this.repo = repo;
-    this.title = new TitleSetup(titlePorts(context, log));
+    this.title = new TitleSetup(titlePorts({ context, log }));
     this.disposables.push(window.onDidChangeActiveTextEditor(() => this.reassertSoon()));
   }
 
@@ -75,8 +90,8 @@ export class SearchEmoji implements Disposable {
   /** After activation, a focus change or a `toucan.*` change. */
   async refresh(): Promise<void> {
     const change = await this.title.settle();
-    if (shouldLabel(enabled(), change)) {
-      const overridden = workspaceTitle();
+    if (shouldLabel({ enabled: enabled(), change })) {
+      const overridden = overriddenInWorkspace(WINDOW_TITLE);
       if (overridden && !this.reportedOverride) {
         this.log.info(
           `This workspace sets its own ${WINDOW_TITLE}, so the search emoji doesn't show here.`,
@@ -91,9 +106,7 @@ export class SearchEmoji implements Disposable {
   }
 
   dispose(): void {
-    if (this.timer !== undefined) {
-      clearTimeout(this.timer);
-    }
+    this.timer.cancel();
     for (const disposable of this.disposables) {
       disposable.dispose();
     }
@@ -106,10 +119,13 @@ export class SearchEmoji implements Disposable {
       return;
     }
     const repo = this.repo();
-    const value = repoVariableValue(
+    const value = repoVariableValue({
       change,
-      repo && { name: repo.name, emoji: emojiFor(repo.config.background, repo.config.glyph) },
-    );
+      repo: repo && {
+        name: repo.name,
+        emoji: emojiFor({ hex: repo.config.background, glyph: repo.config.glyph }),
+      },
+    });
     if (value === undefined) {
       // A repo without a color shows SCM's own value.
       await this.handBack();
@@ -137,15 +153,15 @@ export class SearchEmoji implements Disposable {
     if (!enabled()) {
       return;
     }
-    if (this.timer !== undefined) {
-      clearTimeout(this.timer);
-    }
-    this.timer = setTimeout(() => {
-      this.timer = undefined;
-      this.assert().catch((error: unknown) => {
-        this.log.warn(`Couldn't set the search emoji: ${String(error)}`);
-      });
-    }, REASSERT_DELAY_MS);
+    this.timer.start({
+      ms: REASSERT_DELAY_MS,
+      run: () => {
+        // A .catch, not tryCatch: a timer has no caller to await the assert.
+        this.assert().catch((error: unknown) => {
+          logFailure({ log: this.log, what: "Setting the search emoji", error });
+        });
+      },
+    });
   }
 
   /** SCM rewrites the key when repositories open, close or change branch. */
@@ -154,31 +170,35 @@ export class SearchEmoji implements Disposable {
       return;
     }
     this.gitHooked = true;
-    try {
-      const git = extensions.getExtension<{ getAPI(version: 1): GitApi }>("vscode.git");
-      if (!git) {
-        return;
-      }
-      const api = (await git.activate()).getAPI(1);
-      const watch = (repository: { state: { onDidChange: Event<void> } }) => {
-        this.disposables.push(repository.state.onDidChange(() => this.reassertSoon()));
-      };
-      api.repositories.forEach(watch);
-      this.gitHasRepository = api.repositories.length > 0;
-      this.disposables.push(
-        api.onDidOpenRepository((repository) => {
-          watch(repository);
-          this.gitHasRepository = true;
-          this.reassertSoon();
-        }),
-        api.onDidCloseRepository(() => {
-          this.gitHasRepository = api.repositories.length > 0;
-          this.reassertSoon();
-        }),
-      );
-    } catch (error) {
-      this.log.warn(`Couldn't watch git repositories for the search emoji: ${String(error)}`);
+    const [, error] = await tryCatch(() => this.watchGit());
+    if (error !== null) {
+      this.log.warn(`Couldn't watch git repositories for the search emoji: ${errorText(error)}`);
     }
+  }
+
+  /** Reasserts after every change to a git repository, and when one opens or closes. */
+  private async watchGit(): Promise<void> {
+    const git = extensions.getExtension<{ getAPI(version: 1): GitApi }>("vscode.git");
+    if (!git) {
+      return;
+    }
+    const api = (await git.activate()).getAPI(1);
+    const watch = (repository: { state: { onDidChange: Event<void> } }) => {
+      this.disposables.push(repository.state.onDidChange(() => this.reassertSoon()));
+    };
+    api.repositories.forEach(watch);
+    this.gitHasRepository = api.repositories.length > 0;
+    this.disposables.push(
+      api.onDidOpenRepository((repository) => {
+        watch(repository);
+        this.gitHasRepository = true;
+        this.reassertSoon();
+      }),
+      api.onDidCloseRepository(() => {
+        this.gitHasRepository = api.repositories.length > 0;
+        this.reassertSoon();
+      }),
+    );
   }
 }
 
@@ -186,13 +206,12 @@ function enabled(): boolean {
   return workspace.getConfiguration().get(configs.experimentalSearchEmoji.key, false);
 }
 
-/** Whether this workspace or folder sets its own window.title, hiding the user-level one. */
-function workspaceTitle(): boolean {
-  const inspected = workspace.getConfiguration().inspect<string>(WINDOW_TITLE);
-  return inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined;
+interface TitlePortsArgs {
+  context: ExtensionContext;
+  log: Log;
 }
 
-function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
+function titlePorts({ context, log }: TitlePortsArgs): TitlePorts {
   return {
     enabled,
     focused: () => window.state.focused,
@@ -202,7 +221,7 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
       return {
         global: inspected?.globalValue,
         default: inspected?.defaultValue,
-        overridden: workspaceTitle(),
+        overridden: overriddenInWorkspace(WINDOW_TITLE),
       };
     },
     readChange: () => context.globalState.get<TitleChange>(CHANGE_KEY),
@@ -210,12 +229,10 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
       await context.globalState.update(CHANGE_KEY, change);
     },
     writeTitle: async (value) => {
-      await workspace.getConfiguration().update(WINDOW_TITLE, value, ConfigurationTarget.Global);
+      await writeUserSetting({ key: WINDOW_TITLE, value });
     },
     disable: async () => {
-      await workspace
-        .getConfiguration()
-        .update(configs.experimentalSearchEmoji.key, false, ConfigurationTarget.Global);
+      await writeUserSetting({ key: configs.experimentalSearchEmoji.key, value: false });
     },
     ask: async (overridden) => {
       const answer = await window.showInformationMessage(
@@ -235,7 +252,7 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
     info: (message) => log.info(message),
     failed: (error) => {
       log.warn(titleChangeFailed(error));
-      notify("warning", titleChangeFailed(error));
+      notify({ level: "warning", message: titleChangeFailed(error) });
     },
   };
 }

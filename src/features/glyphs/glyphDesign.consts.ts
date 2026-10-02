@@ -1,3 +1,7 @@
+// import utils
+import { roundToHundredths } from "../../shared/math/round.util.ts";
+
+// import types
 import type { Glyph } from "../../shared/model/model.types.ts";
 
 /** A point in glyph units: x to the right, y down, the glyph 16 units high. */
@@ -31,17 +35,16 @@ const CENTER = 8;
 /** A full turn in radians. */
 // oxlint-disable-next-line no-magic-numbers -- 2π is the definition, not a tunable
 const TURN = 2 * Math.PI;
-/** Points are kept to hundredths of a unit. */
-const HUNDREDTHS = 100;
 /** The sun's disc is a 12-gon (glyph-set/0006). */
 const SUN_DISC_SIDES = 12;
 /** A star's five points, so ten vertices alternating outer and inner. */
 const STAR_POINTS = 5;
 const STAR_VERTICES = 10;
 
-function round2(value: number): number {
-  return Math.round(value * HUNDREDTHS) / HUNDREDTHS;
-}
+// The geometry helpers below (ngon, star, at, pinSun, blade, strip, shape)
+// keep positional parameters, a documented exception to the object-argument
+// rule: GLYPH_DESIGNS is geometry notation, `ngon(8, 8, 6.8)` read like the
+// reference sheet, and named fields would bury the numbers.
 
 /** "x,y x,y …" as written in the reference sheet. */
 function points(text: string): Point[] {
@@ -55,7 +58,10 @@ function points(text: string): Point[] {
 function ngon(cx: number, cy: number, r: number, n = 14): Point[] {
   return Array.from({ length: n }, (_, i) => {
     const angle = (TURN * i) / n;
-    return [round2(cx + r * Math.sin(angle)), round2(cy - r * Math.cos(angle))] as const;
+    return [
+      roundToHundredths(cx + r * Math.sin(angle)),
+      roundToHundredths(cy - r * Math.cos(angle)),
+    ] as const;
   });
 }
 
@@ -65,13 +71,19 @@ function star(cx: number, cy: number, outer: number, inner: number): Point[] {
     // oxlint-disable-next-line no-magic-numbers -- parity: even vertices are the outer points
     const r = i % 2 === 0 ? outer : inner;
     const angle = (Math.PI * i) / STAR_POINTS;
-    return [round2(cx + r * Math.sin(angle)), round2(cy - r * Math.cos(angle))] as const;
+    return [
+      roundToHundredths(cx + r * Math.sin(angle)),
+      roundToHundredths(cy - r * Math.cos(angle)),
+    ] as const;
   });
 }
 
 /** The point at radius `r` and `angle` (clockwise from straight up) around the glyph's center. */
 function at(r: number, angle: number): Point {
-  return [round2(CENTER + r * Math.sin(angle)), round2(CENTER - r * Math.cos(angle))];
+  return [
+    roundToHundredths(CENTER + r * Math.sin(angle)),
+    roundToHundredths(CENTER - r * Math.cos(angle)),
+  ];
 }
 
 /**
@@ -101,8 +113,8 @@ function blade(base: Point, tip: Point, halfWidth: number, taper: number, n = 12
       const t = (i + 1) / n;
       const w = halfWidth * Math.sin(Math.PI * t) ** taper * sign;
       return [
-        round2(bx + ux * length * t - uy * w),
-        round2(by + uy * length * t + ux * w),
+        roundToHundredths(bx + ux * length * t - uy * w),
+        roundToHundredths(by + uy * length * t + ux * w),
       ] as const;
     });
   return [base, ...side(1), tip, ...side(-1).toReversed()];
@@ -113,10 +125,10 @@ function strip(a: Point, b: Point, half: number): Point[] {
   const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
   const [nx, ny] = [(-(b[1] - a[1]) / length) * half, ((b[0] - a[0]) / length) * half];
   return [
-    [round2(a[0] + nx), round2(a[1] + ny)],
-    [round2(b[0] + nx), round2(b[1] + ny)],
-    [round2(b[0] - nx), round2(b[1] - ny)],
-    [round2(a[0] - nx), round2(a[1] - ny)],
+    [roundToHundredths(a[0] + nx), roundToHundredths(a[1] + ny)],
+    [roundToHundredths(b[0] + nx), roundToHundredths(b[1] + ny)],
+    [roundToHundredths(b[0] - nx), roundToHundredths(b[1] - ny)],
+    [roundToHundredths(a[0] - nx), roundToHundredths(a[1] - ny)],
   ];
 }
 

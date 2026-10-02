@@ -1,5 +1,8 @@
+// import utils
 import { opaque, parseColor, toHex } from "../../shared/color/color.util.ts";
 import { glyphSvg } from "../glyphs/glyphs.util.ts";
+
+// import types
 import type {
   CommandCenterColors,
   Glyph,
@@ -28,7 +31,9 @@ export interface SidebarBlockContent {
  */
 export function sidebarBlockHtml({ name, glyph, colors, style }: SidebarBlockContent): string {
   const muted = style === "muted";
-  const fill = muted ? withAlpha(colors.background, MUTED_ALPHA) : colors.background;
+  const fill = muted
+    ? withAlpha({ hex: colors.background, alpha: MUTED_ALPHA })
+    : colors.background;
   const ink = muted ? colors.background : opaqueHex(colors.foreground);
   return `<!DOCTYPE html>
 <html lang="en">
@@ -62,13 +67,18 @@ svg { max-width: 60%; height: auto; }
 </style>
 </head>
 <body>
-${glyphSvg(glyph, ink, GLYPH_PX)}
+${glyphSvg({ glyph, color: ink, height: GLYPH_PX })}
 <div class="name">${escapeHtml(name)}</div>
 </body>
 </html>`;
 }
 
-function withAlpha(hex: Hex, alpha: number): Hex {
+interface WithAlphaArgs {
+  hex: Hex;
+  alpha: number;
+}
+
+function withAlpha({ hex, alpha }: WithAlphaArgs): Hex {
   const color = parseColor(hex);
   return color ? toHex({ ...color, alpha }) : hex;
 }

@@ -1,9 +1,16 @@
+// import libraries
 import { wcagContrast } from "culori/fn";
+
+// import utils
 import { fromHex, normalizeColor } from "./color.util.ts";
 import { isRecord } from "../records/records.util.ts";
 import { asHex } from "./hex.util.ts";
-import type { Hex } from "../model/model.types.ts";
+
+// import consts
 import { PRESETS } from "./presets.consts.ts";
+
+// import types
+import type { Hex } from "../model/model.types.ts";
 
 /** Below this WCAG contrast against the status bar, a color may be hard to see (toucan-v1/0018). */
 export const MIN_STATUS_BAR_CONTRAST = 3;
@@ -16,6 +23,12 @@ const KIND_DEFAULTS: Record<"light" | "dark", Hex> = {
   dark: asHex("#181818"),
 };
 
+interface StatusBarBackgroundArgs {
+  kind: ThemeKind;
+  themeName: string | undefined;
+  customizations: unknown;
+}
+
 /**
  * The status bar background to compare against (toucan-v1/0018). Extensions can't read
  * a theme's resolved colors, so: the user's override for the active theme
@@ -23,11 +36,7 @@ const KIND_DEFAULTS: Record<"light" | "dark", Hex> = {
  * override, then a representative color for the theme kind. `undefined` in
  * high-contrast themes, where VS Code draws status bar items with borders.
  */
-export function statusBarBackground(input: {
-  kind: ThemeKind;
-  themeName: string | undefined;
-  customizations: unknown;
-}): Hex | undefined {
+export function statusBarBackground(input: StatusBarBackgroundArgs): Hex | undefined {
   if (input.kind === "highContrast") {
     return undefined;
   }
@@ -43,18 +52,20 @@ export function statusBarBackground(input: {
   return KIND_DEFAULTS[input.kind];
 }
 
-/**
- * The name of the active color theme, for the `"[Theme Name]"` lookup. With
- * `window.autoDetectColorScheme` on, VS Code uses the preferred theme for the
- * OS scheme instead of `workbench.colorTheme`.
- */
-export function activeThemeName(input: {
+interface ActiveThemeNameArgs {
   kind: ThemeKind;
   autoDetect: unknown;
   colorTheme: unknown;
   preferredDark: unknown;
   preferredLight: unknown;
-}): string | undefined {
+}
+
+/**
+ * The name of the active color theme, for the `"[Theme Name]"` lookup. With
+ * `window.autoDetectColorScheme` on, VS Code uses the preferred theme for the
+ * OS scheme instead of `workbench.colorTheme`.
+ */
+export function activeThemeName(input: ActiveThemeNameArgs): string | undefined {
   const name =
     input.autoDetect === true && input.kind !== "highContrast"
       ? input.kind === "dark"
@@ -64,8 +75,13 @@ export function activeThemeName(input: {
   return typeof name === "string" ? name : undefined;
 }
 
+interface LowContrastArgs {
+  color: Hex;
+  background: Hex | undefined;
+}
+
 /** Whether `color` may be hard to see on `background`. */
-export function lowContrast(color: Hex, background: Hex | undefined): boolean {
+export function lowContrast({ color, background }: LowContrastArgs): boolean {
   return (
     background !== undefined &&
     wcagContrast(fromHex(color), fromHex(background)) < MIN_STATUS_BAR_CONTRAST

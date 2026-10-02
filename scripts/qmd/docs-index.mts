@@ -7,7 +7,10 @@
 //
 // Worktrees: the index points at the checkout that registered it, so a search
 // from another worktree sees that checkout's docs, not its own.
+// import libraries
 import { spawn } from "node:child_process";
+
+// import utils
 import { QMD_INDEX, planIndex } from "./qmd-docs.mts";
 import { touchLock } from "./qmd-lock.mts";
 import { currentState, exclusive, hasQmd } from "./qmd-run.mts";
@@ -37,12 +40,14 @@ if (!hasQmd()) {
   process.exit(1);
 }
 
-const ran = await exclusive(
-  async (lock) => {
+const ran = await exclusive({
+  job: async (lock) => {
     // A single qmd command can run long (the first embed downloads models): keep the lock fresh.
     const heartbeat = setInterval(() => touchLock(lock), HEARTBEAT_MS);
     try {
-      const { commands, notes } = planIndex(currentState(process.argv.includes("--force")));
+      const { commands, notes } = planIndex({
+        state: currentState(process.argv.includes("--force")),
+      });
       for (const note of notes) {
         console.warn(note);
       }
@@ -61,8 +66,8 @@ const ran = await exclusive(
       clearInterval(heartbeat);
     }
   },
-  { waitMs: WAIT_MS },
-);
+  waitMs: WAIT_MS,
+});
 if (!ran) {
   console.error(
     "Another qmd job for Toucan is still running (a hook re-indexing). Try again in a minute.",

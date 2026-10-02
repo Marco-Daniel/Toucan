@@ -1,6 +1,9 @@
+// import libraries
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
+
+// import utils
 import {
   escapeIcons,
   glyphIcon,
@@ -10,8 +13,12 @@ import {
   svgDataUri,
 } from "../../../src/features/glyphs/glyphs.util.ts";
 import { FONT_CODEPOINTS } from "../../../src/features/glyphs/glyphFont.util.ts";
+
+// import consts
 import { GLYPH_PATHS } from "../../../src/generated/glyphPaths.ts";
 import { GLYPH_GROUPS, GLYPHS } from "../../../src/shared/model/model.consts.ts";
+
+// import types
 import type { Glyph, Hex } from "../../../src/shared/model/model.types.ts";
 
 const RED = "#ff0000" as Hex;
@@ -66,7 +73,7 @@ describe("glyph groups", () => {
   });
 
   it("give Set Glyph a separator per group, then its glyphs with swatches, the current one marked", () => {
-    const items = glyphPickItems("sun", (glyph) => `swatch:${glyph}`);
+    const items = glyphPickItems({ current: "sun", icon: (glyph) => `swatch:${glyph}` });
     expect(items.slice(0, 7)).toEqual([
       { label: "Shapes", kind: -1 },
       { label: "square", glyph: "square", iconPath: "swatch:square" },
@@ -124,7 +131,7 @@ describe("glyph groups", () => {
 
 describe("glyphSvg", () => {
   it.each(GLYPHS)("draws %s as one plain filled path, nothing a font would drop", (glyph) => {
-    const svg = glyphSvg(glyph, RED);
+    const svg = glyphSvg({ glyph, color: RED });
     expect(svg).toMatch(
       /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="[\d.]+" height="16" viewBox="0 0 [\d.]+ 16" fill="#ff0000"><path d="M[^"]+Z"\/><\/svg>$/,
     );
@@ -133,7 +140,10 @@ describe("glyphSvg", () => {
 
   it("keeps each glyph's width: 18 for the toucan, 6 for bar, 44 for pill, 16 for the rest", () => {
     const widths = Object.fromEntries(
-      GLYPHS.map((glyph) => [glyph, /viewBox="0 0 ([\d.]+) 16"/.exec(glyphSvg(glyph, RED))?.[1]]),
+      GLYPHS.map((glyph) => [
+        glyph,
+        /viewBox="0 0 ([\d.]+) 16"/.exec(glyphSvg({ glyph, color: RED }))?.[1],
+      ]),
     );
     expect(widths).toEqual({
       ...Object.fromEntries(GLYPHS.map((glyph) => [glyph, "16"])),
@@ -144,18 +154,27 @@ describe("glyphSvg", () => {
   });
 
   it("scales to the requested height and keeps the aspect ratio", () => {
-    expect(glyphSvg("square", RED, 64)).toContain('width="64" height="64"');
-    expect(glyphSvg("pill", RED, 32)).toContain('width="88" height="32"');
-    expect(glyphSvg("toucan", RED, 32)).toContain('width="36" height="32"');
+    expect(glyphSvg({ glyph: "square", color: RED, height: 64 })).toContain(
+      'width="64" height="64"',
+    );
+    expect(glyphSvg({ glyph: "pill", color: RED, height: 32 })).toContain('width="88" height="32"');
+    expect(glyphSvg({ glyph: "toucan", color: RED, height: 32 })).toContain(
+      'width="36" height="32"',
+    );
   });
 });
 
+interface GlyphPoint {
+  x: number;
+  y: number;
+}
+
 /** Alpha at glyph coordinate (x, y) of the glyph rendered 10 px per unit. */
-function inkAt(glyph: Glyph): (x: number, y: number) => number {
+function inkAt(glyph: Glyph): (point: GlyphPoint) => number {
   const scale = 10;
   // `pixels` copies the whole buffer on every access: read it once.
-  const { pixels, width } = new Resvg(glyphSvg(glyph, RED, 16 * scale)).render();
-  return (x, y) => pixels[(Math.floor(y * scale) * width + Math.floor(x * scale)) * 4 + 3]!;
+  const { pixels, width } = new Resvg(glyphSvg({ glyph, color: RED, height: 16 * scale })).render();
+  return ({ x, y }) => pixels[(Math.floor(y * scale) * width + Math.floor(x * scale)) * 4 + 3]!;
 }
 
 describe("glyph bounds", () => {
@@ -336,14 +355,14 @@ describe("glyph shapes", () => {
     ],
   ] as const)("draws %s with its holes and gaps open", (glyph, ink, clear) => {
     const at = inkAt(glyph);
-    expect(ink.map(([x, y]) => at(x, y))).toEqual(ink.map(() => 255));
-    expect(clear.map(([x, y]) => at(x, y))).toEqual(clear.map(() => 0));
+    expect(ink.map(([x, y]) => at({ x, y }))).toEqual(ink.map(() => 255));
+    expect(clear.map(([x, y]) => at({ x, y }))).toEqual(clear.map(() => 0));
   });
 });
 
 describe("svgDataUri", () => {
   it("base64-encodes the SVG", () => {
-    const svg = glyphSvg("heart", RED);
+    const svg = glyphSvg({ glyph: "heart", color: RED });
     const uri = svgDataUri(svg);
     expect(uri.startsWith("data:image/svg+xml;base64,")).toBe(true);
     expect(Buffer.from(uri.split(",")[1] ?? "", "base64").toString("utf8")).toBe(svg);

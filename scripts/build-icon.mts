@@ -1,6 +1,7 @@
 // Renders the extension icon, media/icon.png, from media/toucan-icon.svg:
 // 256×256 with a transparent background, so the rounded corners stay clear.
 // The PNG is committed; CI re-renders it and fails if it drifted.
+// import libraries
 import { readFileSync, writeFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
 

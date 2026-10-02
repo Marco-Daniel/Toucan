@@ -1,19 +1,24 @@
-import { spawn, spawnSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  utimesSync,
-  writeFileSync,
-} from "node:fs";
+// import libraries
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SYSTEM_PATH, fakeQmd } from "./fake-qmd.ts";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-const HOOK = new URL("../../scripts/docs-reindex-hook.mts", import.meta.url).pathname;
+// import utils
+import {
+  SYSTEM_PATH,
+  fakeQmd,
+  qmdEnv,
+  readQmdLog,
+  runWorker,
+  startWorker,
+  until,
+  writeCacheFile,
+  stopWorkers,
+} from "../../helpers/qmd.ts";
+
+const HOOK = new URL("../../../scripts/qmd/docs-reindex-hook.mts", import.meta.url).pathname;
 const REGISTERED = "'toucan-docs (qmd://toucan-docs/)'";
 
 let dir: string;
@@ -28,21 +33,22 @@ beforeEach(() => {
   pending = join(cache, "toucan.pending");
 });
 afterEach(() => {
+  stopWorkers({ script: HOOK, home: dir });
   rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
 });
 
 // qmd's cache, and so the lock, in this test's dir: never the real one.
-const env = (path: string) => ({
-  PATH: path,
-  CLAUDE_PROJECT_DIR: "/repo",
-  HOME: dir,
-  XDG_CACHE_HOME: dir,
-});
+const env = (path: string) => ({ ...qmdEnv({ dir, path }), CLAUDE_PROJECT_DIR: "/repo" });
 const input = (file: unknown) =>
   JSON.stringify({ tool_name: "Edit", tool_input: { file_path: file } });
 
+interface HookArgs {
+  stdin: string;
+  path: string;
+}
+
 /** Runs the hook as Claude Code would, with `stdin` as its input. */
-function hook(stdin: string, path: string) {
+function hook({ stdin, path }: HookArgs) {
   return spawnSync(process.execPath, [HOOK], {
     input: stdin,
     env: env(path),
@@ -56,56 +62,45 @@ function hook(stdin: string, path: string) {
  * worker that ignores a held lock (and blocks on the held update) into a failure.
  */
 function work(path: string) {
-  return spawnSync(process.execPath, [HOOK, "--worker"], {
-    env: env(path),
-    encoding: "utf8",
-    timeout: 10_000,
-  });
+  return runWorker({ script: HOOK, env: env(path) });
 }
 
 /** Notes an edit as the hook does before it hands off. */
 function note(): void {
-  mkdirSync(cache, { recursive: true });
-  writeFileSync(pending, "");
+  writeCacheFile({ dir, name: "toucan.pending", text: "" });
 }
 
-const read = () =>
-  existsSync(join(dir, "qmd.log")) ? readFileSync(join(dir, "qmd.log"), "utf8") : "";
+const read = () => readQmdLog(dir);
 
 /** The log once the detached worker is done: the edit taken and the lock released. */
 async function done(): Promise<string> {
-  await vi.waitFor(
-    () => {
-      if (!read().includes("update end") || existsSync(lock) || existsSync(pending)) {
-        throw new Error("still running");
-      }
-    },
-    { timeout: 5000, interval: 20 },
-  );
+  await until(() => read().includes("update end") && !existsSync(lock) && !existsSync(pending));
   return read();
 }
 
 describe("the docs re-index hook", () => {
   it("re-indexes Toucan's own index in the background after a docs edit", async () => {
-    const result = hook(
-      input("/repo/docs/plans/glyph-set/plan.md"),
-      fakeQmd(dir, { collections: REGISTERED }),
-    );
+    const result = hook({
+      stdin: input("/repo/docs/plans/glyph-set/plan.md"),
+      path: fakeQmd({ dir, collections: REGISTERED }),
+    });
     expect(result).toMatchObject({ status: 0, stdout: "", stderr: "" });
     expect(await done()).toBe("version\ncollection list\nupdate start\nupdate end\n");
   });
 
   it("re-indexes after a guide edit", async () => {
-    hook(
-      input("/repo/README.md"),
-      fakeQmd(dir, { collections: "'toucan-guides (qmd://toucan-guides/)'" }),
-    );
+    hook({
+      stdin: input("/repo/README.md"),
+      path: fakeQmd({ dir, collections: "'toucan-guides (qmd://toucan-guides/)'" }),
+    });
     expect(await done()).toBe("version\ncollection list\nupdate start\nupdate end\n");
   });
 
   // The hook notes an edit before it returns, so nothing noted means no worker.
   it("does nothing for a source edit", () => {
-    expect(hook(input("/repo/src/features/glyphs/glyphs.util.ts"), fakeQmd(dir))).toMatchObject({
+    expect(
+      hook({ stdin: input("/repo/src/features/glyphs/glyphs.util.ts"), path: fakeQmd({ dir }) }),
+    ).toMatchObject({
       status: 0,
       stdout: "",
     });
@@ -117,7 +112,7 @@ describe("the docs re-index hook", () => {
     ["empty input", ""],
     ["input that isn't JSON", "not json"],
   ])("ignores %s", (_case, stdin) => {
-    expect(hook(stdin, fakeQmd(dir, { collections: REGISTERED }))).toMatchObject({
+    expect(hook({ stdin, path: fakeQmd({ dir, collections: REGISTERED }) })).toMatchObject({
       status: 0,
       stdout: "",
       stderr: "",
@@ -126,7 +121,7 @@ describe("the docs re-index hook", () => {
   });
 
   it("stays silent without qmd", () => {
-    expect(hook(input("/repo/docs/a.md"), SYSTEM_PATH)).toMatchObject({
+    expect(hook({ stdin: input("/repo/docs/a.md"), path: SYSTEM_PATH })).toMatchObject({
       status: 0,
       stdout: "",
       stderr: "",
@@ -137,7 +132,7 @@ describe("the docs re-index hook", () => {
 describe("the docs re-index worker", () => {
   it("leaves the edit pending for the bootstrap when Toucan's collections aren't registered", () => {
     note();
-    work(fakeQmd(dir, { collections: "'not-toucan-docs (qmd://not-toucan-docs/)'" }));
+    work(fakeQmd({ dir, collections: "'not-toucan-docs (qmd://not-toucan-docs/)'" }));
     expect(read()).toBe("version\ncollection list\n");
     expect([existsSync(pending), existsSync(lock)]).toEqual([true, false]);
   });
@@ -155,7 +150,7 @@ describe("the docs re-index worker", () => {
   it("leaves the edit to the job that holds the lock", () => {
     note();
     writeFileSync(lock, "");
-    work(fakeQmd(dir, { collections: REGISTERED }));
+    work(fakeQmd({ dir, collections: REGISTERED }));
     expect(read()).toBe("");
     expect([existsSync(pending), existsSync(lock)]).toEqual([true, true]);
   });
@@ -165,29 +160,17 @@ describe("the docs re-index worker", () => {
     writeFileSync(lock, "");
     const elevenMinutesAgo = new Date(Date.now() - 11 * 60_000);
     utimesSync(lock, elevenMinutesAgo, elevenMinutesAgo);
-    work(fakeQmd(dir, { collections: REGISTERED }));
+    work(fakeQmd({ dir, collections: REGISTERED }));
     expect(read()).toBe("version\ncollection list\nupdate start\nupdate end\n");
     expect([existsSync(pending), existsSync(lock)]).toEqual([false, false]);
   });
 
   it("runs one update at a time and catches up on edits made meanwhile", async () => {
-    const path = fakeQmd(dir, { collections: REGISTERED });
+    const path = fakeQmd({ dir, collections: REGISTERED });
     writeFileSync(join(dir, "hold"), "");
     note();
-    const first = spawn(process.execPath, [HOOK, "--worker"], {
-      env: env(path),
-      stdio: "ignore",
-      timeout: 10_000,
-    });
-    const exited = new Promise((resolve) => first.on("close", resolve));
-    await vi.waitFor(
-      () => {
-        if (!read().includes("update start")) {
-          throw new Error("not yet");
-        }
-      },
-      { timeout: 5000, interval: 20 },
-    );
+    const exited = startWorker({ script: HOOK, env: env(path) });
+    await until(() => read().includes("update start"));
     // Five more edits while the first update runs: each worker finds the lock taken.
     for (let i = 0; i < 5; i++) {
       note();

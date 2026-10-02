@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/docs-reindex-hook.mts\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/qmd/docs-reindex-hook.mts\""
           }
         ]
       }
@@ -20,7 +20,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/docs-bootstrap-hook.mts\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/qmd/docs-bootstrap-hook.mts\""
           }
         ]
       }

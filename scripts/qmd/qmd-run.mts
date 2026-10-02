@@ -1,23 +1,28 @@
 // Running qmd for Toucan's scripts: the repo root, calls on Toucan's own index,
 // what is registered there now, and running jobs one at a time. Shared by
 // `pnpm docs:index` and the hooks, so all of them plan and lock the same way.
-import { spawnSync } from "node:child_process";
+// import libraries
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+// import utils
 import {
   DOCS_COLLECTIONS,
   QMD_INDEX,
   parseCollectionList,
   parseCollectionShow,
 } from "./qmd-docs.mts";
-import type { IndexState } from "./qmd-docs.mts";
 import { isPending, releaseLock, takeLock, takePending } from "./qmd-lock.mts";
 
-/** The repo root at runtime (qmd stores real paths), so no path is committed. */
-export const ROOT = realpathSync(fileURLToPath(new URL("..", import.meta.url)));
+// import types
+import type { IndexState } from "./qmd-docs.mts";
 
-export function qmd(args: readonly string[], inherit = false) {
-  return spawnSync("qmd", args, { encoding: "utf8", stdio: inherit ? "inherit" : "pipe" });
+/** The repo root at runtime (qmd stores real paths), so no path is committed. */
+export const ROOT = realpathSync(fileURLToPath(new URL("../..", import.meta.url)));
+
+export function qmd(args: readonly string[]) {
+  return spawnSync("qmd", args, { encoding: "utf8", stdio: "pipe" });
 }
 
 /** Whether qmd is on PATH (`--version` reads no index). */
@@ -90,6 +95,15 @@ async function waitForLock(waitMs: number): Promise<string | undefined> {
   return lock;
 }
 
+interface ExclusiveArgs {
+  /** The work to run under the lock; false when it isn't ready (see below). */
+  job: (lock: string) => boolean | Promise<boolean>;
+  /** How long to wait for another job's lock; 0 gives up at once. */
+  waitMs?: number;
+  /** Lets go of the lock; tests pass their own. */
+  release?: (lock: string) => void;
+}
+
 /**
  * Runs `job` under the lock, then re-indexes for edits made meanwhile. A job
  * that returns false (qmd or the collections aren't ready) leaves the pending
@@ -99,10 +113,11 @@ async function waitForLock(waitMs: number): Promise<string | undefined> {
  * running `job`, when the lock stays held for `waitMs`: the job holding it
  * picks the edits up.
  */
-export async function exclusive(
-  job: (lock: string) => boolean | Promise<boolean>,
-  { waitMs = 0, release = releaseLock }: { waitMs?: number; release?: (lock: string) => void } = {},
-): Promise<boolean> {
+export async function exclusive({
+  job,
+  waitMs = 0,
+  release = releaseLock,
+}: ExclusiveArgs): Promise<boolean> {
   let lock = await waitForLock(waitMs);
   if (!lock) {
     return false;
@@ -121,4 +136,19 @@ export async function exclusive(
     lock = again && round + 1 < MAX_ROUNDS && isPending() ? takeLock() : undefined;
   }
   return true;
+}
+
+/**
+ * Re-runs the calling script with `--worker` as a detached process and
+ * returns at once, so a hook never blocks the session.
+ */
+export function spawnWorker(): void {
+  spawn(process.execPath, [process.argv[1]!, "--worker"], {
+    detached: true,
+    stdio: "ignore",
+  })
+    // A failed spawn (say, a process limit) stays silent like everything else here.
+    // Untested on purpose: spawning this same Node binary can't be made to fail on demand.
+    .on("error", () => undefined)
+    .unref();
 }

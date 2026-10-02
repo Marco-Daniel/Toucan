@@ -1,6 +1,9 @@
+// import libraries
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+
+// import messages
 import * as messages from "../../../src/shared/messages/notifications.messages.ts";
 
 describe("messages", () => {
@@ -50,11 +53,26 @@ function splitFirst(args: string): [string, string] {
   return [args.trim(), ""];
 }
 
+/** The `message` value of an object literal `{ …, message: text }`, or "" when it has none. */
+function messageField(objectLiteral: string): string {
+  let rest = objectLiteral.trim().replace(/^\{/, "").replace(/\}$/, "");
+  while (rest.trim() !== "") {
+    const [entry, after] = splitFirst(rest);
+    const [, key, value] = /^(\w+)\s*(?::\s*([\s\S]*))?$/.exec(entry) ?? [];
+    if (key === "message") {
+      // Shorthand `{ message }` passes a variable, which `allowed` rejects.
+      return value ?? key;
+    }
+    rest = after;
+  }
+  return "";
+}
+
 /**
  * The message text of every notification in the extension's source: the first
- * argument of `show*Message(…)`, and the second (after the level) of
- * `notify(…)`. notify.adapter.ts itself only passes its parameter on; its callers are
- * the ones checked.
+ * argument of `show*Message(…)`, and the `message` of `notify({ level, message })`.
+ * notify.adapter.ts itself only passes its parameter on; its callers are the
+ * ones checked.
  */
 function messageArguments(): { file: string; text: string }[] {
   const root = join(import.meta.dirname, "../../../src");
@@ -73,8 +91,7 @@ function messageArguments(): { file: string; text: string }[] {
         end++;
       }
       const args = source.slice(match.index + match[0].length, end - 1);
-      const text =
-        match[0] === "notify(" ? firstArgument(splitFirst(args)[1]) : firstArgument(args);
+      const text = match[0] === "notify(" ? messageField(args) : firstArgument(args);
       return { file, text };
     });
   });

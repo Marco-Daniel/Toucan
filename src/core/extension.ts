@@ -1,45 +1,69 @@
+// import vscode
 import { window, workspace } from "vscode";
-import type { ExtensionContext } from "vscode";
+
+// import adapters
 import { AgentsControlOffer } from "../features/agentsControl/agentsControl.adapter.ts";
 import { registerCommands } from "../features/commands/commands.adapter.ts";
-import { deriveColors } from "../shared/color/derive.util.ts";
-import type { FocusCoordinator } from "../features/focus/focus.util.ts";
-import { IssueReporter } from "../shared/config/issues.util.ts";
 import { COLOR_CUSTOMIZATIONS, startFocusCoordinator } from "../features/focus/focus.adapter.ts";
-import { configs } from "../generated/meta.ts";
 import { createLog } from "./log.adapter.ts";
 import { resolveActiveRepo } from "./repo.adapter.ts";
-import type { ActiveRepo } from "./repo.adapter.ts";
 import { SearchEmoji } from "../features/searchEmoji/searchEmoji.adapter.ts";
 import { createSettingsWriter } from "../features/settings/settings.adapter.ts";
 import { SidebarBlock } from "../features/sidebar/sidebar.adapter.ts";
 import { StatusBarIndicator } from "../features/statusBar/statusBar.adapter.ts";
 
+// import utils
+import { deriveColors } from "../shared/color/derive.util.ts";
+import { IssueReporter } from "../shared/config/issues.util.ts";
+import { tryCatch } from "../shared/async/tryCatch.util.ts";
+import { logFailure } from "../shared/async/logFailure.util.ts";
+
+// import consts
+import { configs } from "../generated/meta.ts";
+
+// import types
+import type { ExtensionContext } from "vscode";
+import type { FocusCoordinator } from "../features/focus/focus.util.ts";
+import type { ActiveRepo } from "./repo.adapter.ts";
+
 let coordinator: FocusCoordinator | undefined;
+
+interface BackgroundArgs {
+  /** Named in the warning when the task fails. */
+  what: string;
+  task: Promise<unknown>;
+}
 
 export async function activate(context: ExtensionContext): Promise<void> {
   const log = createLog();
   /** Fire-and-forget work: a failure is logged instead of becoming an unhandled rejection. */
-  const background = (what: string, task: Promise<unknown>) => {
-    task.catch((error: unknown) => log.warn(`${what} failed: ${String(error)}`));
+  const background = ({ what, task }: BackgroundArgs) => {
+    // A .catch, not tryCatch: nothing here awaits, the task runs on by itself.
+    task.catch((error: unknown) => logFailure({ log, what, error }));
   };
-  const reporter = new IssueReporter(log, configs.repos.key);
+  const reporter = new IssueReporter({ log, setting: configs.repos.key });
   const indicator = new StatusBarIndicator();
   let repo: ActiveRepo | undefined;
 
-  const writer = createSettingsWriter(context.globalStorageUri.fsPath, log);
-  const focus = startFocusCoordinator(context, log, writer, () =>
-    repo ? deriveColors(repo.config.background, repo.config.overrides) : undefined,
-  );
+  const writer = createSettingsWriter({ globalStoragePath: context.globalStorageUri.fsPath, log });
+  const focus = startFocusCoordinator({
+    context,
+    log,
+    writer,
+    desired: () =>
+      repo
+        ? deriveColors({ background: repo.config.background, overrides: repo.config.overrides })
+        : undefined,
+  });
   coordinator = focus;
 
-  const sidebar = new SidebarBlock(context, log, () => repo);
-  const agentsControl = new AgentsControlOffer(context, log);
-  const searchEmoji = new SearchEmoji(context, log, () => repo);
+  const sidebar = new SidebarBlock({ context, log, repo: () => repo });
+  const agentsControl = new AgentsControlOffer({ context, log });
+  const searchEmoji = new SearchEmoji({ context, log, repo: () => repo });
   // Only a window that colors the Command Center asks (toucan-v1/0016).
   const offerAgentsControl = (focused: boolean) => {
     if (focused && repo) {
-      background("The Agents control offer", agentsControl.check());
+      background({ what: "The Agents control offer", task: agentsControl.check() });
     }
   };
 
@@ -48,10 +72,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
     indicator.update(repo);
     // Only the focused window writes; see FocusCoordinator.refresh.
     focus.refresh();
-    background("Sidebar block refresh", sidebar.refresh());
+    background({ what: "Sidebar block refresh", task: sidebar.refresh() });
     // A repo can get its first color mid-session (Set Color), not only at startup.
     offerAgentsControl(window.state.focused);
-    background("Search emoji refresh", searchEmoji.refresh());
+    background({ what: "Search emoji refresh", task: searchEmoji.refresh() });
   };
 
   context.subscriptions.push(
@@ -64,7 +88,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       focus.setFocused(focused);
       sidebar.controller.setFocused(focused);
       offerAgentsControl(focused);
-      background("Search emoji refresh", searchEmoji.focusChanged(focused));
+      background({ what: "Search emoji refresh", task: searchEmoji.focusChanged(focused) });
     }),
     ...registerCommands({
       writer,
@@ -84,10 +108,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
         affects(configs.sidebarBlockStyle.key) ||
         affects(configs.sidebarBlockVisibility.key)
       ) {
-        background("Sidebar block refresh", sidebar.refresh());
+        background({ what: "Sidebar block refresh", task: sidebar.refresh() });
       }
       if (affects(configs.experimentalSearchEmoji.key)) {
-        background("Search emoji refresh", searchEmoji.refresh());
+        background({ what: "Search emoji refresh", task: searchEmoji.refresh() });
       }
       if (affects(COLOR_CUSTOMIZATIONS)) {
         focus.customizationsChanged();
@@ -101,11 +125,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
   focus.setFocused(window.state.focused);
   // The view's `when` context key must be set before the first reveal, or the
   // reveal can reach the workbench before the view exists.
-  try {
-    await sidebar.refresh();
-  } catch (error) {
+  const [, sidebarError] = await tryCatch(() => sidebar.refresh());
+  if (sidebarError !== null) {
     // Keep the rest of Toucan running if the sidebar's context key fails.
-    log.warn(`Sidebar block setup failed: ${String(error)}`);
+    logFailure({ log, what: "Sidebar block setup", error: sidebarError });
   }
   sidebar.controller.start(window.state.focused);
   offerAgentsControl(window.state.focused);

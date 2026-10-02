@@ -1,15 +1,18 @@
+// import libraries
 import { describe, expect, it } from "vitest";
+
+// import utils
 import { IssueReporter } from "../../../src/shared/config/issues.util.ts";
 
 function setup() {
   const lines: string[] = [];
-  const reporter = new IssueReporter(
-    {
+  const reporter = new IssueReporter({
+    log: {
       info: (message) => lines.push(`info ${message}`),
       warn: (message) => lines.push(`warn ${message}`),
     },
-    "toucan.repos",
-  );
+    setting: "toucan.repos",
+  });
   return { lines, reporter };
 }
 
