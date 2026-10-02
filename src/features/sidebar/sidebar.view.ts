@@ -64,7 +64,7 @@ svg { max-width: 60%; height: auto; }
 </style>
 </head>
 <body>
-${glyphSvg(glyph, ink, GLYPH_PX)}
+${glyphSvg({ glyph, color: ink, height: GLYPH_PX })}
 <div class="name">${escapeHtml(name)}</div>
 </body>
 </html>`;

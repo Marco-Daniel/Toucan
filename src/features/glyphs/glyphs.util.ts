@@ -28,13 +28,19 @@ export function glyphIcon(glyph: Glyph): string {
   return `$(${glyphIconId(glyph)})`;
 }
 
+interface GlyphSvgArgs {
+  glyph: Glyph;
+  color: Hex;
+  height?: number;
+}
+
 /**
  * Standalone SVG of the glyph in `color`, `height` pixels high, keeping the
  * glyph's aspect ratio. Used for tooltip swatches and the sidebar block.
  */
-export function glyphSvg(glyph: Glyph, color: Hex, height = HEIGHT): string {
+export function glyphSvg({ glyph, color, height = HEIGHT }: GlyphSvgArgs): string {
   const { width, d } = GLYPH_PATHS[glyph];
-  return shapeSvg(width, d, color, height);
+  return shapeSvg({ width, d, color, height });
 }
 
 /** `data:` URI for an SVG, as accepted by markdown tooltips (0005). */
@@ -57,11 +63,16 @@ export interface GlyphPickItem<Icon> {
   description?: string;
 }
 
+interface GlyphPickItemsArgs<Icon> {
+  current: Glyph;
+  icon: (glyph: Glyph) => Icon;
+}
+
 /** Set Glyph's list: a separator per group, then its glyphs, the current one marked. */
-export function glyphPickItems<Icon>(
-  current: Glyph,
-  icon: (glyph: Glyph) => Icon,
-): GlyphPickItem<Icon>[] {
+export function glyphPickItems<Icon>({
+  current,
+  icon,
+}: GlyphPickItemsArgs<Icon>): GlyphPickItem<Icon>[] {
   const items: GlyphPickItem<Icon>[] = [];
   for (const { label, glyphs } of GLYPH_GROUPS) {
     items.push({ label, kind: QUICK_PICK_SEPARATOR });

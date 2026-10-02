@@ -19,7 +19,7 @@ interface SwatchArgs {
 }
 
 export function swatch({ glyph, hex }: SwatchArgs): Uri {
-  return Uri.parse(svgDataUri(glyphSvg(glyph, hex, SWATCH_PX)));
+  return Uri.parse(svgDataUri(glyphSvg({ glyph, color: hex, height: SWATCH_PX })));
 }
 
 /** The status bar background to check picked colors against (0018). */

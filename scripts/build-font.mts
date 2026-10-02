@@ -44,7 +44,7 @@ mkdirSync(ICONS, { recursive: true });
 // From the freshly baked paths, not the module this script imported, which
 // still holds the previous run's output.
 const icons = paths.map(({ glyph, width, d }) => {
-  const svg = shapeSvg(width, d, BLACK);
+  const svg = shapeSvg({ width, d, color: BLACK });
   writeFileSync(new URL(`${glyph}.svg`, ICONS), `${svg}\n`);
   return { name: glyph, codepoint: FONT_CODEPOINTS[glyph], svg };
 });

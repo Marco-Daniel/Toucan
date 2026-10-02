@@ -19,9 +19,10 @@ export async function setGlyph({ host, name }: CommandArgs): Promise<void> {
     }
     return;
   }
-  const items: (QuickPickItem & { glyph?: Glyph })[] = glyphPickItems(repo.config.glyph, (glyph) =>
-    swatch({ glyph, hex: repo.config.background }),
-  );
+  const items: (QuickPickItem & { glyph?: Glyph })[] = glyphPickItems({
+    current: repo.config.glyph,
+    icon: (glyph) => swatch({ glyph, hex: repo.config.background }),
+  });
   const picked = await pickWithPreview({
     host,
     name,

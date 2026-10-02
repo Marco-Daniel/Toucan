@@ -54,7 +54,7 @@ const PAD = 2;
  */
 function swatchGlyph(glyph: Glyph): string {
   const { width } = GLYPH_PATHS[glyph];
-  const swatch = glyphSvg(glyph, BLACK, 16 * SCALE).replace(
+  const swatch = glyphSvg({ glyph, color: BLACK, height: 16 * SCALE }).replace(
     '<svg xmlns="http://www.w3.org/2000/svg" ',
     `<svg x="${PAD * SCALE}" y="${PAD * SCALE}" `,
   );

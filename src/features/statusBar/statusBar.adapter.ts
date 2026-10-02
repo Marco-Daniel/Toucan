@@ -63,7 +63,9 @@ export class StatusBarIndicator implements Disposable {
 }
 
 function tooltip({ name, config }: ActiveRepo): MarkdownString {
-  const swatch = svgDataUri(glyphSvg(config.glyph, config.background, TOOLTIP_SWATCH_HEIGHT));
+  const swatch = svgDataUri(
+    glyphSvg({ glyph: config.glyph, color: config.background, height: TOOLTIP_SWATCH_HEIGHT }),
+  );
   const markdown = new MarkdownString();
   // Before appendText: it escapes $(…) in the repo name only when this is on.
   markdown.supportThemeIcons = true;

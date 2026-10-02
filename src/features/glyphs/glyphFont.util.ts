@@ -37,8 +37,15 @@ function round(value: number): number {
   return Math.round(value * HUNDREDTHS) / HUNDREDTHS;
 }
 
+interface ShapeSvgArgs {
+  width: number;
+  d: string;
+  color: Hex;
+  height?: number;
+}
+
 /** The SVG for one baked glyph path; `pnpm font` uses it for the font sources too. */
-export function shapeSvg(width: number, d: string, color: Hex, height = HEIGHT): string {
+export function shapeSvg({ width, d, color, height = HEIGHT }: ShapeSvgArgs): string {
   const pixelWidth = round((width / HEIGHT) * height);
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${pixelWidth}" height="${height}" ` +
