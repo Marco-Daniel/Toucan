@@ -17,6 +17,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SettingsFileWriter } from "../../../src/features/settings/settingsWrite.util.ts";
 import type { Clock } from "../../../src/features/settings/settingsWrite.util.ts";
+import { parseSettingsForTest } from "../../helpers/settings.ts";
 
 const KEY = "toucan.repos";
 const BEFORE = `{
@@ -112,8 +113,7 @@ function readKey(file: string): unknown {
 }
 async function refreshView(file: string): Promise<void> {
   const text = await readFile(file, "utf8");
-  const json = text.replace(/\/\/.*$/gm, "").replace(/,(\s*[}\]])/g, "$1");
-  fileCache.set(file, (JSON.parse(json) as Record<string, unknown>)[KEY]);
+  fileCache.set(file, (parseSettingsForTest(text) as Record<string, unknown>)[KEY]);
 }
 
 const replace = () => ({ value: NEXT });

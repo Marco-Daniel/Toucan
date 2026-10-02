@@ -5,6 +5,7 @@ import {
   settingsFiles,
   viewReflects,
 } from "../../../src/features/settings/settingsEdit.util.ts";
+import { parseSettingsForTest } from "../../helpers/settings.ts";
 
 const KEY = "workbench.colorCustomizations";
 
@@ -21,9 +22,6 @@ const FILE = `{
 
 const VIEW = { "editor.background": "#101010", "commandCenter.background": "#aa0000" };
 
-/** The file's value, parsed independently of the code under test. */
-const parseSettingsForTest = (text: string): unknown =>
-  JSON.parse(text.replace(/\/\/.*$/gm, "").replace(/,(\s*[}\]])/g, "$1"));
 const commentsOf = (text: string) => text.match(/\/\/.*$/gm) ?? [];
 
 describe("planEdit", () => {
