@@ -3,7 +3,7 @@ import type { Color } from "culori/fn";
 import { fromHex, toHex, toOklch } from "./color.ts";
 import type { ColorOverrides, CommandCenterColors, Hex } from "./model.ts";
 
-// Starting amounts from 0004, to be tuned in the real title bar.
+// Starting amounts from toucan-v1/0004, to be tuned in the real title bar.
 /** OKLCH lightness shift from background to hover background. */
 export const ACTIVE_BACKGROUND_SHIFT = 0.06;
 /** OKLCH lightness shift from background to border. */
@@ -22,7 +22,7 @@ const BLACK: Color = { mode: "rgb", r: 0, g: 0, b: 0 };
 const WHITE: Color = { mode: "rgb", r: 1, g: 1, b: 1 };
 
 /**
- * Builds the full `commandCenter.*` set from a background (0004). Overrides
+ * Builds the full `commandCenter.*` set from a background (toucan-v1/0004). Overrides
  * win, and colors derived from an overridden one build on the override.
  * Inputs come from the config parser, so they always parse.
  *

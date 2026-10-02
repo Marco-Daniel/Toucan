@@ -9,7 +9,7 @@ const DECLINED_KEY = "agentsControl.declined";
 
 /**
  * Offers once to switch Agents control to "badge" so the Command Center can
- * show Toucan's background (0016). Never changes it without asking, never
+ * show Toucan's background (toucan-v1/0016). Never changes it without asking, never
  * changes it back.
  */
 export class AgentsControlOffer {

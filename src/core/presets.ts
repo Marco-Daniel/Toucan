@@ -6,7 +6,7 @@ export interface Preset {
   hex: Hex;
 }
 
-/** The toucan-themed palette (0014). A picked preset is stored as its hex. */
+/** The toucan-themed palette (toucan-v1/0014). A picked preset is stored as its hex. */
 export const PRESETS: readonly Preset[] = (
   [
     ["Beak Red", "#f92824"],

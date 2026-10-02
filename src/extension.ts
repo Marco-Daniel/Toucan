@@ -36,7 +36,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   const sidebar = new SidebarBlock(context, log, () => repo);
   const agentsControl = new AgentsControlOffer(context, log);
   const searchEmoji = new SearchEmoji(context, log, () => repo);
-  // Only a window that colors the Command Center asks (0016).
+  // Only a window that colors the Command Center asks (toucan-v1/0016).
   const offerAgentsControl = (focused: boolean) => {
     if (focused && repo) {
       background("The Agents control offer", agentsControl.check());

@@ -38,7 +38,7 @@ import type { StatusBarIndicator } from "./statusBar.ts";
 import { isRecord } from "./core/records.ts";
 
 export interface CommandHost {
-  /** Writes toucan.repos, keeping comments when it safely can (0017). */
+  /** Writes toucan.repos, keeping comments when it safely can (toucan-v1/0017). */
   writer: SettingsWriter;
   /** This window's repo (first folder) name, configured or not. */
   repoName(): string | undefined;
@@ -76,7 +76,7 @@ async function setColor(host: CommandHost, name: string): Promise<void> {
     if (input.kind === "invalid") {
       box.validationMessage = input.message;
     } else if (input.kind === "color" && lowContrast(input.hex, statusBar)) {
-      // A warning, not an error: the color can still be saved (0018).
+      // A warning, not an error: the color can still be saved (toucan-v1/0018).
       box.validationMessage = {
         message: LOW_CONTRAST_WARNING,
         severity: InputBoxValidationSeverity.Warning,
@@ -126,7 +126,7 @@ async function pickPreset(host: CommandHost, name: string): Promise<void> {
       iconPath: swatch(glyph, preset.hex),
       hex: preset.hex,
     };
-    // Marked, not hidden: the user can still pick it (0018).
+    // Marked, not hidden: the user can still pick it (toucan-v1/0018).
     if (lowContrast(preset.hex, statusBar)) {
       item.detail = `$(warning) ${LOW_CONTRAST_WARNING}`;
     }
@@ -297,7 +297,7 @@ function swatch(glyph: Glyph, hex: Hex): Uri {
   return Uri.parse(svgDataUri(glyphSvg(glyph, hex, SWATCH_PX)));
 }
 
-/** The status bar background to check picked colors against (0018). */
+/** The status bar background to check picked colors against (toucan-v1/0018). */
 function statusBarAgainst(): Hex | undefined {
   const themeKind = window.activeColorTheme.kind;
   const kind =

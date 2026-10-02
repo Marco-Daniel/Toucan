@@ -7,12 +7,12 @@ export const REMEMBER_CLOSE_DELAY_MS = 1500;
 
 export interface SidebarSettings {
   enabled: boolean;
-  /** The repo's override, or else the general setting (0013). */
+  /** The repo's override, or else the general setting (toucan-v1/0013). */
   visibility: SidebarVisibility;
 }
 
 /**
- * The block's effective settings from the raw setting values (0013): enabled
+ * The block's effective settings from the raw setting values (toucan-v1/0013): enabled
  * only for a repo with a color; the repo's own visibility override wins over
  * the general one; anything unexpected falls back to the defaults.
  */
@@ -39,7 +39,7 @@ export interface SidebarPorts {
   reveal(): Promise<void>;
   /** Closes the secondary sidebar. */
   closeBar(): Promise<void>;
-  /** Whether the user closed the block in this workspace (`always` mode, 0013). */
+  /** Whether the user closed the block in this workspace (`always` mode, toucan-v1/0013). */
   readClosed(): boolean;
   writeClosed(closed: boolean): Promise<void>;
   warn(message: string): void;
@@ -47,7 +47,7 @@ export interface SidebarPorts {
 }
 
 /**
- * Shows and hides the opt-in sidebar block (0006, 0013).
+ * Shows and hides the opt-in sidebar block (toucan-v1/0006, toucan-v1/0013).
  *
  * `always`: revealed on startup unless the user closed it in this workspace.
  * A close counts when the block stops being visible while the window is
