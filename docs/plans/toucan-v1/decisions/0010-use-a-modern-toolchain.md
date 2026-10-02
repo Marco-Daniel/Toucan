@@ -1,6 +1,7 @@
 # 0010. Use a modern toolchain
 
 - Status: Accepted
+- Lifted to: [ADR-0004](../../../adr/0004-use-a-modern-toolchain.md)
 - Date: 2026-10-01
 - Deciders: Marco
 
