@@ -52,7 +52,8 @@ const ran = await exclusive(
       clearInterval(heartbeat);
     }
   },
-  { waitMs: 60_000 },
+  // TOUCAN_QMD_WAIT_MS shortens the wait in tests.
+  { waitMs: Number(process.env.TOUCAN_QMD_WAIT_MS) || 60_000 },
 );
 if (!ran) {
   console.error(
