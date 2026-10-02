@@ -1,6 +1,7 @@
 # 0005. Always show a status bar glyph and repo name
 
 - Status: Accepted
+- Lifted to: [ADR-0005](../../../adr/0005-always-show-a-status-bar-glyph-and-repo-name.md)
 - Date: 2026-10-01
 - Deciders: Marco
 

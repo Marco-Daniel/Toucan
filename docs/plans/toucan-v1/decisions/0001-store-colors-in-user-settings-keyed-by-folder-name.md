@@ -1,6 +1,7 @@
 # 0001. Store colors in user settings keyed by folder name
 
 - Status: Accepted
+- Lifted to: [ADR-0001](../../../adr/0001-keep-toucans-settings-in-user-scope.md)
 - Date: 2026-10-01
 - Deciders: Marco
 
