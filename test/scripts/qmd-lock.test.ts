@@ -70,8 +70,8 @@ describe("the qmd lock", () => {
   it("notes pending edits until they're taken", () => {
     expect(markPending()).toBe(true);
     expect(isPending()).toBe(true);
-    expect(takePending()).toBe(true);
-    expect([isPending(), takePending()]).toEqual([false, false]);
+    expect(takePending()).toBe("taken");
+    expect([isPending(), takePending()]).toEqual([false, "none"]);
   });
 });
 
@@ -83,6 +83,14 @@ function plant(name: string): string {
   symlinkSync(victim, join(cache, name));
   return victim;
 }
+
+describe("a folder at the pending note", () => {
+  it("isn't an edit, and is reported stuck rather than taken", () => {
+    mkdirSync(join(cache, "toucan.pending"), { recursive: true });
+    expect([isPending(), takePending()]).toEqual([false, "stuck"]);
+    expect(existsSync(join(cache, "toucan.pending"))).toBe(true);
+  });
+});
 
 describe("the lock files, against planted symlinks", () => {
   it("never writes through a symlink at the pending note", () => {
@@ -99,7 +107,7 @@ describe("the lock files, against planted symlinks", () => {
 
   it("removes only the link, never its target, when taking the pending note", () => {
     const victim = plant("toucan.pending");
-    expect(takePending()).toBe(true);
+    expect(takePending()).toBe("taken");
     expect([existsSync(victim), lstatSync(victim).isFile()]).toEqual([true, true]);
   });
 });

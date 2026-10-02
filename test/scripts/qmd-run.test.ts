@@ -1,4 +1,5 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -22,6 +23,34 @@ afterEach(() => {
 
 const log = () =>
   existsSync(join(dir, "qmd.log")) ? readFileSync(join(dir, "qmd.log"), "utf8") : "";
+
+const RUN = new URL("../../scripts/qmd-run.mts", import.meta.url).href;
+const LOCK = new URL("../../scripts/qmd-lock.mts", import.meta.url).href;
+
+/**
+ * Runs `exclusive` in a child, so a loop that never ends fails on the timeout
+ * instead of hanging the suite. It prints how often it let go of the lock;
+ * with `renote`, an edit is noted at every release.
+ */
+function exclusiveInChild(renote: boolean) {
+  const code = `
+    import { exclusive } from ${JSON.stringify(RUN)};
+    import { markPending, releaseLock } from ${JSON.stringify(LOCK)};
+    let releases = 0;
+    await exclusive(() => true, {
+      release: (lock) => {
+        releases++;
+        releaseLock(lock);
+        ${renote ? "markPending();" : ""}
+      },
+    });
+    console.log(releases);
+  `;
+  return spawnSync(process.execPath, ["--input-type=module", "-e", code], {
+    encoding: "utf8",
+    timeout: 10_000,
+  });
+}
 
 describe("exclusive", () => {
   it("goes round again for an edit noted just as it lets go of the lock", async () => {
@@ -82,5 +111,20 @@ describe("exclusive", () => {
     releaseLock(held);
     expect(await running).toBe(true);
     expect(ran).toBe(true);
+  });
+
+  it("stops after one round at a pending note it can't take", () => {
+    mkdirSync(join(dir, "qmd", "toucan.pending"), { recursive: true });
+    expect(exclusiveInChild(false)).toMatchObject({ status: 0, stdout: "1\n" });
+    expect(log()).toBe("");
+    expect(existsSync(join(dir, "qmd", "toucan.lock"))).toBe(false);
+  });
+
+  it("goes five rounds at most while edits keep coming, and lets go of the lock", () => {
+    markPending();
+    expect(exclusiveInChild(true)).toMatchObject({ status: 0, stdout: "5\n" });
+    expect(log()).toBe("update start\nupdate end\n".repeat(5));
+    // The edit noted at the last release waits for the next job.
+    expect([isPending(), existsSync(join(dir, "qmd", "toucan.lock"))]).toEqual([true, false]);
   });
 });

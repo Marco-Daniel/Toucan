@@ -172,4 +172,13 @@ describe("pnpm docs:index", () => {
     expect({ code, stderr }).toEqual({ code: 0, stderr: "" });
     expect(lines().slice(-1)).toEqual(["embed"]);
   });
+
+  it("stops at the first qmd command that fails", async () => {
+    const { code, stderr } = await docsIndex(fakeQmd(dir, { failAdd: true }));
+    expect(code).toBe(1);
+    expect(stderr).toContain("qmd collection add failed; stopping.");
+    const log = lines();
+    expect(log.filter((line) => line === "collection add")).toHaveLength(1);
+    expect(log.at(-1)).toBe("collection add");
+  });
 });

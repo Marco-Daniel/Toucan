@@ -62,12 +62,21 @@ export function currentState(force: boolean): IndexState {
   };
 }
 
-/** Re-indexes Toucan's index for each pending edit, until none are left. */
-export function drainPending(): void {
-  while (takePending()) {
+/**
+ * Re-indexes Toucan's index for each pending edit, until none are left.
+ * Returns false when a pending note is stuck (it can't be removed).
+ */
+export function drainPending(): boolean {
+  let taken = takePending();
+  while (taken === "taken") {
     qmd([...QMD_INDEX, "update"]);
+    taken = takePending();
   }
+  return taken === "none";
 }
+
+/** Rounds `exclusive` goes at most; edits noted after the last wait for the next job. */
+const MAX_ROUNDS = 5;
 
 /** Takes the lock, waiting up to `waitMs` for another job to let go of it. */
 async function waitForLock(waitMs: number): Promise<string | undefined> {
@@ -84,7 +93,8 @@ async function waitForLock(waitMs: number): Promise<string | undefined> {
  * Runs `job` under the lock, then re-indexes for edits made meanwhile. A job
  * that returns false (qmd or the collections aren't ready) leaves the pending
  * edits for a later job. After letting go of the lock it checks once more, so
- * an edit made just before the release isn't lost. Returns false, without
+ * an edit made just before the release isn't lost, for at most MAX_ROUNDS
+ * rounds, and never past a stuck pending note. Returns false, without
  * running `job`, when the lock stays held for `waitMs`: the job holding it
  * picks the edits up.
  */
@@ -96,20 +106,19 @@ export async function exclusive(
   if (!lock) {
     return false;
   }
-  let first = true;
-  while (lock) {
-    let ready = true;
+  for (let round = 0; lock; round++) {
+    // False when the job isn't ready or a pending note is stuck: no more rounds.
+    let again = false;
     try {
       // oxlint-disable-next-line no-await-in-loop -- one round at a time, under the lock
-      ready = first ? await job(lock) : true;
-      if (ready) {
-        drainPending();
+      if (round > 0 || (await job(lock))) {
+        again = drainPending();
       }
     } finally {
       release(lock);
     }
-    first = false;
-    lock = ready && isPending() ? takeLock() : undefined;
+    // Checked before taking the lock again, so the last round never ends holding it.
+    lock = again && round + 1 < MAX_ROUNDS && isPending() ? takeLock() : undefined;
   }
   return true;
 }

@@ -6,7 +6,7 @@
 import {
   closeSync,
   constants,
-  existsSync,
+  lstatSync,
   mkdirSync,
   openSync,
   rmSync,
@@ -66,14 +66,25 @@ export function releaseLock(lock: string): void {
 
 /** Notes an edit, so a running job goes round once more. */
 export const markPending = (): boolean => create(cache("toucan.pending"));
-export const isPending = (): boolean => existsSync(cache("toucan.pending"));
-
-/** Takes the pending note, if there is one. */
-export function takePending(): boolean {
+/** Whether an edit is noted: only a regular file counts, never a folder or a link. */
+export function isPending(): boolean {
   try {
-    rmSync(cache("toucan.pending"));
-    return true;
+    return lstatSync(cache("toucan.pending")).isFile();
   } catch {
     return false;
+  }
+}
+
+/**
+ * Takes the pending note: `taken`, `none` when there is none, or `stuck` when
+ * something is there that can't be removed (a folder, say), so that a caller
+ * looping on it stops instead of spinning.
+ */
+export function takePending(): "taken" | "none" | "stuck" {
+  try {
+    rmSync(cache("toucan.pending"));
+    return "taken";
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ENOENT" ? "none" : "stuck";
   }
 }
