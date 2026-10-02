@@ -7,7 +7,7 @@ import type {
   SidebarStyle,
 } from "../../shared/model/model.types.ts";
 
-/** Fill alpha of the `muted` style (0013). */
+/** Fill alpha of the `muted` style (toucan-v1/0013). */
 export const MUTED_ALPHA = 0.25;
 /** Height of the glyph in the sidebar block, in px. */
 const GLYPH_PX = 64;
@@ -20,7 +20,7 @@ export interface SidebarBlockContent {
 }
 
 /**
- * The block's whole page (0006, 0013): no scripts and a CSP that only allows
+ * The block's whole page (toucan-v1/0006, toucan-v1/0013): no scripts and a CSP that only allows
  * inline styles, painted in the repo color with the glyph large in the middle
  * and the repo name underneath. `full` is the solid color with the derived
  * foreground; `muted` is a faint fill over the theme with the glyph in the

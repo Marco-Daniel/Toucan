@@ -6,7 +6,7 @@ import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 /**
  * The owner file shared by all local windows: which window last took focus
- * (0002). `id` names this window's temp file, so two windows writing at once
+ * (toucan-v1/0002). `id` names this window's temp file, so two windows writing at once
  * never share one.
  */
 export function createOwnerFile(

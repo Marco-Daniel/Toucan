@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PRESETS } from "../../../src/shared/color/presets.consts.ts";
 
 describe("PRESETS", () => {
-  it("are the 16 colors from 0014, in order", () => {
+  it("are the 16 colors from toucan-v1/0014, in order", () => {
     expect(PRESETS).toEqual([
       { name: "Beak Red", hex: "#f92824" },
       { name: "Berry Red", hex: "#a3161a" },

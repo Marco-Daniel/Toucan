@@ -1,7 +1,7 @@
-/** The window title variable the search emoji rides on (0007). */
+/** The window title variable the search emoji rides on (toucan-v1/0007). */
 export const REPO_VARIABLE = "${activeRepositoryName}";
 
-/** What Toucan changed in `window.title`, so it can be undone (0015). */
+/** What Toucan changed in `window.title`, so it can be undone (toucan-v1/0015). */
 export interface TitleChange {
   /** The user's value before, or `undefined` when it was unset. */
   previous: string | undefined;
@@ -64,7 +64,7 @@ export function titleToRestore(
 }
 
 /**
- * The global step a window takes for the search emoji (0015): ask for consent
+ * The global step a window takes for the search emoji (toucan-v1/0015): ask for consent
  * when the feature is on but nothing is recorded yet, restore when it's off
  * but a change is recorded. Only the focused window does either, so several
  * open windows don't all ask.

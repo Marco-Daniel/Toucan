@@ -6,7 +6,7 @@ import type { Hex } from "../../../src/shared/model/model.types.ts";
 const hex = (value: string) => value as Hex;
 
 describe("emojiColor", () => {
-  // The 0014 presets, plus a few common colors that are hard to classify.
+  // The toucan-v1/0014 presets, plus a few common colors that are hard to classify.
   it.each([
     ["#f92824", "red"],
     ["#a3161a", "red"],

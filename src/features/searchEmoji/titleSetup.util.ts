@@ -34,7 +34,7 @@ export interface TitlePorts {
 }
 
 /**
- * The global `window.title` side of the search emoji (0015): heal a crashed
+ * The global `window.title` side of the search emoji (toucan-v1/0015): heal a crashed
  * write, ask for consent and apply, or restore. The record is written before
  * the title, so a window that dies in between can still restore it.
  */

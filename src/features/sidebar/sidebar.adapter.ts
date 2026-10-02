@@ -11,11 +11,11 @@ import { configs } from "../../generated/meta.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "../../core/ids.consts.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
-/** workspaceState key for "the user closed the block here" (0013). */
+/** workspaceState key for "the user closed the block here" (toucan-v1/0013). */
 const CLOSED_KEY = "sidebarBlock.closed";
 
 /**
- * The opt-in sidebar block (0006, 0013): renders the repo color in a webview
+ * The opt-in sidebar block (toucan-v1/0006, toucan-v1/0013): renders the repo color in a webview
  * without scripts and lets `SidebarController` decide when it's shown.
  */
 export class SidebarBlock implements WebviewViewProvider, Disposable {
@@ -116,7 +116,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   /**
    * Toggle Sidebar Block. Turning the block on writes the boolean with
    * VS Code's own update(): a boolean has no comments inside it to keep, and
-   * the settings writer only edits Toucan's object settings (0017).
+   * the settings writer only edits Toucan's object settings (toucan-v1/0017).
    */
   async toggle(): Promise<void> {
     if (!this.repo()) {

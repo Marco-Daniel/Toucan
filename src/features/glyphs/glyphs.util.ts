@@ -4,7 +4,7 @@ import { GLYPH_GROUPS } from "../../shared/model/model.consts.ts";
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 /**
- * Solid codicon used where no glyph applies (0005). VS Code gives extensions
+ * Solid codicon used where no glyph applies (toucan-v1/0005). VS Code gives extensions
  * no signal when a contributed icon font fails to load, so don't try to
  * detect that and swap this in.
  */
@@ -37,7 +37,7 @@ export function glyphSvg(glyph: Glyph, color: Hex, height = HEIGHT): string {
   return shapeSvg(width, d, color, height);
 }
 
-/** `data:` URI for an SVG, as accepted by markdown tooltips (0005). */
+/** `data:` URI for an SVG, as accepted by markdown tooltips (ADR-0005). */
 export function svgDataUri(svg: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`;
 }

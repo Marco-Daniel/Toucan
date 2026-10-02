@@ -8,7 +8,7 @@ export function userValue(key: string): unknown {
   return workspace.getConfiguration().inspect(key)?.globalValue;
 }
 
-/** The settings writer wired to VS Code (0017). Create one and share it: it holds the lock. */
+/** The settings writer wired to VS Code (toucan-v1/0017). Create one and share it: it holds the lock. */
 export function createSettingsWriter(globalStoragePath: string, log: Log): SettingsFileWriter {
   return new SettingsFileWriter(settingsFiles(globalStoragePath), {
     view: userValue,

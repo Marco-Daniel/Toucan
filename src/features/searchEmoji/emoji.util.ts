@@ -103,7 +103,7 @@ export function emojiColor(hex: Hex): EmojiColor {
   return nearestHue(h);
 }
 
-/** The emoji for a repo's color in its glyph's shape (0007, 0012). */
+/** The emoji for a repo's color in its glyph's shape (toucan-v1/0007, toucan-v1/0012). */
 export function emojiFor(hex: Hex, glyph: Glyph): string {
   return family(glyph)[emojiColor(hex)];
 }

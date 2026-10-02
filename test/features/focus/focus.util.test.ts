@@ -32,7 +32,7 @@ class World {
   settings: Record<string, unknown> | undefined = { "editor.background": "#111111" };
   /** What the guessed settings file holds: the same, something else, or unreadable. */
   disk: "same" | "unreadable" | { value: unknown } = "same";
-  /** Whether Toucan has applied a color in this profile before (0008). */
+  /** Whether Toucan has applied a color in this profile before (toucan-v1/0008). */
   applied = true;
   markAppliedCalls = 0;
   failMarkApplied = false;
@@ -209,7 +209,7 @@ describe("FocusCoordinator", () => {
     });
   });
 
-  it("never clears hand-set Command Center colors before Toucan has applied one (0008)", async () => {
+  it("never clears hand-set Command Center colors before Toucan has applied one (toucan-v1/0008)", async () => {
     const world = new World();
     world.applied = false;
     world.settings = { "commandCenter.background": "#123456", "editor.background": "#111111" };

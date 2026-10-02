@@ -40,7 +40,7 @@ export interface FocusPorts {
    */
   writeCustomizations(update: SettingsUpdate): Promise<void>;
   /**
-   * Whether Toucan has applied a color in this profile before (0008): until
+   * Whether Toucan has applied a color in this profile before (toucan-v1/0008): until
    * it has, it never clears `commandCenter.*`, so colors the user set by hand
    * survive installing Toucan.
    */
@@ -53,7 +53,7 @@ export interface FocusPorts {
 
 /**
  * Applies this window's Command Center colors while it's focused and clears
- * them after it loses focus, unless another window has taken over (0002).
+ * them after it loses focus, unless another window has taken over (toucan-v1/0002).
  * Ownership is a window id the focused window writes before its colors, so a
  * window only clears colors it still owns. Leftovers from crashed windows are
  * fixed lazily at the next focus of any window.
@@ -129,7 +129,7 @@ export class FocusCoordinator {
   private async takeOver(): Promise<void> {
     const colors = this.desired();
     if (colors === undefined && !this.ports.hasApplied()) {
-      // Not managing commandCenter.* yet (0008). Taking ownership anyway would
+      // Not managing commandCenter.* yet (toucan-v1/0008). Taking ownership anyway would
       // stop the previous owner's blur from clearing its colors here.
       this.ports.debug("not taking ownership: no color to apply or clear yet");
       return;
@@ -223,7 +223,7 @@ export class FocusCoordinator {
     await this.recordApplied(colors);
   }
 
-  /** Records the first applied color in this profile (0008); a failure here isn't a settings failure. */
+  /** Records the first applied color in this profile (toucan-v1/0008); a failure here isn't a settings failure. */
   private async recordApplied(colors: CommandCenterColors | undefined): Promise<void> {
     if (!colors || this.ports.hasApplied()) {
       return;

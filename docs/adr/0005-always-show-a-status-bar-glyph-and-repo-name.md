@@ -9,7 +9,7 @@
 
 ## Context and Problem
 
-Only the focused window shows the Command Center color (ADR-0001). Every window, focused or not, still needs a mark of its repo that needs no settings writes.
+Only the focused window shows the Command Center color (ADR-0001). Every window with a configured repo, focused or not, still needs a mark of its repo that needs no settings writes.
 
 Lifted from [toucan-v1/0005](../plans/toucan-v1/decisions/0005-always-show-a-status-bar-glyph-and-repo-name.md) and its 2026-10-02 amendment.
 
@@ -21,7 +21,7 @@ Lifted from [toucan-v1/0005](../plans/toucan-v1/decisions/0005-always-show-a-sta
 
 ## Decision Outcome
 
-Chosen: **an always-on status bar item with the repo's glyph from Toucan's icon font, plus the repo name**, colored with the repo color. The rules:
+Chosen: **a status bar item in every window with a configured repo, with the repo's glyph from Toucan's icon font, plus the repo name**, colored with the repo color. The rules:
 
 - Left-aligned at the highest priority, with a stable id, a `name` and an accessibility label.
 - A markdown tooltip with an SVG swatch, the color and action links; a click opens Set Color.

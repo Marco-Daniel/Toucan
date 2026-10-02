@@ -26,7 +26,7 @@ Chosen: **GitHub release notes for every release**. Every release's notes have:
 - the VSIX asset's SHA-256, so a download can be verified;
 - links to the PRs it contains;
 
-and they are scrubbed for the public repo (no other projects, local paths or session names) and signed.
+and they are scrubbed for the public repo (no other projects, local paths or session names) and signed: the notes end with the project's sign-off line.
 
 ## Consequences
 
