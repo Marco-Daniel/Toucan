@@ -19,10 +19,10 @@ Most of Toucan is logic that doesn't need VS Code: color derivation, config pars
 
 ## Decision Outcome
 
-Chosen: **adapters only, by convention**. The file suffix already says which files talk to VS Code, review checks it, and a grep proves it (`git grep -l 'from "vscode"' src` lists only adapters and the entry point). A lint rule was left out for now: the convention is easy to see and hasn't been broken.
+Chosen: **adapters only, by convention**, enforced through CLAUDE.md and review rather than a lint rule. Marco chose this deliberately: the suffix makes the boundary visible, and review checks it with a grep (`git grep -l 'from "vscode"' src` lists only adapters and the entry point).
 
 ## Consequences
 
 - Good: every `.util.ts`, `.consts.ts`, `.view.ts` and `.messages.ts` file runs in plain vitest; adapters stay thin.
-- Bad: nothing enforces it mechanically; a review has to catch a slip.
+- Bad: nothing enforces it mechanically; review has to catch a slip.
 - A file that turns out to need `vscode` becomes an adapter (and is renamed), rather than gaining the import.
