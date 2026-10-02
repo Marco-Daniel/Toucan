@@ -9,8 +9,9 @@ import {
 /**
  * A fake secondary sidebar: reveal and close feed visibility back like VS Code
  * does, unless `silentClose` or `silentReveal` suppress that event. With
- * `holdReveals`, each reveal stays pending until `release()`; with
- * `failReveals`, each reveal rejects. Warnings land in `state.warnings`.
+ * `holdReveals`, each reveal stays pending until `release()`. `failReveals`,
+ * `failCloses` and `failWrites` make reveal, closeBar and writeClosed reject.
+ * Warnings land in `state.warnings`.
  */
 function setup(
   initial: Partial<SidebarSettings> & {
@@ -19,6 +20,8 @@ function setup(
     silentReveal?: boolean;
     holdReveals?: boolean;
     failReveals?: boolean;
+    failCloses?: boolean;
+    failWrites?: boolean;
   } = {},
 ) {
   const {
@@ -27,6 +30,8 @@ function setup(
     silentReveal,
     holdReveals,
     failReveals,
+    failCloses,
+    failWrites,
     ...rest
   } = initial;
   const held: (() => void)[] = [];
@@ -59,12 +64,18 @@ function setup(
       },
       closeBar: async () => {
         state.closes++;
+        if (failCloses) {
+          throw new Error("no secondary sidebar");
+        }
         if (!silentClose) {
           controller.visibilityChanged(false);
         }
       },
       readClosed: () => state.closed,
       writeClosed: async (closed) => {
+        if (failWrites) {
+          throw new Error("workspace state unavailable");
+        }
         state.closed = closed;
       },
       warn: (message) => state.warnings.push(message),
@@ -74,6 +85,8 @@ function setup(
   );
   return { controller, settings, state, release };
 }
+
+type Setup = ReturnType<typeof setup>;
 
 const settle = () => vi.advanceTimersByTimeAsync(0);
 
@@ -353,10 +366,69 @@ describe("resolveSidebarSettings", () => {
 });
 
 describe("SidebarController, failures", () => {
-  it("logs a reveal that fails instead of leaving it unhandled", async () => {
-    const { controller, state } = setup({ failReveals: true });
-    controller.start(true);
+  // Every place the controller starts async work from an event or timer.
+  it.each([
+    {
+      site: "the startup reveal",
+      options: { failReveals: true },
+      act: async ({ controller }: Setup) => {
+        controller.start(true);
+      },
+      warning: "Revealing the block failed: Error: view not registered",
+    },
+    {
+      site: "the reveal after turning the block on",
+      options: { enabled: false, failReveals: true },
+      act: async ({ controller, settings }: Setup) => {
+        controller.start(true);
+        settings.enabled = true;
+        controller.settingsChanged();
+      },
+      warning: "Revealing the block failed: Error: view not registered",
+    },
+    {
+      site: "the reveal on blur",
+      options: { visibility: "unfocused", failReveals: true },
+      act: async ({ controller }: Setup) => {
+        controller.start(true);
+        controller.setFocused(false);
+      },
+      warning: "Revealing the block failed: Error: view not registered",
+    },
+    {
+      site: "the close on focus",
+      options: { visibility: "unfocused", failCloses: true },
+      act: async ({ controller }: Setup) => {
+        controller.start(false);
+        await settle();
+        controller.setFocused(true);
+      },
+      warning: "Closing the bar failed: Error: no secondary sidebar",
+    },
+    {
+      site: "forgetting a remembered close",
+      options: { closed: true, failWrites: true },
+      act: async ({ controller }: Setup) => {
+        controller.start(true);
+        controller.visibilityChanged(true);
+      },
+      warning: "Forgetting the close failed: Error: workspace state unavailable",
+    },
+    {
+      site: "remembering a close",
+      options: { failWrites: true },
+      act: async ({ controller }: Setup) => {
+        controller.start(true);
+        await settle();
+        controller.visibilityChanged(false);
+        await vi.advanceTimersByTimeAsync(REMEMBER_CLOSE_DELAY_MS);
+      },
+      warning: "Remembering the close failed: Error: workspace state unavailable",
+    },
+  ] as const)("logs a failure in $site instead of leaving it unhandled", async (row) => {
+    const sidebar = setup(row.options);
+    await row.act(sidebar);
     await settle();
-    expect(state.warnings).toEqual(["Revealing the block failed: Error: view not registered"]);
+    expect(sidebar.state.warnings).toEqual([row.warning]);
   });
 });
