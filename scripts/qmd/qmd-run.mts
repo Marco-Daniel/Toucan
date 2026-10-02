@@ -1,7 +1,7 @@
 // Running qmd for Toucan's scripts: the repo root, calls on Toucan's own index,
 // what is registered there now, and running jobs one at a time. Shared by
 // `pnpm docs:index` and the hooks, so all of them plan and lock the same way.
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
@@ -131,4 +131,19 @@ export async function exclusive({
     lock = again && round + 1 < MAX_ROUNDS && isPending() ? takeLock() : undefined;
   }
   return true;
+}
+
+/**
+ * Re-runs the calling script with `--worker` as a detached process and
+ * returns at once, so a hook never blocks the session.
+ */
+export function spawnWorker(): void {
+  spawn(process.execPath, [process.argv[1]!, "--worker"], {
+    detached: true,
+    stdio: "ignore",
+  })
+    // A failed spawn (say, a process limit) stays silent like everything else here.
+    // Untested on purpose: spawning this same Node binary can't be made to fail on demand.
+    .on("error", () => undefined)
+    .unref();
 }
