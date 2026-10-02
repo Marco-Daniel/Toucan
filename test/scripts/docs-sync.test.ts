@@ -62,6 +62,11 @@ describe("diffScripts", () => {
   });
 });
 
+/** A package.json holding these setting definitions. */
+const withSettings = (properties: Record<string, object>) => ({
+  contributes: { configuration: { properties } },
+});
+
 describe("diffSettings", () => {
   it("compares the setting keys, whether configuration is one object or a list", () => {
     expect(
@@ -80,7 +85,47 @@ describe("diffSettings", () => {
           },
         },
       }),
-    ).toEqual({ added: ["toucan.new"], removed: ["toucan.old"] });
+    ).toEqual({ added: ["toucan.new"], removed: ["toucan.old"], changed: [] });
+  });
+
+  it("names the settings whose definition changed in a field the docs follow", () => {
+    expect(
+      diffSettings({
+        before: withSettings({
+          "t.default": { default: ["a"] },
+          "t.enum": { enum: ["a"] },
+          "t.enumDescriptions": { enumDescriptions: ["A"] },
+          "t.scope": { scope: "window" },
+          "t.type": { type: "string" },
+          "t.description": { description: "Old" },
+          "t.markdown": { markdownDescription: "Old" },
+          "t.order": { order: 1, default: { a: 1 } },
+        }),
+        after: withSettings({
+          "t.markdown": { markdownDescription: "New" },
+          "t.description": { description: "New" },
+          "t.type": { type: "boolean" },
+          "t.scope": { scope: "application" },
+          "t.enumDescriptions": { enumDescriptions: ["B"] },
+          "t.enum": { enum: ["a", "b"] },
+          "t.default": { default: ["b"] },
+          // Only an unfollowed field changed; the default is equal, as a new object.
+          "t.order": { order: 2, default: { a: 1 } },
+        }),
+      }),
+    ).toEqual({
+      added: [],
+      removed: [],
+      changed: [
+        "t.default",
+        "t.description",
+        "t.enum",
+        "t.enumDescriptions",
+        "t.markdown",
+        "t.scope",
+        "t.type",
+      ],
+    });
   });
 
   it("reports every key removed when the configuration goes", () => {
@@ -89,7 +134,7 @@ describe("diffSettings", () => {
         before: { contributes: { configuration: { properties: { "toucan.repos": {} } } } },
         after: { contributes: {} },
       }),
-    ).toEqual({ added: [], removed: ["toucan.repos"] });
+    ).toEqual({ added: [], removed: ["toucan.repos"], changed: [] });
   });
 });
 
@@ -104,7 +149,7 @@ describe("diffCommands", () => {
           },
         },
       }),
-    ).toEqual({ added: ["toucan.clear"], removed: ["t.a"] });
+    ).toEqual({ added: ["toucan.clear"], removed: ["t.a"], retitled: [] });
   });
 
   it("reports every id removed when the commands go", () => {
@@ -113,7 +158,44 @@ describe("diffCommands", () => {
         before: { contributes: { commands: [{ command: "toucan.setColor" }] } },
         after: {},
       }),
-    ).toEqual({ added: [], removed: ["toucan.setColor"] });
+    ).toEqual({ added: [], removed: ["toucan.setColor"], retitled: [] });
+  });
+
+  it("names the commands whose title changed, appeared or went, by id", () => {
+    expect(
+      diffCommands({
+        before: {
+          contributes: {
+            commands: [
+              { command: "t.renamed", title: "Old" },
+              { command: "t.same", title: "Same" },
+              { command: "t.titled" },
+              { command: "t.untitled", title: "Gone" },
+              { command: "t.removed", title: "Removed" },
+            ],
+          },
+        },
+        after: {
+          contributes: {
+            commands: [
+              { command: "t.untitled" },
+              { command: "t.titled", title: "Now titled" },
+              { command: "t.same", title: "Same" },
+              { command: "t.renamed", title: "New" },
+              { command: "t.added", title: "Added" },
+            ],
+          },
+        },
+      }),
+    ).toEqual({
+      added: ["t.added"],
+      removed: ["t.removed"],
+      retitled: [
+        { command: "t.renamed", from: "Old", to: "New" },
+        { command: "t.titled", from: null, to: "Now titled" },
+        { command: "t.untitled", from: "Gone", to: null },
+      ],
+    });
   });
 });
 
@@ -284,15 +366,17 @@ describe("the docs-sync command", () => {
 
   interface ManifestArgs {
     scripts: Record<string, string>;
-    settings: string[];
-    commands: string[];
+    /** Each setting's definition, by key. */
+    settings: Record<string, object>;
+    /** Each command's title, by id. */
+    commands: Record<string, string>;
   }
   const manifest = ({ scripts, settings, commands }: ManifestArgs) =>
     JSON.stringify({
       scripts,
       contributes: {
-        configuration: { properties: Object.fromEntries(settings.map((key) => [key, {}])) },
-        commands: commands.map((command) => ({ command })),
+        configuration: { properties: settings },
+        commands: Object.entries(commands).map(([command, title]) => ({ command, title })),
       },
     });
 
@@ -301,8 +385,8 @@ describe("the docs-sync command", () => {
     commit({
       "package.json": manifest({
         scripts: { build: "tsdown", lint: "oxlint" },
-        settings: ["t.repos", "t.old"],
-        commands: ["t.set"],
+        settings: { "t.repos": { type: "object", default: {} }, "t.old": {} },
+        commands: { "t.set": "Set" },
       }),
       "docs/adr/0001-one.md": "# 0001. One\n\n- Status: Accepted\n",
       "src/old.ts": "export function gone() {}\nexport const KEPT = 1;\n",
@@ -316,8 +400,8 @@ describe("the docs-sync command", () => {
     commit({
       "package.json": manifest({
         scripts: { build: "tsdown --minify", test: "vitest" },
-        settings: ["t.repos"],
-        commands: ["t.set", "t.clear"],
+        settings: { "t.repos": { type: "object", default: { webshop: "#14939c" } } },
+        commands: { "t.set": "Set Color", "t.clear": "Clear" },
       }),
       "docs/adr/0001-one.md": "# 0001. One\n\n- Status: Superseded by ADR-0002\n",
       "docs/adr/0002-two.md": "# 0002. Two\n\n- Status: Accepted\n",
@@ -354,8 +438,12 @@ describe("the docs-sync command", () => {
         modified: ["README.md", "docs/adr/0001-one.md", "package.json"],
       },
       scripts: { added: ["test"], removed: ["lint"], changed: ["build"] },
-      settings: { added: [], removed: ["t.old"] },
-      commands: { added: ["t.clear"], removed: [] },
+      settings: { added: [], removed: ["t.old"], changed: ["t.repos"] },
+      commands: {
+        added: ["t.clear"],
+        removed: [],
+        retitled: [{ command: "t.set", from: "Set", to: "Set Color" }],
+      },
       adrStatuses: [
         { adr: "0001", from: "Accepted", to: "Superseded by ADR-0002" },
         { adr: "0002", from: null, to: "Accepted" },
@@ -414,6 +502,16 @@ describe("the docs-sync command", () => {
       stdout: "",
       stderr: "--since needs a ref\n",
     });
+  });
+
+  it("prints nothing and exits cleanly when imported, not run", () => {
+    const url = new URL("../../scripts/docs-sync.mts", import.meta.url).href;
+    const result = spawnSync(
+      process.execPath,
+      ["--input-type=module", "-e", `await import(${JSON.stringify(url)});`],
+      { cwd: dir, env: env(), encoding: "utf8" },
+    );
+    expect(result).toMatchObject({ status: 0, stdout: "", stderr: "" });
   });
 
   it("fails outside a git checkout", () => {

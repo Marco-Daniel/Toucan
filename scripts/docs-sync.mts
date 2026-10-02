@@ -33,6 +33,12 @@ export interface NameChanges {
   removed: string[];
 }
 
+export interface CommandRetitle {
+  command: string;
+  from: string | null;
+  to: string | null;
+}
+
 export interface AdrStatusChange {
   adr: string;
   from: string | null;
@@ -45,8 +51,8 @@ interface DocsSyncReport {
   full: false;
   files: FileChanges;
   scripts: NameChanges & { changed: string[] };
-  settings: NameChanges;
-  commands: NameChanges;
+  settings: NameChanges & { changed: string[] };
+  commands: NameChanges & { retitled: CommandRetitle[] };
   adrStatuses: AdrStatusChange[];
   symbols: NameChanges;
 }
@@ -110,35 +116,85 @@ export function diffScripts({
   };
 }
 
-/** The setting keys in `contributes.configuration`, a single object or a list of them. */
-function settingKeys(manifest: unknown): string[] {
+/** The fields of a setting whose change the docs may need to follow. */
+const SETTING_FIELDS = [
+  "default",
+  "enum",
+  "enumDescriptions",
+  "scope",
+  "type",
+  "description",
+  "markdownDescription",
+] as const;
+
+/** The settings in `contributes.configuration` (a single object or a list of them), by key. */
+function settingsOf(manifest: unknown): Map<string, unknown> {
   const contributes = isRecord(manifest) ? manifest["contributes"] : undefined;
   const configuration = isRecord(contributes) ? contributes["configuration"] : undefined;
   const sections = Array.isArray(configuration) ? configuration : [configuration];
-  return sections.flatMap((section) =>
-    isRecord(section) && isRecord(section["properties"]) ? Object.keys(section["properties"]) : [],
+  return new Map(
+    sections.flatMap((section) =>
+      isRecord(section) && isRecord(section["properties"])
+        ? Object.entries(section["properties"])
+        : [],
+    ),
   );
 }
 
-/** The setting keys added to or removed from `contributes.configuration`. */
-export function diffSettings({ before, after }: BeforeAfter<unknown>): NameChanges {
-  return diffNames({ before: settingKeys(before), after: settingKeys(after) });
+/** Whether any of a setting's fields the docs follow differs, compared as JSON. */
+function isSettingChanged({ before, after }: BeforeAfter<unknown>): boolean {
+  const old = isRecord(before) ? before : {};
+  const now = isRecord(after) ? after : {};
+  return SETTING_FIELDS.some((field) => JSON.stringify(old[field]) !== JSON.stringify(now[field]));
 }
 
-/** The command ids in `contributes.commands`. */
-function commandIds(manifest: unknown): string[] {
+/** The setting keys added to or removed from `contributes.configuration`, or defined differently. */
+export function diffSettings({
+  before,
+  after,
+}: BeforeAfter<unknown>): NameChanges & { changed: string[] } {
+  const old = settingsOf(before);
+  const now = settingsOf(after);
+  return {
+    ...diffNames({ before: [...old.keys()], after: [...now.keys()] }),
+    changed: [...now.keys()]
+      .filter(
+        (key) => old.has(key) && isSettingChanged({ before: old.get(key), after: now.get(key) }),
+      )
+      .toSorted(),
+  };
+}
+
+/** The commands in `contributes.commands`: each id's title, or `null` without one. */
+function commandsOf(manifest: unknown): Map<string, string | null> {
   const contributes = isRecord(manifest) ? manifest["contributes"] : undefined;
   const commands = isRecord(contributes) ? contributes["commands"] : undefined;
-  return Array.isArray(commands)
-    ? commands.flatMap((entry) =>
-        isRecord(entry) && typeof entry["command"] === "string" ? [entry["command"]] : [],
-      )
-    : [];
+  return new Map(
+    Array.isArray(commands)
+      ? commands.flatMap((entry) =>
+          isRecord(entry) && typeof entry["command"] === "string"
+            ? [[entry["command"], typeof entry["title"] === "string" ? entry["title"] : null]]
+            : [],
+        )
+      : [],
+  );
 }
 
-/** The command ids added to or removed from `contributes.commands`. */
-export function diffCommands({ before, after }: BeforeAfter<unknown>): NameChanges {
-  return diffNames({ before: commandIds(before), after: commandIds(after) });
+/** The command ids added to or removed from `contributes.commands`, and those with a new title. */
+export function diffCommands({
+  before,
+  after,
+}: BeforeAfter<unknown>): NameChanges & { retitled: CommandRetitle[] } {
+  const old = commandsOf(before);
+  const now = commandsOf(after);
+  return {
+    ...diffNames({ before: [...old.keys()], after: [...now.keys()] }),
+    retitled: [...now.keys()].toSorted().flatMap((command) => {
+      const from = old.get(command);
+      const to = now.get(command) ?? null;
+      return from === undefined || from === to ? [] : [{ command, from, to }];
+    }),
+  };
 }
 
 /** The ADRs whose Status line changed, appeared or went, by number; `null` where there was none. */
