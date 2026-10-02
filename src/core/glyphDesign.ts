@@ -115,19 +115,21 @@ const shape = (width: number, fills: string[], holes: (string | Point[])[] = [])
 /** The agreed geometry, ported from the plan's reference sheet (assets/glyph-sheet.py). */
 export const GLYPH_DESIGNS: Record<Glyph, GlyphDesign> = {
   square: shape(16, ["1.2,1.2 14.8,1.2 14.8,14.8 1.2,14.8"]),
-  bar: shape(6, ["1.2,0.4 4.8,0.4 4.8,15.6 1.2,15.6"]),
+  // Ends 0.75 in, so the softened outline fills the box exactly.
+  bar: shape(6, ["1.2,0.75 4.8,0.75 4.8,15.25 1.2,15.25"]),
   pill: shape(44, ["7,1.2 37,1.2 42.8,4 42.8,12 37,14.8 7,14.8 1.2,12 1.2,4"]),
   circle: { ...shape(16, []), fills: [ngon(8, 8, 6.8)] },
   // After the app icon (0005): head and beak, a notch between them and a cut-out eye.
   toucan: shape(
     18,
     [
-      "4.6,1.2 7.4,1.3 7.8,5.2 10.6,7.6 11,10.4 8.8,13.2 6.4,15.3 4.4,15.3 4.4,13 1.6,11 1.8,6 3,2.8",
+      "4.6,1.2 7.4,1.3 7.8,5.2 10.6,7.6 11,10.4 8.8,13.2 6.4,15.25 4.4,15.25 4.4,13 1.6,11 1.8,6 3,2.8",
       "7.9,1.4 11.6,0.9 14.8,2 16.8,4.2 17.1,7.4 14.6,5.2 8.3,5.3",
     ],
     ["7.35,0.9 7.75,0.9 8.05,5.7 7.65,5.7", ngon(5.2, 3.6, 0.9, 8)],
   ),
-  sun: { width: 16, fills: pinSun(2.8, 5.0, 7.9, 0.2), holes: [], softening: SUN_SOFTENING },
+  // Rays end at radius 7.65 (8 minus half the sun's softening), so their tips stay in the box.
+  sun: { width: 16, fills: pinSun(2.8, 5.0, 7.65, 0.2), holes: [], softening: SUN_SOFTENING },
   // A pointed blade on a short stem (0007).
   leaf: {
     ...shape(16, []),

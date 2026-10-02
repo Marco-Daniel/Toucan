@@ -3,7 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { FONT_CODEPOINTS, glyphSvg } from "../../src/core/glyphs.ts";
+import { FONT_CODEPOINTS } from "../../src/core/glyphFont.ts";
+import { glyphSvg } from "../../src/core/glyphs.ts";
+import { GLYPH_PATHS } from "../../src/generated/glyphPaths.ts";
 import { GLYPHS, type Glyph, type Hex } from "../../src/core/model.ts";
 import { buildFont } from "../../scripts/font.mts";
 
@@ -41,22 +43,41 @@ function ink(svg: string, fontFiles: string[] = []): { width: number; mask: bool
   return { width, mask };
 }
 
-/** The glyph as the font draws it, placed like the 16-unit SVG: 1/8 of the em below the baseline. */
-function fontGlyph(glyph: Glyph, width: number): string {
+/** Glyph units of empty margin around both drawings, so nothing is clipped and an overflow shows. */
+const PAD = 2;
+
+/**
+ * The glyph as swatches draw it (glyphSvg, clipped to its own box), PAD units
+ * in from the top left. Anything outside the box is cut off here but not in
+ * the font, so it shows up as a difference.
+ */
+function swatchGlyph(glyph: Glyph): string {
+  const { width } = GLYPH_PATHS[glyph];
+  const swatch = glyphSvg(glyph, BLACK, 16 * SCALE).replace(
+    '<svg xmlns="http://www.w3.org/2000/svg" ',
+    `<svg x="${PAD * SCALE}" y="${PAD * SCALE}" `,
+  );
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${(width + 2 * PAD) * SCALE}" height="${(16 + 2 * PAD) * SCALE}">` +
+    `${swatch}</svg>`
+  );
+}
+
+/** The glyph as the font draws it, placed like the swatch: 1/8 of the em below the baseline. */
+function fontGlyph(glyph: Glyph): string {
+  const { width } = GLYPH_PATHS[glyph];
   const size = 16 * SCALE;
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${width * SCALE}" height="${size}">` +
-    `<text x="0" y="${size * 0.875}" font-family="toucan-icons" font-size="${size}" fill="${BLACK}">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${(width + 2 * PAD) * SCALE}" height="${size + 2 * PAD * SCALE}">` +
+    `<text x="${PAD * SCALE}" y="${PAD * SCALE + size * 0.875}" font-family="toucan-icons" font-size="${size}" fill="${BLACK}">` +
     `&#x${FONT_CODEPOINTS[glyph].toString(16)};</text></svg>`
   );
 }
 
 describe("the icon font", () => {
   it.each(GLYPHS)("draws %s like its SVG, holes included", (glyph) => {
-    const svg = glyphSvg(glyph, BLACK, 16 * SCALE);
-    const width = Number(/viewBox="0 0 ([\d.]+) 16"/.exec(svg)?.[1]);
-    const expected = ink(svg);
-    const actual = ink(fontGlyph(glyph, width), [fontFile]);
+    const expected = ink(swatchGlyph(glyph));
+    const actual = ink(fontGlyph(glyph), [fontFile]);
     let both = 0;
     let either = 0;
     for (let i = 0; i < expected.mask.length; i++) {

@@ -8,6 +8,7 @@ import {
   glyphSvg,
   svgDataUri,
 } from "../../src/core/glyphs.ts";
+import { GLYPH_PATHS } from "../../src/generated/glyphPaths.ts";
 import { GLYPH_GROUPS, GLYPHS, type Glyph, type Hex } from "../../src/core/model.ts";
 
 const RED = "#ff0000" as Hex;
@@ -128,6 +129,26 @@ function inkAt(glyph: Glyph): (x: number, y: number) => number {
   const { pixels, width } = new Resvg(glyphSvg(glyph, RED, 16 * scale)).render();
   return (x, y) => pixels[(Math.floor(y * scale) * width + Math.floor(x * scale)) * 4 + 3]!;
 }
+
+describe("glyph bounds", () => {
+  // glyphSvg's viewBox is the glyph box: anything outside it would be clipped
+  // in swatches but drawn in full by the font.
+  it("keep every baked outline inside its box", () => {
+    const outside = GLYPHS.filter((glyph) => {
+      const { width, d } = GLYPH_PATHS[glyph];
+      const numbers = d.match(/-?\d+(?:\.\d+)?/g)!.map(Number);
+      const xs = numbers.filter((_, i) => i % 2 === 0);
+      const ys = numbers.filter((_, i) => i % 2 === 1);
+      return (
+        Math.min(...xs) < 0 ||
+        Math.max(...xs) > width ||
+        Math.min(...ys) < 0 ||
+        Math.max(...ys) > 16
+      );
+    });
+    expect(outside).toEqual([]);
+  });
+});
 
 describe("glyph shapes", () => {
   // Points from the reference sheet's geometry: inside a body must be ink;
