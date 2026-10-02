@@ -54,7 +54,11 @@ export class TitleSetup {
     const focused = ports.focused();
     let change = ports.readChange();
     // Only the focused window heals: it's the one that may have crashed mid-write.
-    if (focused && change && unappliedChange(change, ports.title().global, ports.now())) {
+    if (
+      focused &&
+      change &&
+      unappliedChange({ change, currentTitle: ports.title().global, now: ports.now() })
+    ) {
       await ports.writeChange(undefined);
       change = undefined;
     }
@@ -115,7 +119,7 @@ export class TitleSetup {
   }
 
   private async restore(change: TitleChange): Promise<void> {
-    const result = titleToRestore(change, this.ports.title().global);
+    const result = titleToRestore({ change, current: this.ports.title().global });
     if (result.restore) {
       await this.ports.writeTitle(result.value);
       this.ports.info("Restored window.title.");

@@ -32,20 +32,27 @@ export function titleWithRepoVariable(current: string): string | undefined {
   return current.includes(REPO_VARIABLE) ? undefined : `${REPO_VARIABLE}${current}`;
 }
 
+interface RepoVariableValueArgs {
+  change: TitleChange;
+  repo: { name: string; emoji: string } | undefined;
+}
+
 /**
  * What the variable shows. When Toucan added it, the title already names the
  * repo elsewhere, so the emoji and a space (nothing for a repo without a
  * color, so VS Code drops the separator after it). When the user's own title
  * used it, it stands in for SCM's repo name, so the emoji plus the name.
  */
-export function repoVariableValue(
-  change: TitleChange,
-  repo: { name: string; emoji: string } | undefined,
-): string | undefined {
+export function repoVariableValue({ change, repo }: RepoVariableValueArgs): string | undefined {
   if (change.written !== undefined) {
     return repo ? `${repo.emoji} ` : "";
   }
   return repo && `${repo.emoji} ${repo.name}`;
+}
+
+interface TitleToRestoreArgs {
+  change: TitleChange;
+  current: string | undefined;
 }
 
 /**
@@ -53,10 +60,10 @@ export function repoVariableValue(
  * but only if `window.title` is still what Toucan wrote. If the user edited
  * it since, their edit stays.
  */
-export function titleToRestore(
-  change: TitleChange,
-  current: string | undefined,
-): { restore: true; value: string | undefined } | { restore: false } {
+export function titleToRestore({
+  change,
+  current,
+}: TitleToRestoreArgs): { restore: true; value: string | undefined } | { restore: false } {
   if (change.written === undefined || current !== change.written) {
     return { restore: false };
   }
@@ -86,9 +93,20 @@ export function searchEmojiStep(state: {
   return "none";
 }
 
+interface ShouldLabelArgs {
+  enabled: boolean;
+  change: TitleChange | undefined;
+}
+
 /** Whether a window shows the emoji label (otherwise it hands the key back). */
-export function shouldLabel(enabled: boolean, change: TitleChange | undefined): boolean {
+export function shouldLabel({ enabled, change }: ShouldLabelArgs): boolean {
   return enabled && change !== undefined;
+}
+
+interface UnappliedChangeArgs {
+  change: TitleChange;
+  currentTitle: string | undefined;
+  now: number;
 }
 
 /**
@@ -99,11 +117,7 @@ export function shouldLabel(enabled: boolean, change: TitleChange | undefined): 
  * view of the title can lag behind the write), and neither is a recent
  * pending one (its write may still be under way in another window).
  */
-export function unappliedChange(
-  change: TitleChange,
-  currentTitle: string | undefined,
-  now: number,
-): boolean {
+export function unappliedChange({ change, currentTitle, now }: UnappliedChangeArgs): boolean {
   return (
     change.pendingSince !== undefined &&
     now - change.pendingSince > PENDING_STALE_MS &&

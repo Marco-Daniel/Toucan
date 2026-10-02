@@ -33,6 +33,12 @@ interface GitApi {
   onDidCloseRepository: Event<unknown>;
 }
 
+interface SearchEmojiArgs {
+  context: ExtensionContext;
+  log: Log;
+  repo: () => ActiveRepo | undefined;
+}
+
 /**
  * The experimental emoji in the Command Center label (0007, 0015). It needs
  * `${activeRepositoryName}` in the global window.title, which Toucan only
@@ -56,11 +62,11 @@ export class SearchEmoji implements Disposable {
   private readonly repo: () => ActiveRepo | undefined;
   private readonly title: TitleSetup;
 
-  constructor(context: ExtensionContext, log: Log, repo: () => ActiveRepo | undefined) {
+  constructor({ context, log, repo }: SearchEmojiArgs) {
     this.context = context;
     this.log = log;
     this.repo = repo;
-    this.title = new TitleSetup(titlePorts(context, log));
+    this.title = new TitleSetup(titlePorts({ context, log }));
     this.disposables.push(window.onDidChangeActiveTextEditor(() => this.reassertSoon()));
   }
 
@@ -76,7 +82,7 @@ export class SearchEmoji implements Disposable {
   /** After activation, a focus change or a `toucan.*` change. */
   async refresh(): Promise<void> {
     const change = await this.title.settle();
-    if (shouldLabel(enabled(), change)) {
+    if (shouldLabel({ enabled: enabled(), change })) {
       const overridden = workspaceTitle();
       if (overridden && !this.reportedOverride) {
         this.log.info(
@@ -107,10 +113,13 @@ export class SearchEmoji implements Disposable {
       return;
     }
     const repo = this.repo();
-    const value = repoVariableValue(
+    const value = repoVariableValue({
       change,
-      repo && { name: repo.name, emoji: emojiFor(repo.config.background, repo.config.glyph) },
-    );
+      repo: repo && {
+        name: repo.name,
+        emoji: emojiFor({ hex: repo.config.background, glyph: repo.config.glyph }),
+      },
+    });
     if (value === undefined) {
       // A repo without a color shows SCM's own value.
       await this.handBack();
@@ -198,7 +207,12 @@ function workspaceTitle(): boolean {
   return inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined;
 }
 
-function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
+interface TitlePortsArgs {
+  context: ExtensionContext;
+  log: Log;
+}
+
+function titlePorts({ context, log }: TitlePortsArgs): TitlePorts {
   return {
     enabled,
     focused: () => window.state.focused,

@@ -103,8 +103,13 @@ export function emojiColor(hex: Hex): EmojiColor {
   return nearestHue(h);
 }
 
+interface EmojiForArgs {
+  hex: Hex;
+  glyph: Glyph;
+}
+
 /** The emoji for a repo's color in its glyph's shape (0007, 0012). */
-export function emojiFor(hex: Hex, glyph: Glyph): string {
+export function emojiFor({ hex, glyph }: EmojiForArgs): string {
   return family(glyph)[emojiColor(hex)];
 }
 
