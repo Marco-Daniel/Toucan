@@ -15,6 +15,18 @@ Public prior art (other open-source extensions, VS Code itself) is fine to name.
 
 Before every commit, push or GitHub post, check the text for these. If something slips through, say so straight away instead of quietly fixing it, because removing it from public history takes a history rewrite.
 
+## Documentation search
+
+When qmd is available (the `qmd` MCP server, set up per README, Development), search the docs instead of reading whole folders:
+
+- Before changing code, search `toucan-docs` for the area, and narrow to `adr/` for the binding system rules and direction.
+- Use `query` with a `lex` line for exact terms plus a `vec` line for the question, then `get` the hits you need.
+- For the history of why things are the way they are, narrow to `plans/` (per-feature plans and their decisions).
+- `toucan-guides` holds README.md and GROUNDING.md.
+- Without qmd, read the files directly.
+
+A hook keeps the keyword index fresh after doc edits. Run `pnpm docs:index` after bigger doc changes, to refresh the embeddings.
+
 ## Tests must be able to fail
 
 Every test has to survive one question:
