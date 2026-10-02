@@ -15,6 +15,11 @@
 import { Stryker } from "@stryker-mutator/core";
 
 const VITEST = "node node_modules/vitest/vitest.mjs";
+
+/** A path as one shell word: Stryker runs the command through a shell, so spaces must not split it. */
+function shellQuoted(path: string): string {
+  return `'${path.replaceAll("'", `'\\''`)}'`;
+}
 // After `node` and this script come the files to mutate.
 const FIRST_ARGUMENT = 2;
 const files = process.argv.slice(FIRST_ARGUMENT);
@@ -24,6 +29,6 @@ const options =
     ? {}
     : {
         mutate: files,
-        commandRunner: { command: `${VITEST} related --run ${files.join(" ")}` },
+        commandRunner: { command: `${VITEST} related --run ${files.map(shellQuoted).join(" ")}` },
       };
 await new Stryker({ configFile: "stryker.config.json", ...options }).runMutationTest();
