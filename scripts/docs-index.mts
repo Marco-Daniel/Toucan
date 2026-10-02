@@ -37,12 +37,14 @@ if (!hasQmd()) {
   process.exit(1);
 }
 
-const ran = await exclusive(
-  async (lock) => {
+const ran = await exclusive({
+  job: async (lock) => {
     // A single qmd command can run long (the first embed downloads models): keep the lock fresh.
     const heartbeat = setInterval(() => touchLock(lock), HEARTBEAT_MS);
     try {
-      const { commands, notes } = planIndex(currentState(process.argv.includes("--force")));
+      const { commands, notes } = planIndex({
+        state: currentState(process.argv.includes("--force")),
+      });
       for (const note of notes) {
         console.warn(note);
       }
@@ -61,8 +63,8 @@ const ran = await exclusive(
       clearInterval(heartbeat);
     }
   },
-  { waitMs: WAIT_MS },
-);
+  waitMs: WAIT_MS,
+});
 if (!ran) {
   console.error(
     "Another qmd job for Toucan is still running (a hook re-indexing). Try again in a minute.",

@@ -81,8 +81,19 @@ export interface IndexPlan {
   notes: string[];
 }
 
-function absolute(root: string, dir: string): string {
+interface AbsoluteArgs {
+  root: string;
+  dir: string;
+}
+
+function absolute({ root, dir }: AbsoluteArgs): string {
   return dir === "." ? root : `${root}/${dir}`;
+}
+
+interface PlanIndexArgs {
+  state: IndexState;
+  /** False for keyword search only: no embeddings, so no model download. */
+  embed?: boolean;
 }
 
 /**
@@ -90,7 +101,7 @@ function absolute(root: string, dir: string): string {
  * re-index, and embed unless `embed` is false (keyword search only: no model
  * download).
  */
-export function planIndex(state: IndexState, { embed = true } = {}): IndexPlan {
+export function planIndex({ state, embed = true }: PlanIndexArgs): IndexPlan {
   const { commands, notes } = planCollections(state);
   if (embed) {
     commands.push(["embed"]);
@@ -103,7 +114,7 @@ function planCollections(state: IndexState): IndexPlan {
   const commands: string[][] = [];
   const notes: string[] = [];
   for (const { name, dir, mask, contexts } of DOCS_COLLECTIONS) {
-    const path = absolute(state.root, dir);
+    const path = absolute({ root: state.root, dir });
     const current = state.registered[name];
     const add = ["collection", "add", path, "--name", name, "--mask", mask];
     if (!current) {
@@ -136,7 +147,12 @@ function planCollections(state: IndexState): IndexPlan {
 }
 
 /** Whether an edited file is in one of Toucan's collections, so keyword search needs a refresh. */
-export function isIndexedDoc(file: string, root: string): boolean {
+interface IsIndexedDocArgs {
+  file: string;
+  root: string;
+}
+
+export function isIndexedDoc({ file, root }: IsIndexedDocArgs): boolean {
   // A file outside the repo comes out as "../…", which no collection mask matches.
   const path = relative(root, file);
   return DOCS_COLLECTIONS.some(({ dir, mask }) =>

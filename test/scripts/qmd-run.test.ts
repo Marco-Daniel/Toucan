@@ -37,7 +37,8 @@ function exclusiveInChild(renote: boolean) {
     import { exclusive } from ${JSON.stringify(RUN)};
     import { markPending, releaseLock } from ${JSON.stringify(LOCK)};
     let releases = 0;
-    await exclusive(() => true, {
+    await exclusive({
+      job: () => true,
       release: (lock) => {
         releases++;
         releaseLock(lock);
@@ -57,21 +58,19 @@ describe("exclusive", () => {
     let jobs = 0;
     let releases = 0;
     markPending();
-    await exclusive(
-      () => {
+    await exclusive({
+      job: () => {
         jobs++;
         return true;
       },
-      {
-        release: (lock) => {
-          // The first time, an edit lands between the last check and the release.
-          if (releases++ === 0) {
-            markPending();
-          }
-          releaseLock(lock);
-        },
+      release: (lock) => {
+        // The first time, an edit lands between the last check and the release.
+        if (releases++ === 0) {
+          markPending();
+        }
+        releaseLock(lock);
       },
-    );
+    });
     expect(log()).toBe("update start\nupdate end\nupdate start\nupdate end\n");
     // The job (checking qmd and the collections) runs once, not every round.
     expect(jobs).toBe(1);
@@ -79,7 +78,7 @@ describe("exclusive", () => {
 
   it("leaves the edits pending when the job isn't ready for them", async () => {
     markPending();
-    expect(await exclusive(() => false)).toBe(true);
+    expect(await exclusive({ job: () => false })).toBe(true);
     expect(log()).toBe("");
     expect(isPending()).toBe(true);
     expect(takeLock()).toBeDefined();
@@ -89,9 +88,11 @@ describe("exclusive", () => {
     takeLock();
     let ran = false;
     expect(
-      await exclusive(() => {
-        ran = true;
-        return true;
+      await exclusive({
+        job: () => {
+          ran = true;
+          return true;
+        },
       }),
     ).toBe(false);
     expect(ran).toBe(false);
@@ -100,13 +101,13 @@ describe("exclusive", () => {
   it("waits for the lock when asked to, then runs", async () => {
     const held = takeLock()!;
     let ran = false;
-    const running = exclusive(
-      () => {
+    const running = exclusive({
+      job: () => {
         ran = true;
         return true;
       },
-      { waitMs: 5000 },
-    );
+      waitMs: 5000,
+    });
     expect(ran).toBe(false);
     releaseLock(held);
     expect(await running).toBe(true);

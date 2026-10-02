@@ -17,7 +17,7 @@ import { markPending } from "./qmd-lock.mts";
 import { exclusive, hasQmd, registeredNames } from "./qmd-run.mts";
 
 if (process.argv[2] === "--worker") {
-  await exclusive(() => hasQmd() && registeredNames().size > 0);
+  await exclusive({ job: () => hasQmd() && registeredNames().size > 0 });
 } else {
   const root = process.env["CLAUDE_PROJECT_DIR"];
   // Input that can't be read or isn't JSON isn't hook input: nothing to do.
@@ -26,7 +26,7 @@ if (process.argv[2] === "--worker") {
   );
   const tool = isRecord(input) ? input["tool_input"] : undefined;
   const file = isRecord(tool) ? tool["file_path"] : undefined;
-  if (root && typeof file === "string" && isIndexedDoc(file, root)) {
+  if (root && typeof file === "string" && isIndexedDoc({ file, root })) {
     markPending();
     spawn(process.execPath, [process.argv[1]!, "--worker"], {
       detached: true,

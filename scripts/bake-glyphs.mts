@@ -28,7 +28,13 @@ const HUNDREDTHS = 100;
 const toPath = (points: readonly Point[]): Path =>
   points.map(([x, y]) => ({ X: Math.round(x * SCALE), Y: Math.round(y * SCALE) }));
 
-function grow(polygons: readonly (readonly Point[])[], by: number): Paths {
+interface GrowArgs {
+  polygons: readonly (readonly Point[])[];
+  /** How far every edge moves out, in glyph units. */
+  by: number;
+}
+
+function grow({ polygons, by }: GrowArgs): Paths {
   // Same orientation for every input, so overlapping fills unite under nonzero.
   const paths = polygons.map((points) => {
     const path = toPath(points);
@@ -49,12 +55,12 @@ function format(value: number): string {
 export function bakeGlyph(design: GlyphDesign): string {
   const clipper = new ClipperLib.Clipper();
   clipper.AddPaths(
-    grow(design.fills, design.softening * STROKE_REACH),
+    grow({ polygons: design.fills, by: design.softening * STROKE_REACH }),
     ClipperLib.PolyType.ptSubject,
     true,
   );
   clipper.AddPaths(
-    grow(design.holes, HOLE_SOFTENING * STROKE_REACH),
+    grow({ polygons: design.holes, by: HOLE_SOFTENING * STROKE_REACH }),
     ClipperLib.PolyType.ptClip,
     true,
   );

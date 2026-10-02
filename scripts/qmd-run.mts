@@ -16,8 +16,8 @@ import { isPending, releaseLock, takeLock, takePending } from "./qmd-lock.mts";
 /** The repo root at runtime (qmd stores real paths), so no path is committed. */
 export const ROOT = realpathSync(fileURLToPath(new URL("..", import.meta.url)));
 
-export function qmd(args: readonly string[], inherit = false) {
-  return spawnSync("qmd", args, { encoding: "utf8", stdio: inherit ? "inherit" : "pipe" });
+export function qmd(args: readonly string[]) {
+  return spawnSync("qmd", args, { encoding: "utf8", stdio: "pipe" });
 }
 
 /** Whether qmd is on PATH (`--version` reads no index). */
@@ -90,6 +90,15 @@ async function waitForLock(waitMs: number): Promise<string | undefined> {
   return lock;
 }
 
+interface ExclusiveArgs {
+  /** The work to run under the lock; false when it isn't ready (see below). */
+  job: (lock: string) => boolean | Promise<boolean>;
+  /** How long to wait for another job's lock; 0 gives up at once. */
+  waitMs?: number;
+  /** Lets go of the lock; tests pass their own. */
+  release?: (lock: string) => void;
+}
+
 /**
  * Runs `job` under the lock, then re-indexes for edits made meanwhile. A job
  * that returns false (qmd or the collections aren't ready) leaves the pending
@@ -99,10 +108,11 @@ async function waitForLock(waitMs: number): Promise<string | undefined> {
  * running `job`, when the lock stays held for `waitMs`: the job holding it
  * picks the edits up.
  */
-export async function exclusive(
-  job: (lock: string) => boolean | Promise<boolean>,
-  { waitMs = 0, release = releaseLock }: { waitMs?: number; release?: (lock: string) => void } = {},
-): Promise<boolean> {
+export async function exclusive({
+  job,
+  waitMs = 0,
+  release = releaseLock,
+}: ExclusiveArgs): Promise<boolean> {
   let lock = await waitForLock(waitMs);
   if (!lock) {
     return false;

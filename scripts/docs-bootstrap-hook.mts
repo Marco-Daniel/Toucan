@@ -10,13 +10,13 @@ import { allRegistered, currentState, exclusive, hasQmd, qmd } from "./qmd-run.m
 
 if (process.argv[2] === "--worker") {
   // Wait for a job that's running (an edit's re-index, say), then register.
-  await exclusive(
-    () => {
+  await exclusive({
+    job: () => {
       if (!hasQmd()) {
         return false;
       }
       if (!allRegistered()) {
-        for (const args of planIndex(currentState(false), { embed: false }).commands) {
+        for (const args of planIndex({ state: currentState(false), embed: false }).commands) {
           if (qmd(args).status !== 0) {
             return false;
           }
@@ -24,8 +24,8 @@ if (process.argv[2] === "--worker") {
       }
       return true;
     },
-    { waitMs: 120_000 },
-  );
+    waitMs: 120_000,
+  });
 } else {
   // Hand the work to a detached copy of this script, so the session starts at once.
   spawn(process.execPath, [process.argv[1]!, "--worker"], {

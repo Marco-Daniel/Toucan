@@ -14,7 +14,7 @@ const GUIDES_CONTEXT = DOCS_COLLECTIONS[1]!.contexts;
 
 /** The plan with each command's leading `--index toucan` checked and stripped. */
 function plan(overrides: Partial<IndexState> = {}) {
-  const { commands, notes } = planIndex(state(overrides));
+  const { commands, notes } = planIndex({ state: state(overrides) });
   for (const command of commands) {
     expect(command.slice(0, 2)).toEqual(["--index", "toucan"]);
   }
@@ -56,7 +56,7 @@ describe("planIndex", () => {
   });
 
   it("leaves out the embedding when asked for keyword search only", () => {
-    const { commands } = planIndex(state(), { embed: false });
+    const { commands } = planIndex({ state: state(), embed: false });
     expect(commands.at(-1)).toEqual(["--index", "toucan", "update"]);
     expect(commands.some((command) => command.includes("embed"))).toBe(false);
   });
@@ -231,6 +231,6 @@ describe("isIndexedDoc", () => {
     ["/repo/src/README.md", false],
     ["/elsewhere/docs/plan.md", false],
   ])("%s → %s", (file, indexed) => {
-    expect(isIndexedDoc(file, "/repo")).toBe(indexed);
+    expect(isIndexedDoc({ file, root: "/repo" })).toBe(indexed);
   });
 });
