@@ -17,7 +17,7 @@ export function createOwnerFile(
     async readOwner() {
       try {
         const parsed: unknown = JSON.parse(await readFile(file, "utf8"));
-        const owner = isRecord(parsed) ? parsed.window : undefined;
+        const owner = isRecord(parsed) ? parsed["window"] : undefined;
         return typeof owner === "string" ? owner : undefined;
       } catch {
         // Missing or unreadable counts as another window's, so nothing is cleared.

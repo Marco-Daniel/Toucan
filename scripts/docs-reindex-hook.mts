@@ -17,7 +17,7 @@ import { exclusive, hasQmd, registeredNames } from "./qmd-run.mts";
 if (process.argv[2] === "--worker") {
   await exclusive(() => hasQmd() && registeredNames().size > 0);
 } else {
-  const root = process.env.CLAUDE_PROJECT_DIR;
+  const root = process.env["CLAUDE_PROJECT_DIR"];
   let file: unknown;
   try {
     file = (JSON.parse(await text(process.stdin)) as { tool_input?: { file_path?: unknown } })

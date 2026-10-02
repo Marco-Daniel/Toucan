@@ -21,8 +21,8 @@ const run = (args: readonly string[]) =>
   });
 
 // The TOUCAN_QMD_* overrides shorten the waits in tests.
-const WAIT_MS = Number(process.env.TOUCAN_QMD_WAIT_MS) || 60_000;
-const HEARTBEAT_MS = Number(process.env.TOUCAN_QMD_HEARTBEAT_MS) || 60_000;
+const WAIT_MS = Number(process.env["TOUCAN_QMD_WAIT_MS"]) || 60_000;
+const HEARTBEAT_MS = Number(process.env["TOUCAN_QMD_HEARTBEAT_MS"]) || 60_000;
 
 if (!hasQmd()) {
   console.error(

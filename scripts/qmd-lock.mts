@@ -20,7 +20,7 @@ const STALE_MS = 10 * 60_000;
 
 /** qmd's cache folder, resolved the way qmd resolves it. */
 function cache(name: string): string {
-  const dir = join(process.env.XDG_CACHE_HOME || join(homedir(), ".cache"), "qmd");
+  const dir = join(process.env["XDG_CACHE_HOME"] || join(homedir(), ".cache"), "qmd");
   mkdirSync(dir, { recursive: true });
   return join(dir, name);
 }
