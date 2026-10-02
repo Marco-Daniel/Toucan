@@ -1,16 +1,27 @@
+// import vscode
 import { commands as vscodeCommands, window, workspace } from "vscode";
-import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
-import type { Log } from "../../core/log.adapter.ts";
+import { writeUserSetting } from "../settings/settings.adapter.ts";
+
+// import utils
 import { deriveColors } from "../../shared/color/derive.util.ts";
 import { resolveSidebarSettings, SidebarController } from "./sidebar.util.ts";
-import type { SidebarSettings } from "./sidebar.util.ts";
+
+// import views
 import { sidebarBlockHtml } from "./sidebar.view.ts";
-import type { SidebarStyle } from "../../shared/model/model.types.ts";
+
+// import consts
 import { configs } from "../../generated/meta.ts";
 import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "../../core/ids.consts.ts";
+
+// import types
+import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
+import type { Log } from "../../core/log.adapter.ts";
+import type { SidebarSettings } from "./sidebar.util.ts";
+import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
-import { writeUserSetting } from "../settings/settings.adapter.ts";
 
 /** workspaceState key for "the user closed the block here" (toucan-v1/0013). */
 const CLOSED_KEY = "sidebarBlock.closed";

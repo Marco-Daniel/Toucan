@@ -1,7 +1,12 @@
+// import vscode
 import { ConfigurationTarget, workspace } from "vscode";
-import type { Log } from "../../core/log.adapter.ts";
+
+// import utils
 import { settingsFiles } from "./settingsEdit.util.ts";
 import { SettingsFileWriter } from "./settingsWrite.util.ts";
+
+// import types
+import type { Log } from "../../core/log.adapter.ts";
 
 /** The user-level value of a setting: never get(), which merges defaults and workspace values. */
 export function userValue(key: string): unknown {

@@ -1,5 +1,8 @@
-import type { Glyph } from "../../shared/model/model.types.ts";
+// import utils
 import { roundToHundredths } from "../../shared/math/round.util.ts";
+
+// import types
+import type { Glyph } from "../../shared/model/model.types.ts";
 
 /** A point in glyph units: x to the right, y down, the glyph 16 units high. */
 export type Point = readonly [number, number];

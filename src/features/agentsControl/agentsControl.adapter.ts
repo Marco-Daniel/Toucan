@@ -1,9 +1,18 @@
+// import vscode
 import { window, workspace } from "vscode";
-import type { ExtensionContext } from "vscode";
-import { AGENTS_CONTROL_OFFER } from "../../shared/messages/notifications.messages.ts";
-import type { Log } from "../../core/log.adapter.ts";
-import { AGENTS_CONTROL, agentsControlAction } from "./agentsControl.util.ts";
+
+// import adapters
 import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
+
+// import utils
+import { AGENTS_CONTROL, agentsControlAction } from "./agentsControl.util.ts";
+
+// import messages
+import { AGENTS_CONTROL_OFFER } from "../../shared/messages/notifications.messages.ts";
+
+// import types
+import type { ExtensionContext } from "vscode";
+import type { Log } from "../../core/log.adapter.ts";
 
 /** globalState key for "Not now" (per profile). */
 const DECLINED_KEY = "agentsControl.declined";

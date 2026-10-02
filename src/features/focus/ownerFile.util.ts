@@ -1,9 +1,14 @@
+// import libraries
 import { mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { FocusPorts } from "./focus.util.ts";
+
+// import utils
 import { isRecord } from "../../shared/records/records.util.ts";
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { writeAtomically } from "../../shared/fs/atomicWrite.util.ts";
+
+// import types
+import type { FocusPorts } from "./focus.util.ts";
 
 interface CreateOwnerFileArgs {
   directory: string;

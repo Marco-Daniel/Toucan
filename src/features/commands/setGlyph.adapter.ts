@@ -1,14 +1,25 @@
+// import vscode
 import { commands as vscodeCommands, window } from "vscode";
-import type { QuickPickItem } from "vscode";
-import { withGlyph } from "./entries.util.ts";
-import { glyphPickItems } from "../glyphs/glyphs.util.ts";
-import { NO_COLOR_YET } from "../../shared/messages/notifications.messages.ts";
-import type { Glyph } from "../../shared/model/model.types.ts";
-import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
-import { commands } from "../../generated/meta.ts";
-import type { CommandArgs } from "./commands.adapter.ts";
+
+// import adapters
 import { swatch, writeRepos } from "./commandUi.adapter.ts";
 import { pickWithPreview } from "./pickWithPreview.adapter.ts";
+
+// import utils
+import { withGlyph } from "./entries.util.ts";
+import { glyphPickItems } from "../glyphs/glyphs.util.ts";
+
+// import consts
+import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
+import { commands } from "../../generated/meta.ts";
+
+// import messages
+import { NO_COLOR_YET } from "../../shared/messages/notifications.messages.ts";
+
+// import types
+import type { QuickPickItem } from "vscode";
+import type { Glyph } from "../../shared/model/model.types.ts";
+import type { CommandArgs } from "./commands.adapter.ts";
 
 export async function setGlyph({ host, name }: CommandArgs): Promise<void> {
   const repo = host.activeRepo();

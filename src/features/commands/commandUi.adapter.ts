@@ -1,14 +1,25 @@
+// import vscode
 import { ColorThemeKind, Uri, window, workspace } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
+import { COLOR_CUSTOMIZATIONS } from "../focus/focus.adapter.ts";
+
+// import utils
 import { activeThemeName, statusBarBackground } from "../../shared/color/contrast.util.ts";
 import { glyphSvg, svgDataUri } from "../glyphs/glyphs.util.ts";
-import { saveFailed } from "../../shared/messages/notifications.messages.ts";
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
-import { COLOR_CUSTOMIZATIONS } from "../focus/focus.adapter.ts";
+import { tryCatch } from "../../shared/async/tryCatch.util.ts";
+
+// import consts
 import { configs } from "../../generated/meta.ts";
+
+// import messages
+import { saveFailed } from "../../shared/messages/notifications.messages.ts";
+
+// import types
+import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import type { CommandHost } from "./commands.adapter.ts";
-import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 /** A quick pick swatch is drawn 16 px high. */
 const SWATCH_PX = 16;

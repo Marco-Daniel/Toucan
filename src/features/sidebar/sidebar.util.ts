@@ -1,9 +1,14 @@
+// import utils
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
-import { SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "../../shared/model/model.consts.ts";
-import type { SidebarStyle, SidebarVisibility } from "../../shared/model/model.types.ts";
 import { isOneOf } from "../../shared/guards/oneOf.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
 import { logFailure } from "../../shared/async/logFailure.util.ts";
+
+// import consts
+import { SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "../../shared/model/model.consts.ts";
+
+// import types
+import type { SidebarStyle, SidebarVisibility } from "../../shared/model/model.types.ts";
 
 /** How long a user close must last before it's remembered (see `visibilityChanged`). */
 export const REMEMBER_CLOSE_DELAY_MS = 1500;

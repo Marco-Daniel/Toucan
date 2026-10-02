@@ -1,3 +1,4 @@
+// import libraries
 import { isDeepStrictEqual } from "node:util";
 // The ESM build: the package's UMD main loads its modules with a dynamic
 // require that the bundler can't follow.
@@ -9,8 +10,12 @@ import {
   parse,
   parseTree,
 } from "jsonc-parser/lib/esm/main.js";
-import type { Edit, JSONScanner, ParseError } from "jsonc-parser/lib/esm/main.js";
+
+// import utils
 import { isRecord } from "../../shared/records/records.util.ts";
+
+// import types
+import type { Edit, JSONScanner, ParseError } from "jsonc-parser/lib/esm/main.js";
 
 const CRLF = "\r\n";
 /** `globalStorage/<extension id>`, under a profile's folder. */

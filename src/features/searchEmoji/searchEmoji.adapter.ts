@@ -1,19 +1,30 @@
+// import vscode
 import { commands as vscodeCommands, extensions, window, workspace } from "vscode";
-import type { Disposable, Event, ExtensionContext } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
-import type { Log } from "../../core/log.adapter.ts";
-import { emojiFor } from "./emoji.util.ts";
-import { titleChangeFailed } from "../../shared/messages/notifications.messages.ts";
-import { TitleSetup } from "./titleSetup.util.ts";
-import type { TitlePorts } from "./titleSetup.util.ts";
-import { repoVariableValue, shouldLabel } from "./windowTitle.util.ts";
-import type { TitleChange } from "./windowTitle.util.ts";
-import { configs } from "../../generated/meta.ts";
-import type { ActiveRepo } from "../../core/repo.adapter.ts";
-import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.adapter.ts";
+
+// import utils
+import { emojiFor } from "./emoji.util.ts";
+import { TitleSetup } from "./titleSetup.util.ts";
+import { repoVariableValue, shouldLabel } from "./windowTitle.util.ts";
+import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
 import { logFailure } from "../../shared/async/logFailure.util.ts";
+
+// import consts
+import { configs } from "../../generated/meta.ts";
+
+// import messages
+import { titleChangeFailed } from "../../shared/messages/notifications.messages.ts";
+
+// import types
+import type { Disposable, Event, ExtensionContext } from "vscode";
+import type { Log } from "../../core/log.adapter.ts";
+import type { TitlePorts } from "./titleSetup.util.ts";
+import type { TitleChange } from "./windowTitle.util.ts";
+import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
 const WINDOW_TITLE = "window.title";
 /** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */

@@ -1,8 +1,13 @@
+// import vscode
 import { window } from "vscode";
+
+// import adapters
+import { Preview } from "./preview.adapter.ts";
+
+// import types
 import type { QuickPickItem } from "vscode";
 import type { RepoConfig } from "../../shared/config/config.util.ts";
 import type { CommandArgs } from "./commands.adapter.ts";
-import { Preview } from "./preview.adapter.ts";
 
 interface PickWithPreviewArgs<T> extends CommandArgs {
   items: T[];

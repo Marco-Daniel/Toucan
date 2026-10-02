@@ -1,15 +1,22 @@
+// import vscode
 import { commands as vscodeCommands } from "vscode";
-import type { Disposable } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
-import { commands } from "../../generated/meta.ts";
-import type { ActiveRepo } from "../../core/repo.adapter.ts";
-import type { SettingsWriter } from "../settings/settings.adapter.ts";
-import type { SidebarBlock } from "../sidebar/sidebar.adapter.ts";
-import type { StatusBarIndicator } from "../statusBar/statusBar.adapter.ts";
 import { clearColor } from "./clearColor.adapter.ts";
 import { pickPreset } from "./pickPresetColor.adapter.ts";
 import { setColor } from "./setColor.adapter.ts";
 import { setGlyph } from "./setGlyph.adapter.ts";
+
+// import consts
+import { commands } from "../../generated/meta.ts";
+
+// import types
+import type { Disposable } from "vscode";
+import type { ActiveRepo } from "../../core/repo.adapter.ts";
+import type { SettingsWriter } from "../settings/settings.adapter.ts";
+import type { SidebarBlock } from "../sidebar/sidebar.adapter.ts";
+import type { StatusBarIndicator } from "../statusBar/statusBar.adapter.ts";
 
 export interface CommandHost {
   /** Writes toucan.repos, keeping comments when it safely can (toucan-v1/0017). */

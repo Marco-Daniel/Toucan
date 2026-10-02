@@ -1,5 +1,8 @@
+// import utils
 import { opaque, parseColor, toHex } from "../../shared/color/color.util.ts";
 import { glyphSvg } from "../glyphs/glyphs.util.ts";
+
+// import types
 import type {
   CommandCenterColors,
   Glyph,

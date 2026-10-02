@@ -1,6 +1,11 @@
+// import utils
 import { NEUTRAL_GRAY } from "../../shared/color/color.util.ts";
-import type { RepoConfig } from "../../shared/config/config.util.ts";
+
+// import consts
 import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
+
+// import types
+import type { RepoConfig } from "../../shared/config/config.util.ts";
 import type { CommandArgs, CommandHost } from "./commands.adapter.ts";
 
 /**

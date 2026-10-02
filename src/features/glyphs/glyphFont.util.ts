@@ -1,10 +1,12 @@
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+// import utils
 import { roundToHundredths } from "../../shared/math/round.util.ts";
+
+// import types
+import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 // What `pnpm font` needs from the glyph code. Kept apart from glyphs.ts, which
 // imports the generated paths that `pnpm font` rewrites, so a missing or broken
 // generated file can't stop it from being regenerated.
-
 /**
  * Private-use codepoints of the glyphs in Toucan's icon font. pill, square and
  * bar keep their original codepoints; the rest follow in group order.

@@ -1,11 +1,14 @@
+// import utils
 import {
   searchEmojiStep,
   titleToRestore,
   titleWithRepoVariable,
   unappliedChange,
 } from "./windowTitle.util.ts";
-import type { TitleChange } from "./windowTitle.util.ts";
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
+
+// import types
+import type { TitleChange } from "./windowTitle.util.ts";
 
 /** `window.title` as `inspect()` reports it. */
 export interface TitleSettings {

@@ -1,11 +1,18 @@
+// import vscode
 import { InputBoxValidationSeverity, window } from "vscode";
+
+// import adapters
+import { statusBarAgainst, writeRepos } from "./commandUi.adapter.ts";
+import { Preview } from "./preview.adapter.ts";
+
+// import utils
 import { validateColorInput } from "../../shared/color/color.util.ts";
 import { LOW_CONTRAST_WARNING, lowContrast } from "../../shared/color/contrast.util.ts";
 import { withBackground } from "./entries.util.ts";
+
+// import types
 import type { Hex } from "../../shared/model/model.types.ts";
 import type { CommandArgs } from "./commands.adapter.ts";
-import { statusBarAgainst, writeRepos } from "./commandUi.adapter.ts";
-import { Preview } from "./preview.adapter.ts";
 
 export async function setColor({ host, name }: CommandArgs): Promise<void> {
   const preview = new Preview({ host, name });

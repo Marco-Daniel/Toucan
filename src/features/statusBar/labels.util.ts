@@ -1,5 +1,8 @@
-import type { RepoConfig } from "../../shared/config/config.util.ts";
+// import utils
 import { presetName } from "../../shared/color/contrast.util.ts";
+
+// import types
+import type { RepoConfig } from "../../shared/config/config.util.ts";
 
 interface AccessibilityLabelArgs {
   name: string;

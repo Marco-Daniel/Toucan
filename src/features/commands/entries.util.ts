@@ -1,5 +1,8 @@
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+// import utils
 import { isRecord } from "../../shared/records/records.util.ts";
+
+// import types
+import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 /**
  * Edits of the raw `toucan.repos` value, as the commands write it back to

@@ -1,6 +1,11 @@
-import { COMMAND_CENTER_KEYS } from "../../shared/model/model.consts.ts";
-import type { CommandCenterColors } from "../../shared/model/model.types.ts";
+// import utils
 import { isRecord } from "../../shared/records/records.util.ts";
+
+// import consts
+import { COMMAND_CENTER_KEYS } from "../../shared/model/model.consts.ts";
+
+// import types
+import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 
 const PREFIX = "commandCenter.";
 

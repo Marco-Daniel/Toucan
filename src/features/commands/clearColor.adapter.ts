@@ -1,16 +1,27 @@
+// import vscode
 import { window } from "vscode";
+
+// import adapters
 import { notify } from "../../core/notify.adapter.ts";
+import { userValue } from "../settings/settings.adapter.ts";
+import { writeRepos } from "./commandUi.adapter.ts";
+
+// import utils
 import { handEditedKeys, withoutRepo } from "./entries.util.ts";
+import { isRecord } from "../../shared/records/records.util.ts";
+
+// import consts
+import { configs } from "../../generated/meta.ts";
+
+// import messages
 import {
   CLEAR_CONFIRMATION,
   NO_COLOR,
   clearDetail,
 } from "../../shared/messages/notifications.messages.ts";
-import { configs } from "../../generated/meta.ts";
-import { userValue } from "../settings/settings.adapter.ts";
-import { isRecord } from "../../shared/records/records.util.ts";
+
+// import types
 import type { CommandArgs } from "./commands.adapter.ts";
-import { writeRepos } from "./commandUi.adapter.ts";
 
 export async function clearColor({ host, name }: CommandArgs): Promise<void> {
   const raw = readRepos();

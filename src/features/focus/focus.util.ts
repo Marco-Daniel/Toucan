@@ -1,11 +1,14 @@
+// import utils
 import { createLock } from "../../shared/async/lock.util.ts";
 import { customizationsFor, mergeCustomizations } from "./merge.util.ts";
-import type { CommandCenterColors } from "../../shared/model/model.types.ts";
-import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
 import { errorText, tryCatch, tryCatchSync } from "../../shared/async/tryCatch.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
 import { logFailure } from "../../shared/async/logFailure.util.ts";
+
+// import types
+import type { CommandCenterColors } from "../../shared/model/model.types.ts";
+import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 
 /**
  * Delay before an unfocused window clears the Command Center colors. Switching

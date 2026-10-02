@@ -1,9 +1,16 @@
+// import vscode
 import { MarkdownString, StatusBarAlignment, window } from "vscode";
-import type { Disposable } from "vscode";
+
+// import utils
 import { escapeIcons, glyphIcon, glyphSvg, svgDataUri } from "../glyphs/glyphs.util.ts";
 import { accessibilityLabel } from "./labels.util.ts";
+
+// import consts
 import { commands } from "../../generated/meta.ts";
 import { STATUS_ITEM_ID } from "../../core/ids.consts.ts";
+
+// import types
+import type { Disposable } from "vscode";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
 const TOOLTIP_SWATCH_HEIGHT = 32;

@@ -1,12 +1,19 @@
-import type { QuickPickItem } from "vscode";
-import { LOW_CONTRAST_WARNING, lowContrast } from "../../shared/color/contrast.util.ts";
-import { withBackground } from "./entries.util.ts";
-import type { Hex } from "../../shared/model/model.types.ts";
-import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
-import { PRESETS } from "../../shared/color/presets.consts.ts";
-import type { CommandArgs } from "./commands.adapter.ts";
+// import adapters
 import { statusBarAgainst, swatch, writeRepos } from "./commandUi.adapter.ts";
 import { pickWithPreview } from "./pickWithPreview.adapter.ts";
+
+// import utils
+import { LOW_CONTRAST_WARNING, lowContrast } from "../../shared/color/contrast.util.ts";
+import { withBackground } from "./entries.util.ts";
+
+// import consts
+import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
+import { PRESETS } from "../../shared/color/presets.consts.ts";
+
+// import types
+import type { QuickPickItem } from "vscode";
+import type { Hex } from "../../shared/model/model.types.ts";
+import type { CommandArgs } from "./commands.adapter.ts";
 
 export async function pickPreset({ host, name }: CommandArgs): Promise<void> {
   const glyph = host.activeRepo()?.config.glyph ?? DEFAULT_GLYPH;

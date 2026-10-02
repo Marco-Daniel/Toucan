@@ -1,4 +1,7 @@
+// import utils
 import { fromHex, toOklch } from "../../shared/color/color.util.ts";
+
+// import types
 import type { Glyph, Hex } from "../../shared/model/model.types.ts";
 
 /** The color categories emoji come in. */
