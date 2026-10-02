@@ -8,6 +8,7 @@ import {
   type Event,
   type ExtensionContext,
 } from "vscode";
+import { notify } from "./notify.ts";
 import type { Log } from "./log.ts";
 import { emojiFor } from "./core/emoji.ts";
 import { titleChangeFailed } from "./core/messages.ts";
@@ -234,7 +235,7 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
     info: (message) => log.info(message),
     failed: (error) => {
       log.warn(titleChangeFailed(error));
-      void window.showWarningMessage(titleChangeFailed(error));
+      notify("warning", titleChangeFailed(error));
     },
   };
 }

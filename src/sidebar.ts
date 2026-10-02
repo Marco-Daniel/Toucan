@@ -8,6 +8,7 @@ import {
   type WebviewView,
   type WebviewViewProvider,
 } from "vscode";
+import { notify } from "./notify.ts";
 import type { Log } from "./log.ts";
 import { deriveColors } from "./core/derive.ts";
 import { resolveSidebarSettings, SidebarController, type SidebarSettings } from "./core/sidebar.ts";
@@ -126,7 +127,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
    */
   async toggle(): Promise<void> {
     if (!this.repo()) {
-      void window.showInformationMessage("Set a Toucan color for this repo first.");
+      notify("info", "Set a Toucan color for this repo first.");
       return;
     }
     if (!workspace.getConfiguration().get(configs.sidebarBlockEnabled.key, false)) {

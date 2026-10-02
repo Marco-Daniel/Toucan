@@ -28,6 +28,11 @@ describe("messages", () => {
 
 /** Splits off the first top-level argument, skipping strings and nested brackets. */
 function firstArgument(args: string): string {
+  return splitFirst(args)[0];
+}
+
+/** The first top-level argument and the arguments after it. */
+function splitFirst(args: string): [string, string] {
   let depth = 0;
   for (let i = 0; i < args.length; i++) {
     const char = args[i];
@@ -39,28 +44,37 @@ function firstArgument(args: string): string {
     } else if (")]}".includes(char!)) {
       depth--;
     } else if (char === "," && depth === 0) {
-      return args.slice(0, i).trim();
+      return [args.slice(0, i).trim(), args.slice(i + 1)];
     }
   }
-  return args.trim();
+  return [args.trim(), ""];
 }
 
-/** The first argument of every `show*Message(…)` call in the extension's source. */
+/**
+ * The message text of every notification in the extension's source: the first
+ * argument of `show*Message(…)`, and the second (after the level) of
+ * `notify(…)`. notify.ts itself only passes its parameter on; its callers are
+ * the ones checked.
+ */
 function messageArguments(): { file: string; text: string }[] {
   const root = join(import.meta.dirname, "../../src");
   const files = readdirSync(root, { recursive: true, encoding: "utf8" }).filter(
-    (file) => file.endsWith(".ts") && !file.startsWith("generated"),
+    (file) => file.endsWith(".ts") && !file.startsWith("generated") && file !== "notify.ts",
   );
   return files.flatMap((file) => {
     const source = readFileSync(join(root, file), "utf8");
-    return [...source.matchAll(/show(?:Information|Warning|Error)Message\(/g)].map((match) => {
+    const calls = /show(?:Information|Warning|Error)Message\(|\bnotify\(/g;
+    return [...source.matchAll(calls)].map((match) => {
       let depth = 1;
       let end = match.index + match[0].length;
       while (depth > 0 && end < source.length) {
         depth += source[end] === "(" ? 1 : source[end] === ")" ? -1 : 0;
         end++;
       }
-      return { file, text: firstArgument(source.slice(match.index + match[0].length, end - 1)) };
+      const args = source.slice(match.index + match[0].length, end - 1);
+      const text =
+        match[0] === "notify(" ? firstArgument(splitFirst(args)[1]) : firstArgument(args);
+      return { file, text };
     });
   });
 }

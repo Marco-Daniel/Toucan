@@ -8,6 +8,7 @@ import {
   type Disposable,
   type QuickPickItem,
 } from "vscode";
+import { notify } from "./notify.ts";
 import { NEUTRAL_GRAY, validateColorInput } from "./core/color.ts";
 import {
   LOW_CONTRAST_WARNING,
@@ -180,7 +181,7 @@ async function setGlyph(host: CommandHost, name: string): Promise<void> {
 async function clearColor(host: CommandHost, name: string): Promise<void> {
   const raw = readRepos();
   if (!isRecord(raw) || !Object.hasOwn(raw, name)) {
-    void window.showInformationMessage(NO_COLOR);
+    notify("info", NO_COLOR);
     return;
   }
   // Only a bare color is cheap to set again; anything more was typed by hand.
@@ -281,7 +282,7 @@ function withRepo(
   return async () => {
     const name = host.repoName();
     if (name === undefined) {
-      void window.showWarningMessage("Toucan colors a repository. Open a folder first.");
+      notify("warning", "Toucan colors a repository. Open a folder first.");
       return;
     }
     await command(host, name);
@@ -333,6 +334,6 @@ async function writeRepos(host: CommandHost, update: SettingsUpdate): Promise<vo
     // Application-scoped, so VS Code keeps it in the default profile's file.
     await host.writer.write(configs.repos.key, update, "defaultProfile");
   } catch (error) {
-    void window.showErrorMessage(saveFailed(error));
+    notify("error", saveFailed(error));
   }
 }

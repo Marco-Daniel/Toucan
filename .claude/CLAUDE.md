@@ -28,7 +28,7 @@ Hooks register Toucan's collections at session start and keep the keyword index 
 
 ## Code rules
 
-- Await every promise and handle failures with `tryCatch` or `tryCatchSync` (`src/core/tryCatch.ts`). No `void` fire-and-forget. The only exception is a sync event handler or timer with no caller to await; it gets a lint disable with its reason.
+- Await every promise and handle failures with `tryCatch` or `tryCatchSync` (`src/core/tryCatch.ts`). No `void` fire-and-forget (lint enforces it). Two exceptions: a non-modal notification goes through `notify()` (`src/notify.ts`), which doesn't wait for dismissal; and a sync event handler or timer with no caller to await hands its work off with a lint disable that states the reason.
 - Every `oxlint-disable` comment states its reason after `--`. Fix the finding where you can, and disable a rule only where a fix would make the code worse.
 
 ## Tests must be able to fail
