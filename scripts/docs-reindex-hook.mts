@@ -10,6 +10,7 @@
 // stays pending for the session-start bootstrap.
 import { spawn } from "node:child_process";
 import { text } from "node:stream/consumers";
+import { tryCatch } from "../src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../src/shared/records/records.util.ts";
 import { isIndexedDoc } from "./qmd-docs.mts";
 import { markPending } from "./qmd-lock.mts";
@@ -19,14 +20,12 @@ if (process.argv[2] === "--worker") {
   await exclusive(() => hasQmd() && registeredNames().size > 0);
 } else {
   const root = process.env["CLAUDE_PROJECT_DIR"];
-  let file: unknown;
-  try {
-    const input: unknown = JSON.parse(await text(process.stdin));
-    const tool = isRecord(input) ? input["tool_input"] : undefined;
-    file = isRecord(tool) ? tool["file_path"] : undefined;
-  } catch {
-    // Not hook input: nothing to do.
-  }
+  // Input that can't be read or isn't JSON isn't hook input: nothing to do.
+  const [input] = await tryCatch(async (): Promise<unknown> =>
+    JSON.parse(await text(process.stdin)),
+  );
+  const tool = isRecord(input) ? input["tool_input"] : undefined;
+  const file = isRecord(tool) ? tool["file_path"] : undefined;
   if (root && typeof file === "string" && isIndexedDoc(file, root)) {
     markPending();
     spawn(process.execPath, [process.argv[1]!, "--worker"], {

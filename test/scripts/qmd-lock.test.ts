@@ -67,6 +67,14 @@ describe("the qmd lock", () => {
     expect(takeLock()).toBeUndefined();
   });
 
+  it("leaves a lock that's gone alone, but reports any other failure", () => {
+    touchLock(join(cache, "gone.lock"));
+    expect(existsSync(join(cache, "gone.lock"))).toBe(false);
+    // A path under a regular file can't be touched: ENOTDIR, not "missing".
+    writeFileSync(join(dir, "file"), "");
+    expect(() => touchLock(join(dir, "file", "toucan.lock"))).toThrow(/ENOTDIR/);
+  });
+
   it("notes pending edits until they're taken", () => {
     expect(markPending()).toBe(true);
     expect(isPending()).toBe(true);

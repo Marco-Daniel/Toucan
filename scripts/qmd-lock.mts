@@ -15,6 +15,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { tryCatchSync } from "../src/shared/async/tryCatch.util.ts";
 
 /** A lock older than this (10 minutes) was left by a job that died. */
 const STALE_MS = 600_000;
@@ -29,25 +30,22 @@ function cache(name: string): string {
 }
 
 function create(path: string): boolean {
-  try {
-    const { O_CREAT, O_EXCL, O_WRONLY } = constants;
-    closeSync(openSync(path, O_CREAT | O_EXCL | O_WRONLY, FILE_MODE));
-    return true;
-  } catch {
-    return false;
-  }
+  const { O_CREAT, O_EXCL, O_WRONLY } = constants;
+  const [, error] = tryCatchSync(() =>
+    closeSync(openSync(path, O_CREAT | O_EXCL | O_WRONLY, FILE_MODE)),
+  );
+  return error === null;
 }
 
 /** Takes the lock (replacing a stale one) and returns its path, or undefined if held. */
 export function takeLock(): string | undefined {
   const lock = cache("toucan.lock");
-  try {
+  // A lock that can't be read isn't there: free.
+  tryCatchSync(() => {
     if (Date.now() - statSync(lock).mtimeMs > STALE_MS) {
       rmSync(lock);
     }
-  } catch {
-    // Not there: free.
-  }
+  });
   return create(lock) ? lock : undefined;
 }
 
@@ -59,12 +57,9 @@ function isMissing(error: unknown): boolean {
 /** Keeps a held lock fresh. One that's gone (removed by hand, say) stays gone. */
 export function touchLock(lock: string): void {
   const now = new Date();
-  try {
-    utimesSync(lock, now, now);
-  } catch (error) {
-    if (!isMissing(error)) {
-      throw error;
-    }
+  const [, error] = tryCatchSync(() => utimesSync(lock, now, now));
+  if (error !== null && !isMissing(error)) {
+    throw error;
   }
 }
 
@@ -76,11 +71,8 @@ export function releaseLock(lock: string): void {
 export const markPending = (): boolean => create(cache("toucan.pending"));
 /** Whether an edit is noted: only a regular file counts, never a folder or a link. */
 export function isPending(): boolean {
-  try {
-    return lstatSync(cache("toucan.pending")).isFile();
-  } catch {
-    return false;
-  }
+  const [stats] = tryCatchSync(() => lstatSync(cache("toucan.pending")));
+  return stats?.isFile() ?? false;
 }
 
 /**
@@ -89,10 +81,9 @@ export function isPending(): boolean {
  * looping on it stops instead of spinning.
  */
 export function takePending(): "taken" | "none" | "stuck" {
-  try {
-    rmSync(cache("toucan.pending"));
+  const [, error] = tryCatchSync(() => rmSync(cache("toucan.pending")));
+  if (error === null) {
     return "taken";
-  } catch (error) {
-    return isMissing(error) ? "none" : "stuck";
   }
+  return isMissing(error) ? "none" : "stuck";
 }
