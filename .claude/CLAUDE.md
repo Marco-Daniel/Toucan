@@ -26,6 +26,11 @@ Always look things up in the docs through qmd, wherever you work in this repo. T
 
 Hooks register Toucan's collections at session start and keep the keyword index fresh after doc edits. Run `pnpm docs:index` after bigger doc changes, to refresh the embeddings.
 
+## Code rules
+
+- Await every promise and handle failures with `tryCatch` or `tryCatchSync` (`src/core/tryCatch.ts`). No `void` fire-and-forget. The only exception is a sync event handler or timer with no caller to await; it gets a lint disable with its reason.
+- Every `oxlint-disable` comment states its reason after `--`. Fix the finding where you can, and disable a rule only where a fix would make the code worse.
+
 ## Tests must be able to fail
 
 Every test has to survive one question:
