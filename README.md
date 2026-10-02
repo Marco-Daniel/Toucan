@@ -107,10 +107,10 @@ Toucan keeps its docs in its own qmd index, `toucan`, so it never touches your o
 One-time setup:
 
 1. Install qmd 2.8 or newer: `npm i -g @tobilu/qmd`. Do this under the Node version your editor and Claude Code use (with nvm, run it while that version is active), so `qmd` is on their `PATH`.
-2. If npm says it skipped install scripts, try qmd anyway: the prebuilt binaries usually work. If they don't, reinstall with `--allow-scripts=` followed by the packages npm lists in its warning, comma-separated (for qmd 2.8.3 that was `npm i -g @tobilu/qmd --allow-scripts=node-llama-cpp,tree-sitter-go,tree-sitter-python,tree-sitter-rust,tree-sitter-typescript,tree-sitter-javascript`).
+2. If npm says it skipped install scripts, try qmd anyway: the prebuilt binaries usually work. If they don't, reinstall with `--allow-scripts=` followed by the packages npm lists in its warning, comma-separated. The list depends on the qmd version; e.g., for qmd 2.8.3: `npm i -g @tobilu/qmd --allow-scripts=node-llama-cpp,tree-sitter-go,tree-sitter-python,tree-sitter-rust,tree-sitter-typescript,tree-sitter-javascript`.
 3. Check it: `qmd --version` prints 2.8 or newer, and `command -v qmd` prints its path.
 4. Start a Claude Code session here. A session-start hook registers Toucan's two collections, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and builds the keyword index in the background.
-5. The first search, usually made by an agent, downloads qmd's models (about 2 GB, one-time); that's expected and well worth it.
+5. The first search or `pnpm docs:index` downloads qmd's models (about 2 GB, one-time); that's expected and well worth it.
 6. Run `pnpm docs:index` once for full embeddings (semantic search). It's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
 
 After that, a hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
