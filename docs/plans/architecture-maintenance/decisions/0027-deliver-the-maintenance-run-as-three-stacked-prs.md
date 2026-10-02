@@ -16,7 +16,7 @@ The run mixes rules, file moves and refactors. One PR would mix moves with behav
 
 ## Decision Outcome
 
-Chosen: one plan, three stacked PRs: #7 `rules-and-adrs` (ADRs, CLAUDE.md, tooling, qmd), #8 `file-moves` (behaviour-neutral restructure) and #9 `dry-upkeep` (tryCatch, object arguments, DRY helpers, Stryker). Each branch runs internal review rounds before its PR opens, so the run feels like one run to Marco, who approved the three PRs by purpose. ADRs 0006 and 0009–0012 and the CLAUDE.md rules describe the layout and tooling completed by #8 and #9; the three merge back-to-back, with nothing landing on main in between.
+Chosen: one plan, three stacked PRs: #7 `rules-and-adrs` (ADRs, CLAUDE.md, tooling, qmd), #8 `file-moves` (behaviour-neutral restructure) and #9 `dry-upkeep` (tryCatch, object arguments, DRY helpers, Stryker). Each branch runs internal review rounds before its PR opens, so the run feels like one run to Marco, who approved the three PRs by purpose. ADRs 0006 and 0009–0012 and the CLAUDE.md rules (including the import group headers) describe the layout and tooling completed by #8 and #9; the three merge back-to-back, with nothing landing on main in between.
 
 ## Consequences
 
