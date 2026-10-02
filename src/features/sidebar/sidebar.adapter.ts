@@ -97,7 +97,10 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
     this.view.webview.html = sidebarBlockHtml({
       name: repo.name,
       glyph: repo.config.glyph,
-      colors: deriveColors(repo.config.background, repo.config.overrides),
+      colors: deriveColors({
+        background: repo.config.background,
+        overrides: repo.config.overrides,
+      }),
       style: this.settings().style,
     });
   }
@@ -120,7 +123,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
    */
   async toggle(): Promise<void> {
     if (!this.repo()) {
-      notify("info", "Set a Toucan color for this repo first.");
+      notify({ level: "info", message: "Set a Toucan color for this repo first." });
       return;
     }
     if (!workspace.getConfiguration().get(configs.sidebarBlockEnabled.key, false)) {

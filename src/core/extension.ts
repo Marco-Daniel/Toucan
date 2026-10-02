@@ -21,17 +21,19 @@ let coordinator: FocusCoordinator | undefined;
 export async function activate(context: ExtensionContext): Promise<void> {
   const log = createLog();
   /** Fire-and-forget work: a failure is logged instead of becoming an unhandled rejection. */
-  const background = (what: string, task: Promise<unknown>) => {
+  const background = ({ what, task }: { what: string; task: Promise<unknown> }) => {
     // A .catch, not tryCatch: nothing here awaits, the task runs on by itself.
     task.catch((error: unknown) => log.warn(`${what} failed: ${String(error)}`));
   };
-  const reporter = new IssueReporter(log, configs.repos.key);
+  const reporter = new IssueReporter({ log, setting: configs.repos.key });
   const indicator = new StatusBarIndicator();
   let repo: ActiveRepo | undefined;
 
   const writer = createSettingsWriter(context.globalStorageUri.fsPath, log);
   const focus = startFocusCoordinator(context, log, writer, () =>
-    repo ? deriveColors(repo.config.background, repo.config.overrides) : undefined,
+    repo
+      ? deriveColors({ background: repo.config.background, overrides: repo.config.overrides })
+      : undefined,
   );
   coordinator = focus;
 
@@ -41,7 +43,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
   // Only a window that colors the Command Center asks (0016).
   const offerAgentsControl = (focused: boolean) => {
     if (focused && repo) {
-      background("The Agents control offer", agentsControl.check());
+      background({ what: "The Agents control offer", task: agentsControl.check() });
     }
   };
 
@@ -50,10 +52,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
     indicator.update(repo);
     // Only the focused window writes; see FocusCoordinator.refresh.
     focus.refresh();
-    background("Sidebar block refresh", sidebar.refresh());
+    background({ what: "Sidebar block refresh", task: sidebar.refresh() });
     // A repo can get its first color mid-session (Set Color), not only at startup.
     offerAgentsControl(window.state.focused);
-    background("Search emoji refresh", searchEmoji.refresh());
+    background({ what: "Search emoji refresh", task: searchEmoji.refresh() });
   };
 
   context.subscriptions.push(
@@ -66,7 +68,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       focus.setFocused(focused);
       sidebar.controller.setFocused(focused);
       offerAgentsControl(focused);
-      background("Search emoji refresh", searchEmoji.focusChanged(focused));
+      background({ what: "Search emoji refresh", task: searchEmoji.focusChanged(focused) });
     }),
     ...registerCommands({
       writer,
@@ -86,10 +88,10 @@ export async function activate(context: ExtensionContext): Promise<void> {
         affects(configs.sidebarBlockStyle.key) ||
         affects(configs.sidebarBlockVisibility.key)
       ) {
-        background("Sidebar block refresh", sidebar.refresh());
+        background({ what: "Sidebar block refresh", task: sidebar.refresh() });
       }
       if (affects(configs.experimentalSearchEmoji.key)) {
-        background("Search emoji refresh", searchEmoji.refresh());
+        background({ what: "Search emoji refresh", task: searchEmoji.refresh() });
       }
       if (affects(COLOR_CUSTOMIZATIONS)) {
         focus.customizationsChanged();

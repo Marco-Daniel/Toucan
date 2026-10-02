@@ -6,6 +6,12 @@ export interface IssueLog {
   warn(message: string): void;
 }
 
+interface IssueReporterArgs {
+  log: IssueLog;
+  /** The setting's key, named in every message. */
+  setting: string;
+}
+
 /** Logs config issues, once per change, so every refresh doesn't repeat them. */
 export class IssueReporter {
   // Starts as "no issues", so a clean config logs nothing at startup.
@@ -14,7 +20,7 @@ export class IssueReporter {
   private readonly log: IssueLog;
   private readonly setting: string;
 
-  constructor(log: IssueLog, setting: string) {
+  constructor({ log, setting }: IssueReporterArgs) {
     this.log = log;
     this.setting = setting;
   }

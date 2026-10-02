@@ -20,7 +20,7 @@ export async function setColor(host: CommandHost, name: string): Promise<void> {
     const input = validateColorInput(value);
     if (input.kind === "invalid") {
       box.validationMessage = input.message;
-    } else if (input.kind === "color" && lowContrast(input.hex, statusBar)) {
+    } else if (input.kind === "color" && lowContrast({ color: input.hex, background: statusBar })) {
       // A warning, not an error: the color can still be saved (0018).
       box.validationMessage = {
         message: LOW_CONTRAST_WARNING,

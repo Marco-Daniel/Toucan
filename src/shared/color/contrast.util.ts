@@ -64,8 +64,13 @@ export function activeThemeName(input: {
   return typeof name === "string" ? name : undefined;
 }
 
+interface LowContrastArgs {
+  color: Hex;
+  background: Hex | undefined;
+}
+
 /** Whether `color` may be hard to see on `background`. */
-export function lowContrast(color: Hex, background: Hex | undefined): boolean {
+export function lowContrast({ color, background }: LowContrastArgs): boolean {
   return (
     background !== undefined &&
     wcagContrast(fromHex(color), fromHex(background)) < MIN_STATUS_BAR_CONTRAST

@@ -98,22 +98,22 @@ describe("activeThemeName", () => {
 
 describe("lowContrast", () => {
   it("flags colors under 3:1 against the status bar", () => {
-    expect(lowContrast(hex("#101316"), hex("#181818"))).toBe(true); // Plumage Black, 1.05
-    expect(lowContrast(hex("#8a9c05"), hex("#f8f8f8"))).toBe(true); // Bill Lime, 2.89
+    expect(lowContrast({ color: hex("#101316"), background: hex("#181818") })).toBe(true); // Plumage Black, 1.05
+    expect(lowContrast({ color: hex("#8a9c05"), background: hex("#f8f8f8") })).toBe(true); // Bill Lime, 2.89
   });
 
   it("puts the line at 3:1 (no hex color lands exactly on it against Dark Modern)", () => {
-    expect(lowContrast(hex("#7747cb"), hex("#181818"))).toBe(true); // 2.999999, the closest below
-    expect(lowContrast(hex("#646464"), hex("#181818"))).toBe(false); // 3.0006
+    expect(lowContrast({ color: hex("#7747cb"), background: hex("#181818") })).toBe(true); // 2.999999, the closest below
+    expect(lowContrast({ color: hex("#646464"), background: hex("#181818") })).toBe(false); // 3.0006
   });
 
   it("accepts colors at or above 3:1", () => {
-    expect(lowContrast(hex("#e8579b"), hex("#f8f8f8"))).toBe(false); // Tropical Pink, 3.15
-    expect(lowContrast(hex("#f92824"), hex("#181818"))).toBe(false); // Beak Red
+    expect(lowContrast({ color: hex("#e8579b"), background: hex("#f8f8f8") })).toBe(false); // Tropical Pink, 3.15
+    expect(lowContrast({ color: hex("#f92824"), background: hex("#181818") })).toBe(false); // Beak Red
   });
 
   it("never warns without a background to compare", () => {
-    expect(lowContrast(hex("#101316"), undefined)).toBe(false);
+    expect(lowContrast({ color: hex("#101316"), background: undefined })).toBe(false);
   });
 });
 

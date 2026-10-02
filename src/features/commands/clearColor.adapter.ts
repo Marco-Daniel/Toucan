@@ -15,7 +15,7 @@ import { writeRepos } from "./commandUi.adapter.ts";
 export async function clearColor(host: CommandHost, name: string): Promise<void> {
   const raw = readRepos();
   if (!isRecord(raw) || !Object.hasOwn(raw, name)) {
-    notify("info", NO_COLOR);
+    notify({ level: "info", message: NO_COLOR });
     return;
   }
   // Only a bare color is cheap to set again; anything more was typed by hand.

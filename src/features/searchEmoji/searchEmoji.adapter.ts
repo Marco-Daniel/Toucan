@@ -241,7 +241,7 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
     info: (message) => log.info(message),
     failed: (error) => {
       log.warn(titleChangeFailed(error));
-      notify("warning", titleChangeFailed(error));
+      notify({ level: "warning", message: titleChangeFailed(error) });
     },
   };
 }

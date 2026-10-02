@@ -3,7 +3,7 @@ import { deriveColors } from "../../../src/shared/color/derive.util.ts";
 import type { Hex } from "../../../src/shared/model/model.types.ts";
 import { sidebarBlockHtml } from "../../../src/features/sidebar/sidebar.view.ts";
 
-const colors = deriveColors("#14939c" as Hex);
+const colors = deriveColors({ background: "#14939c" as Hex });
 
 describe("sidebarBlockHtml", () => {
   it("allows no scripts and only inline styles", () => {

@@ -8,7 +8,7 @@ const toOklch = converter("oklch");
 // Test inputs are written as valid hex, which the parser would produce.
 const asHex = (value: string) => value as Hex;
 const derive = (background: string, overrides: Record<string, string> = {}) =>
-  deriveColors(asHex(background), overrides);
+  deriveColors({ background: asHex(background), overrides });
 const lightness = (hex: string) => toOklch(parseHex(hex))!.l;
 
 // Every preset from 0014, plus the extremes.

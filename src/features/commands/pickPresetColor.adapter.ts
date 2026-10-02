@@ -20,7 +20,7 @@ export async function pickPreset(host: CommandHost, name: string): Promise<void>
       hex: preset.hex,
     };
     // Marked, not hidden: the user can still pick it (0018).
-    if (lowContrast(preset.hex, statusBar)) {
+    if (lowContrast({ color: preset.hex, background: statusBar })) {
       item.detail = `$(warning) ${LOW_CONTRAST_WARNING}`;
     }
     return item;

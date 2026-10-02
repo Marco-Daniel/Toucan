@@ -44,7 +44,7 @@ function withRepo(
   return async () => {
     const name = host.repoName();
     if (name === undefined) {
-      notify("warning", "Toucan colors a repository. Open a folder first.");
+      notify({ level: "warning", message: "Toucan colors a repository. Open a folder first." });
       return;
     }
     await command(host, name);

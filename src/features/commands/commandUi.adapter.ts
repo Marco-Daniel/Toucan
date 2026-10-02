@@ -47,6 +47,6 @@ export async function writeRepos(host: CommandHost, update: SettingsUpdate): Pro
     host.writer.write(configs.repos.key, update, "defaultProfile"),
   );
   if (error !== null) {
-    notify("error", saveFailed(error));
+    notify({ level: "error", message: saveFailed(error) });
   }
 }

@@ -57,7 +57,7 @@ export function parseRepos(raw: unknown): ParsedConfig {
 
   for (const [repo, value] of Object.entries(raw)) {
     const report = (message: string) => issues.push({ repo, message });
-    const entry = parseEntry(value, report);
+    const entry = parseEntry({ value, report });
     if (entry) {
       repos.set(repo, entry);
     }
@@ -65,9 +65,14 @@ export function parseRepos(raw: unknown): ParsedConfig {
   return { repos, issues };
 }
 
-function parseEntry(value: unknown, report: (message: string) => void): RepoConfig | undefined {
+interface ParseArgs<T> {
+  value: T;
+  report: (message: string) => void;
+}
+
+function parseEntry({ value, report }: ParseArgs<unknown>): RepoConfig | undefined {
   if (typeof value === "string") {
-    const background = parseBackground(value, report);
+    const background = parseBackground({ value, report });
     return background === undefined
       ? undefined
       : { background, overrides: {}, glyph: DEFAULT_GLYPH };
@@ -88,7 +93,7 @@ function parseEntry(value: unknown, report: (message: string) => void): RepoConf
     report(`background ${JSON.stringify(rawBackground)} is not a color string.`);
     return undefined;
   }
-  const background = parseBackground(rawBackground, report);
+  const background = parseBackground({ value: rawBackground, report });
   if (!background) {
     return undefined;
   }
@@ -139,7 +144,7 @@ function parseEntry(value: unknown, report: (message: string) => void): RepoConf
  * The background must be opaque: the foreground is picked for contrast against
  * it, and the status bar glyph and sidebar block are painted with it.
  */
-function parseBackground(value: string, report: (message: string) => void): Hex | undefined {
+function parseBackground({ value, report }: ParseArgs<string>): Hex | undefined {
   const color = parseColor(value);
   if (!color) {
     report(`background "${value}" is not a valid color.`);
