@@ -10,6 +10,7 @@ The ADRs in [docs/adr/](../docs/adr/README.md) are the most important docs: the 
 - **background**: context that explains the system.
 - **direction**: where the code is heading. `Migration: as touched` means move code you change; `tracked` means planned work.
 - Cite an ADR as `ADR-NNNN` in code and docs; a test fails on one that doesn't exist or is superseded.
+- Before changing an area, search its ADRs (qmd, `toucan-docs` `adr/`).
 - `docs/plans/<plan>/` holds one piece of work's intent and history, not rules.
 
 ## Documentation search
@@ -38,6 +39,7 @@ Every test has to survive one question: **would it still pass if the code it cov
 
 - Write expected values out literally; never compute them with the code under test.
 - Assert the exact value, key, count or order, not "is defined", "has length > 0" or "didn't throw".
+- Every test needs a real assertion: if the behaviour is "doesn't throw", call it directly and assert the observable result that proves the path ran.
 - The name says what the assertion checks.
 - Don't snapshot third-party behaviour (culori, jsonc-parser, VS Code); assert the contract we depend on.
 - Fakes must be able to disagree: seed them with state that differs from the desired result, and assert what the code wrote.
@@ -54,7 +56,7 @@ A change to a command, a path or a behaviour updates every doc that mentions it,
 Everything pushed to GitHub is public: files, commit messages, branch names, PR and issue text, review comments and CI logs. None of that may contain:
 
 - references to other projects or repositories of the owner, or where an idea was borrowed from (describe the idea itself)
-- local machine details: absolute paths, usernames, hostnames, SSH host aliases or other local config
+- local machine details: absolute paths (home folders, temp or scratch directories), usernames, hostnames, SSH host aliases or other local config
 - secrets, tokens or credentials, or anything copied from a private source
 - agent or session names; refer to roles instead: the lead, the implementer, the outside reviewer, the blind reviewer, DevOps
 
