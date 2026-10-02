@@ -35,7 +35,7 @@ if (process.argv[2] === "--worker") {
     })
       // A failed spawn (say, a process limit) stays silent like everything else here.
       // Untested on purpose: spawning this same Node binary can't be made to fail on demand.
-      .on("error", () => {})
+      .on("error", () => undefined)
       .unref();
   }
 }

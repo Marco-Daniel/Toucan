@@ -25,7 +25,7 @@ beforeAll(async () => {
     svg: readFileSync(new URL(`../../media/icons/${glyph}.svg`, import.meta.url), "utf8"),
   }));
   const font = await buildFont(icons);
-  svgFont = font.svgFont;
+  ({ svgFont } = font);
   dir = mkdtempSync(join(tmpdir(), "toucan-font-"));
   fontFile = join(dir, "toucan-icons.ttf");
   writeFileSync(fontFile, font.ttf);

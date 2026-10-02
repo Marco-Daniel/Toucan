@@ -2,6 +2,7 @@ import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { FocusPorts } from "./focus.ts";
 import { isRecord } from "./records.ts";
+import { tryCatch } from "./tryCatch.ts";
 
 /**
  * The owner file shared by all local windows: which window last took focus
@@ -32,7 +33,8 @@ export function createOwnerFile(
         await writeFile(temporary, JSON.stringify({ window: owner }));
         await rename(temporary, file);
       } catch (error) {
-        await unlink(temporary).catch(() => {});
+        // Best effort: the temp file may not exist; the write's error is the one to report.
+        await tryCatch(unlink(temporary));
         throw error;
       }
     },

@@ -30,7 +30,11 @@ function setup(
     ...rest
   } = initial;
   const held: (() => void)[] = [];
-  const release = () => held.splice(0).forEach((resolve) => resolve());
+  const release = () => {
+    for (const resolve of held.splice(0)) {
+      resolve();
+    }
+  };
   const settings: SidebarSettings = { enabled: true, visibility: "always", ...rest };
   const state = {
     closed: initiallyClosed ?? false,

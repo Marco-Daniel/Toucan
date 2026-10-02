@@ -221,11 +221,11 @@ function titlePorts(context: ExtensionContext, log: Log): TitlePorts {
         "Show the repo's emoji in the search bar?",
         {
           modal: true,
-          detail:
-            "Toucan's experimental search emoji needs ${activeRepositoryName} at the start of window.title, so it changes that setting in your user settings. Turning the emoji off restores your previous title." +
-            (overridden
+          detail: `Toucan's experimental search emoji needs \${activeRepositoryName} at the start of window.title, so it changes that setting in your user settings. Turning the emoji off restores your previous title.${
+            overridden
               ? " This workspace sets its own window.title, so the emoji won't show in this window."
-              : ""),
+              : ""
+          }`,
         },
         "Change Window Title",
       );
