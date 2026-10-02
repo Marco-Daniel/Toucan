@@ -102,12 +102,16 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 
 [qmd](https://github.com/tobi/qmd) gives local keyword and semantic search over the docs. Claude Code sessions in this repo use it through `.mcp.json`. Nothing needs it: without qmd, agents read the files directly, and CI never installs it.
 
+Toucan keeps its docs in its own qmd index, `toucan`, so it never touches your other qmd collections. Search it yourself with `qmd --index toucan query "…"`.
+
 One-time setup:
 
-1. Install it globally: `npm i -g @tobilu/qmd` (2.8 or newer). It has native dependencies and downloads about 2 GB of models on first use, which is why it isn't a devDependency. Make sure `qmd` is on the `PATH` that Claude Code starts with (with nvm, install it under the Node version that's active there).
-2. Run `pnpm docs:index` in this checkout. It registers two collections, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and then indexes and embeds them. It only ever touches `toucan-*` collections in qmd's global config, and it's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
+1. Install it globally: `npm i -g @tobilu/qmd` (2.8 or newer). It has native dependencies and downloads about 2 GB of models on first use, which is why it isn't a devDependency. Install it under the Node version your editor and Claude Code use (with nvm, the one that's active there), so `qmd` is on their `PATH`. If npm skips the install scripts, the prebuilt binaries usually work; otherwise reinstall with `--allow-scripts`.
+2. Start a Claude Code session here. A session-start hook registers Toucan's two collections in the `toucan` index, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and builds the keyword index in the background. Then run `pnpm docs:index` once for semantic search: it also refreshes the embeddings (downloading qmd's models on first use). It's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
 
-After that, a Claude Code hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
+After that, a hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
+
+The index points at the checkout that registered it, so a search from another worktree sees that checkout's docs.
 
 ## License
 

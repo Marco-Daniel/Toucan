@@ -17,15 +17,14 @@ Before every commit, push or GitHub post, check the text for these. If something
 
 ## Documentation search
 
-When qmd is available (the `qmd` MCP server, set up per README, Development), search the docs instead of reading whole folders:
+Always look things up in the docs through qmd, wherever you work in this repo. This applies to subagents too: tell them in the task.
 
-- Before changing code, search `toucan-docs` for the area, and narrow to `adr/` for the binding system rules and direction.
-- Use `query` with a `lex` line for exact terms plus a `vec` line for the question, then `get` the hits you need.
-- For the history of why things are the way they are, narrow to `plans/` (per-feature plans and their decisions).
-- `toucan-guides` holds README.md and GROUNDING.md.
-- Without qmd, read the files directly.
+- Search Toucan's own `toucan` index through the `qmd` MCP server: `toucan-docs` for `docs/`, `toucan-guides` for README.md and GROUNDING.md.
+- Before changing code, search `toucan-docs` for the area; narrow to `adr/` for the binding system rules and direction, and to `plans/` for why things are the way they are.
+- Use `query` with a `lex` line for exact terms and a `vec` line for the question, then `get` the hits you need instead of reading whole folders.
+- If qmd isn't available, say so once, with the install line (`npm i -g @tobilu/qmd`, then `pnpm docs:index`; see README, Development), and read the files instead.
 
-A hook keeps the keyword index fresh after doc edits. Run `pnpm docs:index` after bigger doc changes, to refresh the embeddings.
+Hooks register Toucan's collections at session start and keep the keyword index fresh after doc edits. Run `pnpm docs:index` after bigger doc changes, to refresh the embeddings.
 
 ## Tests must be able to fail
 

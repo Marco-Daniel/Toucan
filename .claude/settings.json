@@ -1,4 +1,7 @@
 {
+  "enabledMcpjsonServers": [
+    "qmd"
+  ],
   "hooks": {
     "PostToolUse": [
       {
@@ -7,6 +10,17 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/docs-reindex-hook.mts\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/docs-bootstrap-hook.mts\""
           }
         ]
       }
