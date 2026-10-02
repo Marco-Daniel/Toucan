@@ -17,8 +17,29 @@
 // TypeScript 7 doesn't ship, and this repo's tsconfig has nothing to rewrite.
 import { relative, resolve } from "node:path";
 import { Stryker } from "@stryker-mutator/core";
+import { createVitest } from "vitest/node";
 
 const VITEST = "node node_modules/vitest/vitest.mjs";
+
+/** Prints why the run won't start and exits with a failure. */
+function refuse(message: string): never {
+  console.error(message);
+  process.exit(1);
+}
+
+/** The files no test file relates to (imports, directly or not), found without running tests. */
+async function filesWithoutTests(paths: readonly string[]): Promise<string[]> {
+  const untested: string[] = [];
+  for (const path of paths) {
+    const vitest = await createVitest({ watch: false, related: [path] });
+    const specifications = await vitest.getRelevantTestSpecifications();
+    await vitest.close();
+    if (specifications.length === 0) {
+      untested.push(path);
+    }
+  }
+  return untested;
+}
 
 /** A path as one shell word: Stryker runs the command through a shell, so spaces must not split it. */
 function shellQuoted(path: string): string {
@@ -35,10 +56,26 @@ const qmdFiles = files.filter((file) =>
   relative(process.cwd(), resolve(file)).startsWith(EXCLUDED),
 );
 if (qmdFiles.length > 0) {
-  console.error(
+  refuse(
     `Not mutating ${qmdFiles.join(", ")}: scripts/qmd/ is excluded from mutation testing, because its file locks, cache writes and detached processes could reach the real ~/.cache/qmd.`,
   );
-  process.exit(1);
+}
+
+// The related-tests command needs file paths: a glob reaches it verbatim, finds
+// no tests, and every mutant would read as survived. The shell expands an unquoted one.
+const globs = files.filter((file) => /[*?[{]/.test(file));
+if (globs.length > 0) {
+  refuse(
+    `Pass files, not patterns: ${globs.join(", ")}. Leave a glob unquoted to let the shell expand it.`,
+  );
+}
+
+// A file no test imports would also read as all survived: check before any mutant runs.
+const untested = await filesWithoutTests(files);
+if (untested.length > 0) {
+  refuse(
+    `No tests relate to ${untested.join(", ")}; mutation results would all read as survived. Add a test, or leave the file out.`,
+  );
 }
 
 const options =
