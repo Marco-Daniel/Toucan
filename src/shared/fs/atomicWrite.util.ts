@@ -25,7 +25,8 @@ export async function writeAtomically({
     if (mode === undefined) {
       await writeFile(temporary, text);
     } else {
-      // Created with `mode`; the umask can narrow it, so chmod then sets it exactly.
+      // Created with `mode`, so the copy is never more readable than the original;
+      // the umask can narrow it, so chmod then sets it exactly.
       await writeFile(temporary, text, { mode });
       await chmod(temporary, mode);
     }

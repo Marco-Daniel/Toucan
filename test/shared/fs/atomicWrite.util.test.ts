@@ -1,8 +1,24 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type * as FsPromises from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { writeAtomically } from "../../../src/shared/fs/atomicWrite.util.ts";
+
+/** The temp file's permission bits each time chmod is about to change them. */
+const modesBeforeChmod = vi.hoisted((): number[] => []);
+
+// The real chmod, recording the mode the file was created with just before it.
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const real = await importOriginal<typeof FsPromises>();
+  return {
+    ...real,
+    chmod: async (path: string, mode: number) => {
+      modesBeforeChmod.push((await real.stat(path)).mode & 0o777);
+      await real.chmod(path, mode);
+    },
+  };
+});
 
 let dir: string;
 
@@ -27,6 +43,13 @@ describe("writeAtomically", () => {
     await writeAtomically({ file, temporary: join(dir, "settings.tmp"), text: "x", mode: 0o666 });
     // Tests run with a umask (typically 022) that would narrow 0o666 without the chmod.
     expect(statSync(file).mode & 0o777).toBe(0o666);
+  });
+
+  it("creates the temp file with the mode already, never more readable first", async () => {
+    modesBeforeChmod.length = 0;
+    const file = join(dir, "settings.json");
+    await writeAtomically({ file, temporary: join(dir, "settings.tmp"), text: "x", mode: 0o600 });
+    expect(modesBeforeChmod).toEqual([0o600]);
   });
 
   it("removes the temp file and rethrows when the rename fails", async () => {
