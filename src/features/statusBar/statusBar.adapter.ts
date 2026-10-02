@@ -52,7 +52,7 @@ export class StatusBarIndicator implements Disposable {
     const { name, config } = repo;
     this.item.text = `${glyphIcon(config.glyph)} ${escapeIcons(name)}`;
     this.item.color = config.background;
-    this.item.accessibilityInformation = { label: accessibilityLabel(name, config) };
+    this.item.accessibilityInformation = { label: accessibilityLabel({ name, config }) };
     this.item.tooltip = tooltip(repo);
     this.item.show();
   }

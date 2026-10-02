@@ -124,11 +124,17 @@ describe("presetName and accessibilityLabel", () => {
   });
 
   it("announces the repo, the preset color and the glyph, never a hex code", () => {
-    expect(accessibilityLabel("webshop", { background: hex("#e0620b"), glyph: "toucan" })).toBe(
-      "Toucan: webshop, Beak Orange toucan",
-    );
-    expect(accessibilityLabel("webshop", { background: hex("#123456"), glyph: "heart" })).toBe(
-      "Toucan: webshop, heart",
-    );
+    expect(
+      accessibilityLabel({
+        name: "webshop",
+        config: { background: hex("#e0620b"), glyph: "toucan" },
+      }),
+    ).toBe("Toucan: webshop, Beak Orange toucan");
+    expect(
+      accessibilityLabel({
+        name: "webshop",
+        config: { background: hex("#123456"), glyph: "heart" },
+      }),
+    ).toBe("Toucan: webshop, heart");
   });
 });
