@@ -11,17 +11,21 @@ export interface SidebarSettings {
   visibility: SidebarVisibility;
 }
 
+interface ResolveSidebarSettingsArgs {
+  enabled: unknown;
+  style: unknown;
+  visibility: unknown;
+  repo: { sidebarBlock?: SidebarVisibility } | undefined;
+}
+
 /**
  * The block's effective settings from the raw setting values (0013): enabled
  * only for a repo with a color; the repo's own visibility override wins over
  * the general one; anything unexpected falls back to the defaults.
  */
-export function resolveSidebarSettings(input: {
-  enabled: unknown;
-  style: unknown;
-  visibility: unknown;
-  repo: { sidebarBlock?: SidebarVisibility } | undefined;
-}): SidebarSettings & { style: SidebarStyle } {
+export function resolveSidebarSettings(
+  input: ResolveSidebarSettingsArgs,
+): SidebarSettings & { style: SidebarStyle } {
   const general = oneOf({ options: SIDEBAR_VISIBILITIES, value: input.visibility }) ?? "always";
   return {
     enabled: input.repo !== undefined && input.enabled === true,

@@ -146,12 +146,12 @@ function planCollections(state: IndexState): IndexPlan {
   return { commands, notes };
 }
 
-/** Whether an edited file is in one of Toucan's collections, so keyword search needs a refresh. */
 interface IsIndexedDocArgs {
   file: string;
   root: string;
 }
 
+/** Whether an edited file is in one of Toucan's collections, so keyword search needs a refresh. */
 export function isIndexedDoc({ file, root }: IsIndexedDocArgs): boolean {
   // A file outside the repo comes out as "../…", which no collection mask matches.
   const path = relative(root, file);

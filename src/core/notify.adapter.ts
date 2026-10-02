@@ -10,7 +10,6 @@ interface NotifyArgs {
  * settles when the user dismisses it, so awaiting would stall the caller, and
  * there's no outcome to handle: it has no buttons and never rejects.
  */
-
 export function notify({ level, message }: NotifyArgs): void {
   const shown =
     level === "info"

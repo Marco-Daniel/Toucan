@@ -18,10 +18,16 @@ import { errorText, tryCatch } from "../shared/async/tryCatch.util.ts";
 
 let coordinator: FocusCoordinator | undefined;
 
+interface BackgroundArgs {
+  /** Named in the warning when the task fails. */
+  what: string;
+  task: Promise<unknown>;
+}
+
 export async function activate(context: ExtensionContext): Promise<void> {
   const log = createLog();
   /** Fire-and-forget work: a failure is logged instead of becoming an unhandled rejection. */
-  const background = ({ what, task }: { what: string; task: Promise<unknown> }) => {
+  const background = ({ what, task }: BackgroundArgs) => {
     // A .catch, not tryCatch: nothing here awaits, the task runs on by itself.
     task.catch((error: unknown) => log.warn(`${what} failed: ${String(error)}`));
   };

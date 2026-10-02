@@ -70,17 +70,19 @@ export function titleToRestore({
   return { restore: true, value: change.previous };
 }
 
+interface SearchEmojiStepArgs {
+  enabled: boolean;
+  focused: boolean;
+  change: TitleChange | undefined;
+}
+
 /**
  * The global step a window takes for the search emoji (0015): ask for consent
  * when the feature is on but nothing is recorded yet, restore when it's off
  * but a change is recorded. Only the focused window does either, so several
  * open windows don't all ask.
  */
-export function searchEmojiStep(state: {
-  enabled: boolean;
-  focused: boolean;
-  change: TitleChange | undefined;
-}): "ask" | "restore" | "none" {
+export function searchEmojiStep(state: SearchEmojiStepArgs): "ask" | "restore" | "none" {
   if (!state.focused) {
     return "none";
   }

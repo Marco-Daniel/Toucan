@@ -61,16 +61,16 @@ export function withoutRepo({ raw, repo }: RepoEditArgs): Repos | undefined {
   return Object.keys(repos).length > 0 ? repos : undefined;
 }
 
-/**
- * Sets an own property even for a name like "__proto__", which a plain
- * assignment would turn into a prototype change instead of a key.
- */
 interface SetArgs {
   repos: Repos;
   repo: string;
   value: unknown;
 }
 
+/**
+ * Sets an own property even for a name like "__proto__", which a plain
+ * assignment would turn into a prototype change instead of a key.
+ */
 function set({ repos, repo, value }: SetArgs): void {
   Object.defineProperty(repos, repo, {
     value,
