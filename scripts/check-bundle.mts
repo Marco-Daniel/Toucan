@@ -1,7 +1,7 @@
 // Loads the built bundle in plain Node with a stub for `vscode`, so a
 // dependency the bundler left unresolved fails CI instead of activation.
 import Module, { createRequire } from "node:module";
-import { isRecord } from "../src/core/records.ts";
+import { isRecord } from "../src/shared/records/records.util.ts";
 
 type Load = (this: unknown, request: string, ...rest: unknown[]) => unknown;
 // `_load` is Node's internal hook that every require() goes through; it isn't typed.

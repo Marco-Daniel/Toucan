@@ -105,7 +105,7 @@ describe("the docs re-index hook", () => {
 
   // The hook notes an edit before it returns, so nothing noted means no worker.
   it("does nothing for a source edit", () => {
-    expect(hook(input("/repo/src/core/glyphs.ts"), fakeQmd(dir))).toMatchObject({
+    expect(hook(input("/repo/src/features/glyphs/glyphs.util.ts"), fakeQmd(dir))).toMatchObject({
       status: 0,
       stdout: "",
     });

@@ -10,7 +10,7 @@
 // stays pending for the session-start bootstrap.
 import { spawn } from "node:child_process";
 import { text } from "node:stream/consumers";
-import { isRecord } from "../src/core/records.ts";
+import { isRecord } from "../src/shared/records/records.util.ts";
 import { isIndexedDoc } from "./qmd-docs.mts";
 import { markPending } from "./qmd-lock.mts";
 import { exclusive, hasQmd, registeredNames } from "./qmd-run.mts";

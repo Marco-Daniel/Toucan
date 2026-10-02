@@ -3,11 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { FONT_CODEPOINTS } from "../../src/core/glyphFont.ts";
-import { glyphSvg } from "../../src/core/glyphs.ts";
+import { FONT_CODEPOINTS } from "../../src/features/glyphs/glyphFont.util.ts";
+import { glyphSvg } from "../../src/features/glyphs/glyphs.util.ts";
 import { GLYPH_PATHS } from "../../src/generated/glyphPaths.ts";
-import { GLYPHS } from "../../src/core/model.ts";
-import type { Glyph, Hex } from "../../src/core/model.ts";
+import { GLYPHS } from "../../src/shared/model/model.consts.ts";
+import type { Glyph, Hex } from "../../src/shared/model/model.types.ts";
 import { buildFont } from "../../scripts/font.mts";
 
 const BLACK = "#000000" as Hex;

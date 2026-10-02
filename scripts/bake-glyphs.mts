@@ -1,14 +1,14 @@
-// Bakes a glyph design (src/core/glyphDesign.ts) into one plain filled SVG
-// path: every fill grown by half its softening with round joins, as if
-// painted with a round stroke, the fills united, and the holes (grown by half
-// the lighter hole softening) cut out. Outlines and holes come out with
-// opposite winding, so they read the same under the nonzero rule that SVG and
-// TrueType fonts both use. Font tools drop strokes and masks; this doesn't
-// need either (glyph-set/0004).
+// Bakes a glyph design (src/features/glyphs/glyphDesign.consts.ts) into one
+// plain filled SVG path: every fill grown by half its softening with round
+// joins, as if painted with a round stroke, the fills united, and the holes
+// (grown by half the lighter hole softening) cut out. Outlines and holes come
+// out with opposite winding, so they read the same under the nonzero rule that
+// SVG and TrueType fonts both use. Font tools drop strokes and masks; this
+// doesn't need either (glyph-set/0004).
 import ClipperLib from "clipper-lib";
 import type { Path, Paths } from "clipper-lib";
-import { HOLE_SOFTENING } from "../src/core/glyphDesign.ts";
-import type { GlyphDesign, Point } from "../src/core/glyphDesign.ts";
+import { HOLE_SOFTENING } from "../src/features/glyphs/glyphDesign.consts.ts";
+import type { GlyphDesign, Point } from "../src/features/glyphs/glyphDesign.consts.ts";
 
 /** Clipper works in integers: 1/1000 of a glyph unit. */
 const SCALE = 1000;

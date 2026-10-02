@@ -1,7 +1,7 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/extension.ts"],
+  entry: ["src/core/extension.ts"],
   format: "cjs",
   platform: "node",
   // Lowest Node a ^1.138 extension host may run (VS Code 1.139.1 ships Node 24.20).

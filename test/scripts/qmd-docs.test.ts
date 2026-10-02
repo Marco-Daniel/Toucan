@@ -227,7 +227,7 @@ describe("isIndexedDoc", () => {
     ["/repo/GROUNDING.md", true],
     ["/repo/docs/plans/glyph-set/assets/glyph-sheet.py", false],
     ["/repo/.claude/CLAUDE.md", false],
-    ["/repo/src/core/glyphs.ts", false],
+    ["/repo/src/features/glyphs/glyphs.util.ts", false],
     ["/repo/src/README.md", false],
     ["/elsewhere/docs/plan.md", false],
   ])("%s → %s", (file, indexed) => {
