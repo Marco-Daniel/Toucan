@@ -38,6 +38,11 @@ const SUN_DISC_SIDES = 12;
 const STAR_POINTS = 5;
 const STAR_VERTICES = 10;
 
+// The geometry helpers below (ngon, star, at, pinSun, blade, strip, shape)
+// keep positional parameters, a documented exception to the object-argument
+// rule: GLYPH_DESIGNS is geometry notation, `ngon(8, 8, 6.8)` read like the
+// reference sheet, and named fields would bury the numbers.
+
 /** "x,y x,y …" as written in the reference sheet. */
 function points(text: string): Point[] {
   return text.split(" ").map((pair) => {
