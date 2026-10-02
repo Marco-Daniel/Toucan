@@ -3,6 +3,7 @@ import { customizationsFor, mergeCustomizations } from "./merge.util.ts";
 import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import { isRecord } from "../../shared/records/records.util.ts";
+import { errorText, tryCatch, tryCatchSync } from "../../shared/async/tryCatch.util.ts";
 
 /**
  * Delay before an unfocused window clears the Command Center colors. Switching
@@ -135,13 +136,13 @@ export class FocusCoordinator {
       return;
     }
     // Owner first: another window's pending blur checks it before clearing.
-    try {
-      await this.ports.writeOwner(this.id);
-      this.ports.debug("took ownership");
-    } catch (error) {
+    const [, ownerError] = await tryCatch(
+      this.ports.writeOwner(this.id).then(() => this.ports.debug("took ownership")),
+    );
+    if (ownerError !== null) {
       // Apply the colors anyway: better colored now than waiting for the next
       // focus change; the verify step heals if another window clears them.
-      this.ports.warn(`Couldn't record this window as the color owner: ${String(error)}`);
+      this.ports.warn(`Couldn't record this window as the color owner: ${errorText(ownerError)}`);
     }
     await this.write(colors);
     this.cancel("verify");
@@ -206,17 +207,21 @@ export class FocusCoordinator {
       this.staleSnapshot = snapshot;
       this.ports.debug("settings view is stale; rewriting");
     }
-    try {
+    const [, error] = await tryCatch(
       // Toucan's keys merged onto whatever the user value is when it's written.
-      await this.ports.writeCustomizations((current) => customizationsFor(current, colors));
-      this.ports.debug(colors ? `applied ${colors.background}` : "cleared");
-      this.failing = false;
-    } catch (error) {
+      this.ports
+        .writeCustomizations((current) => customizationsFor(current, colors))
+        .then(() => {
+          this.ports.debug(colors ? `applied ${colors.background}` : "cleared");
+          this.failing = false;
+        }),
+    );
+    if (error !== null) {
       // Log once per failure streak, e.g. while settings.json has unsaved edits.
       const first = !this.failing;
       this.failing = true;
       if (first) {
-        this.ports.warn(`Couldn't update workbench.colorCustomizations: ${String(error)}`);
+        this.ports.warn(`Couldn't update workbench.colorCustomizations: ${errorText(error)}`);
       }
       return;
     }
@@ -228,10 +233,9 @@ export class FocusCoordinator {
     if (!colors || this.ports.hasApplied()) {
       return;
     }
-    try {
-      await this.ports.markApplied();
-    } catch (error) {
-      this.ports.warn(`Couldn't record that Toucan applied a color: ${String(error)}`);
+    const [, error] = await tryCatch(this.ports.markApplied());
+    if (error !== null) {
+      this.ports.warn(`Couldn't record that Toucan applied a color: ${errorText(error)}`);
     }
   }
 
@@ -260,14 +264,10 @@ export class FocusCoordinator {
   /** Runs tasks one at a time, so this window's own writes never interleave. */
   private enqueue(task: () => Promise<void>): Promise<void> {
     return this.lock(async () => {
-      try {
-        await task();
-      } catch (error) {
-        try {
-          this.ports.warn(`Focus handling failed: ${String(error)}`);
-        } catch {
-          // Logging can fail during shutdown; the queue must keep going.
-        }
+      const [, error] = await tryCatch(task());
+      if (error !== null) {
+        // Logging can fail during shutdown; the queue must keep going.
+        tryCatchSync(() => this.ports.warn(`Focus handling failed: ${errorText(error)}`));
       }
     });
   }

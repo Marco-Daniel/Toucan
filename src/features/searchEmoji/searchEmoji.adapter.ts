@@ -16,6 +16,7 @@ import { repoVariableValue, shouldLabel } from "./windowTitle.util.ts";
 import type { TitleChange } from "./windowTitle.util.ts";
 import { configs } from "../../generated/meta.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
+import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 const WINDOW_TITLE = "window.title";
 /** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
@@ -154,31 +155,35 @@ export class SearchEmoji implements Disposable {
       return;
     }
     this.gitHooked = true;
-    try {
-      const git = extensions.getExtension<{ getAPI(version: 1): GitApi }>("vscode.git");
-      if (!git) {
-        return;
-      }
-      const api = (await git.activate()).getAPI(1);
-      const watch = (repository: { state: { onDidChange: Event<void> } }) => {
-        this.disposables.push(repository.state.onDidChange(() => this.reassertSoon()));
-      };
-      api.repositories.forEach(watch);
-      this.gitHasRepository = api.repositories.length > 0;
-      this.disposables.push(
-        api.onDidOpenRepository((repository) => {
-          watch(repository);
-          this.gitHasRepository = true;
-          this.reassertSoon();
-        }),
-        api.onDidCloseRepository(() => {
-          this.gitHasRepository = api.repositories.length > 0;
-          this.reassertSoon();
-        }),
-      );
-    } catch (error) {
-      this.log.warn(`Couldn't watch git repositories for the search emoji: ${String(error)}`);
+    const [, error] = await tryCatch(this.watchGit());
+    if (error !== null) {
+      this.log.warn(`Couldn't watch git repositories for the search emoji: ${errorText(error)}`);
     }
+  }
+
+  /** Reasserts after every change to a git repository, and when one opens or closes. */
+  private async watchGit(): Promise<void> {
+    const git = extensions.getExtension<{ getAPI(version: 1): GitApi }>("vscode.git");
+    if (!git) {
+      return;
+    }
+    const api = (await git.activate()).getAPI(1);
+    const watch = (repository: { state: { onDidChange: Event<void> } }) => {
+      this.disposables.push(repository.state.onDidChange(() => this.reassertSoon()));
+    };
+    api.repositories.forEach(watch);
+    this.gitHasRepository = api.repositories.length > 0;
+    this.disposables.push(
+      api.onDidOpenRepository((repository) => {
+        watch(repository);
+        this.gitHasRepository = true;
+        this.reassertSoon();
+      }),
+      api.onDidCloseRepository(() => {
+        this.gitHasRepository = api.repositories.length > 0;
+        this.reassertSoon();
+      }),
+    );
   }
 }
 

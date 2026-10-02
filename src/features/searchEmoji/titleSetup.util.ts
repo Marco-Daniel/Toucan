@@ -5,6 +5,7 @@ import {
   unappliedChange,
 } from "./windowTitle.util.ts";
 import type { TitleChange } from "./windowTitle.util.ts";
+import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 /** `window.title` as `inspect()` reports it. */
 export interface TitleSettings {
@@ -59,9 +60,8 @@ export class TitleSetup {
     }
     const step = searchEmojiStep({ enabled, focused, change });
     if (step === "ask") {
-      try {
-        await this.askAndApply();
-      } catch (error) {
+      const [, error] = await tryCatch(this.askAndApply());
+      if (error !== null) {
         // The record was cleared again in askAndApply; just tell the user.
         ports.failed(error);
       }
@@ -97,9 +97,8 @@ export class TitleSetup {
       if (written === undefined) {
         return;
       }
-      try {
-        await ports.writeTitle(written);
-      } catch (error) {
+      const [, error] = await tryCatch(ports.writeTitle(written));
+      if (error !== null) {
         await ports.writeChange(undefined);
         throw error;
       }
