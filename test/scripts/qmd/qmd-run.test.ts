@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isPending, markPending, releaseLock, takeLock } from "../../../scripts/qmd/qmd-lock.mts";
 import { ROOT, exclusive } from "../../../scripts/qmd/qmd-run.mts";
-import { fakeQmd, readQmdLog } from "../../helpers/qmd.ts";
+import { fakeQmd, isolateQmdCache, readQmdLog } from "../../helpers/qmd.ts";
 
 let dir: string;
 
@@ -13,8 +13,7 @@ beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "toucan-run-"));
   // Only the fake qmd, and the lock in this test's dir.
   vi.stubEnv("PATH", fakeQmd({ dir, collections: "'toucan-docs (qmd://toucan-docs/)'" }));
-  vi.stubEnv("HOME", dir);
-  vi.stubEnv("XDG_CACHE_HOME", dir);
+  isolateQmdCache(dir);
 });
 afterEach(() => {
   vi.unstubAllEnvs();

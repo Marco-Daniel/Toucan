@@ -109,3 +109,13 @@ export function writeCacheFile({ dir, name, text }: WriteCacheFileArgs): void {
   mkdirSync(join(dir, "qmd"), { recursive: true });
   writeFileSync(join(dir, "qmd", name), text);
 }
+
+/**
+ * Points both places qmd's cache can come from at `dir`, for code that runs
+ * in the test process: XDG_CACHE_HOME, and HOME for when XDG_CACHE_HOME is
+ * unset (as a mutant may make it). Undo with vi.unstubAllEnvs().
+ */
+export function isolateQmdCache(dir: string): void {
+  vi.stubEnv("HOME", dir);
+  vi.stubEnv("XDG_CACHE_HOME", dir);
+}

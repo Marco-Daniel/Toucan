@@ -20,6 +20,7 @@ import {
   takePending,
   touchLock,
 } from "../../../scripts/qmd/qmd-lock.mts";
+import { isolateQmdCache } from "../../helpers/qmd.ts";
 
 let dir: string;
 let cache: string;
@@ -27,7 +28,7 @@ let cache: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "toucan-lock-"));
   // qmd's cache, and so the lock, in this test's dir: never the real one.
-  vi.stubEnv("XDG_CACHE_HOME", dir);
+  isolateQmdCache(dir);
   cache = join(dir, "qmd");
 });
 afterEach(() => {
@@ -46,6 +47,11 @@ function age({ path, ms }: AgeArgs): void {
 }
 
 describe("the qmd lock", () => {
+  it("falls back to HOME's .cache when XDG_CACHE_HOME is unset, never the real home", () => {
+    vi.stubEnv("XDG_CACHE_HOME", undefined);
+    expect(takeLock()).toBe(join(dir, ".cache", "qmd", "toucan.lock"));
+  });
+
   it("lives in qmd's cache folder, next to Toucan's index", () => {
     expect(takeLock()).toBe(join(cache, "toucan.lock"));
   });
