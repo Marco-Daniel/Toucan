@@ -12,7 +12,7 @@ import { setColor } from "./setColor.adapter.ts";
 import { setGlyph } from "./setGlyph.adapter.ts";
 
 export interface CommandHost {
-  /** Writes toucan.repos, keeping comments when it safely can (0017). */
+  /** Writes toucan.repos, keeping comments when it safely can (toucan-v1/0017). */
   writer: SettingsWriter;
   /** This window's repo (first folder) name, configured or not. */
   repoName(): string | undefined;

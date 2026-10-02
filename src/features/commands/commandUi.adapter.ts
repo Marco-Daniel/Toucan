@@ -22,7 +22,7 @@ export function swatch({ glyph, hex }: SwatchArgs): Uri {
   return Uri.parse(svgDataUri(glyphSvg({ glyph, color: hex, height: SWATCH_PX })));
 }
 
-/** The status bar background to check picked colors against (0018). */
+/** The status bar background to check picked colors against (toucan-v1/0018). */
 export function statusBarAgainst(): Hex | undefined {
   const themeKind = window.activeColorTheme.kind;
   const kind =

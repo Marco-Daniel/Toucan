@@ -9,8 +9,8 @@ import type { ActiveRepo } from "../../core/repo.adapter.ts";
 const TOOLTIP_SWATCH_HEIGHT = 32;
 
 /**
- * The always-on indicator (0005): the repo's glyph and name in its color, in
- * every window, without writing settings. Hidden for unconfigured repos (0008).
+ * The always-on indicator (ADR-0005): the repo's glyph and name in its color, in
+ * every window, without writing settings. Hidden for unconfigured repos (toucan-v1/0008).
  */
 export class StatusBarIndicator implements Disposable {
   // Max priority puts it right after the remote indicator, which stays leftmost.

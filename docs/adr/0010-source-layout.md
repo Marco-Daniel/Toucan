@@ -20,7 +20,7 @@
 ## Decision Outcome
 
 Chosen: **topic folders with role suffixes**:
-- `src/core/`: the entry point and the adapters every part uses.
+- `src/core/`: the entry point and the extension-wide adapters and ids.
 - `src/shared/<topic>/`: code features share, generic from the start (`shared/` itself holds only folders).
 - `src/features/<feature>/`: one folder per feature.
 - `src/generated/`: generated code, unchanged.

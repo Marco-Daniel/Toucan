@@ -41,7 +41,7 @@ export interface ParsedConfig {
 const OVERRIDE_KEYS = COMMAND_CENTER_KEYS.filter((key) => key !== "background");
 
 /**
- * Normalizes the raw `toucan.repos` value (0001). An entry with an invalid
+ * Normalizes the raw `toucan.repos` value (ADR-0001). An entry with an invalid
  * background is dropped; any other invalid field is ignored and reported.
  */
 export function parseRepos(raw: unknown): ParsedConfig {

@@ -40,7 +40,7 @@ export function glyphSvg({ glyph, color, height = HEIGHT }: GlyphSvgArgs): strin
   return shapeSvg({ width, d, color, height });
 }
 
-/** `data:` URI for an SVG, as accepted by markdown tooltips (0005). */
+/** `data:` URI for an SVG, as accepted by markdown tooltips (ADR-0005). */
 export function svgDataUri(svg: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`;
 }

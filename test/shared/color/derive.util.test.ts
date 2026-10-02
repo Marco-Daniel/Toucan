@@ -14,7 +14,7 @@ const derive = ({ background, overrides = {} }: DeriveArgs) =>
   deriveColors({ background: asHex(background), overrides });
 const lightness = (hex: string) => toOklch(parseHex(hex))!.l;
 
-// Every preset from 0014, plus the extremes.
+// Every preset from toucan-v1/0014, plus the extremes.
 const BACKGROUNDS = [
   "#f92824",
   "#a3161a",

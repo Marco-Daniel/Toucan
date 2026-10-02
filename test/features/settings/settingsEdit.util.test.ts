@@ -400,7 +400,7 @@ describe("settingsFiles", () => {
 });
 
 describe("planEdit, clearing every key", () => {
-  // Keeps the (now empty) object: removing the key would drop comments inside it (0017).
+  // Keeps the (now empty) object: removing the key would drop comments inside it (toucan-v1/0017).
   it("leaves an empty object (closing brace on its own line) in a plain file", () => {
     const text = `{\n  "${KEY}": {\n    "commandCenter.background": "#aa0000"\n  }\n}\n`;
     const plan = planEdit({

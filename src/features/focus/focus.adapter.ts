@@ -12,7 +12,7 @@ import type { CommandCenterColors } from "../../shared/model/model.types.ts";
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
 export const COLOR_CUSTOMIZATIONS = "workbench.colorCustomizations";
-/** globalState (per profile): Toucan has applied a color here at least once (0008). */
+/** globalState (per profile): Toucan has applied a color here at least once (toucan-v1/0008). */
 const APPLIED_KEY = "commandCenter.applied";
 /** Debug lines name the window by the start of its id. */
 const SHORT_ID_LENGTH = 8;
@@ -73,7 +73,7 @@ function ownerFilePorts({ context, id, log, writer }: OwnerFilePortsArgs): Focus
       await context.globalState.update(APPLIED_KEY, true);
     },
     async writeCustomizations(update) {
-      // Run inside the writer's lock; keeps comments when it safely can (0017).
+      // Run inside the writer's lock; keeps comments when it safely can (toucan-v1/0017).
       await writer.write({ key: COLOR_CUSTOMIZATIONS, update, target: "profile" });
     },
     warn(message) {

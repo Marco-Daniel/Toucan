@@ -30,7 +30,7 @@ interface CreateSettingsWriterArgs {
   log: Log;
 }
 
-/** The settings writer wired to VS Code (0017). Create one and share it: it holds the lock. */
+/** The settings writer wired to VS Code (toucan-v1/0017). Create one and share it: it holds the lock. */
 export function createSettingsWriter({
   globalStoragePath,
   log,

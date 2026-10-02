@@ -4,7 +4,7 @@ import { GLYPHS } from "../../../src/shared/model/model.consts.ts";
 import { asHex } from "../../../src/shared/color/hex.util.ts";
 
 describe("emojiColor", () => {
-  // The 0014 presets, plus a few common colors that are hard to classify.
+  // The toucan-v1/0014 presets, plus a few common colors that are hard to classify.
   it.each([
     ["#f92824", "red"],
     ["#a3161a", "red"],

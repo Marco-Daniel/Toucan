@@ -20,7 +20,7 @@ const PROFILE_SEGMENTS = 2;
 
 /**
  * Plans an in-place edit of one setting in the user settings file, keeping
- * comments and formatting (0017). The adapter does the file I/O.
+ * comments and formatting (toucan-v1/0017). The adapter does the file I/O.
  */
 export type EditPlan =
   | { kind: "noop" }
@@ -72,7 +72,7 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
   if (current === undefined) {
     return { kind: "fallback", reason: `${key} isn't in the file` };
   }
-  // Not proof the file is this window's (0017 step 2); the adapter's
+  // Not proof the file is this window's (toucan-v1/0017 step 2); the adapter's
   // verify-and-revert covers the rest.
   if (!isRecord(current) || !isDeepStrictEqual(current, view)) {
     return { kind: "fallback", reason: `${key} in the file differs from VS Code's view` };
@@ -299,7 +299,7 @@ export function viewReflects({ view, desired, changed }: ViewReflectsArgs): bool
 /**
  * The user settings files, derived from the extension's global storage path:
  * `<User>/globalStorage/<ext>` or `<User>/profiles/<id>/globalStorage/<ext>`.
- * `profile` is this profile's file (a guess, see 0017); `defaultProfile` is
+ * `profile` is this profile's file (a guess, see toucan-v1/0017); `defaultProfile` is
  * where VS Code keeps application-scoped settings such as `toucan.repos`.
  */
 export function settingsFiles(globalStoragePath: string): {

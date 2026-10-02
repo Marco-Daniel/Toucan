@@ -19,7 +19,7 @@ export async function pickPreset({ host, name }: CommandArgs): Promise<void> {
       iconPath: swatch({ glyph, hex: preset.hex }),
       hex: preset.hex,
     };
-    // Marked, not hidden: the user can still pick it (0018).
+    // Marked, not hidden: the user can still pick it (toucan-v1/0018).
     if (lowContrast({ color: preset.hex, background: statusBar })) {
       item.detail = `$(warning) ${LOW_CONTRAST_WARNING}`;
     }

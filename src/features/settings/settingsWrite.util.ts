@@ -89,7 +89,7 @@ interface ReflectedArgs {
 }
 
 /**
- * Writes one of Toucan's two settings, keeping comments when it can (0017).
+ * Writes one of Toucan's two settings, keeping comments when it can (toucan-v1/0017).
  * It edits the user settings file in place only when the setting is in the
  * file and matches VS Code's view, and only if VS Code then picks the edit up;
  * otherwise it falls back to `update()`.
@@ -123,7 +123,7 @@ export class SettingsFileWriter {
     this.clock = options.clock ?? realClock;
   }
 
-  /** The settings file a target resolves to (a guess for `profile`, see 0017). */
+  /** The settings file a target resolves to (a guess for `profile`, see toucan-v1/0017). */
   file(target: SettingsTarget): string {
     return this.files[target];
   }
@@ -214,7 +214,7 @@ export class SettingsFileWriter {
       this.misses.delete(file);
       return undefined;
     }
-    // VS Code didn't follow: maybe slow, maybe not this window's file (0017 step 5).
+    // VS Code didn't follow: maybe slow, maybe not this window's file (toucan-v1/0017 step 5).
     const [now] = await tryCatch(() => readFile(file, "utf8"));
     if (now !== plan.text) {
       // Someone else wrote meanwhile: no evidence either way about the guess.

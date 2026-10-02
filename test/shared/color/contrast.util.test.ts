@@ -96,7 +96,7 @@ describe("activeThemeName", () => {
 });
 
 describe("LOW_CONTRAST_WARNING", () => {
-  // Both pickers show it as is (0018): a guess at the status bar, so no ratio.
+  // Both pickers show it as is (toucan-v1/0018): a guess at the status bar, so no ratio.
   it("says the color may be hard to see, without a measured ratio", () => {
     expect(LOW_CONTRAST_WARNING).toBe("May be hard to see on the status bar.");
   });
