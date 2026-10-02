@@ -8,6 +8,12 @@ export function userValue(key: string): unknown {
   return workspace.getConfiguration().inspect(key)?.globalValue;
 }
 
+/** Whether this workspace or folder sets its own value for `key`, hiding the user-level one. */
+export function overriddenInWorkspace(key: string): boolean {
+  const inspected = workspace.getConfiguration().inspect(key);
+  return inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined;
+}
+
 interface CreateSettingsWriterArgs {
   globalStoragePath: string;
   log: Log;

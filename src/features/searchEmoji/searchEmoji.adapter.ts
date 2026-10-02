@@ -17,6 +17,7 @@ import type { TitleChange } from "./windowTitle.util.ts";
 import { configs } from "../../generated/meta.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
+import { overriddenInWorkspace } from "../settings/settings.adapter.ts";
 
 const WINDOW_TITLE = "window.title";
 /** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
@@ -83,7 +84,7 @@ export class SearchEmoji implements Disposable {
   async refresh(): Promise<void> {
     const change = await this.title.settle();
     if (shouldLabel({ enabled: enabled(), change })) {
-      const overridden = workspaceTitle();
+      const overridden = overriddenInWorkspace(WINDOW_TITLE);
       if (overridden && !this.reportedOverride) {
         this.log.info(
           `This workspace sets its own ${WINDOW_TITLE}, so the search emoji doesn't show here.`,
@@ -201,12 +202,6 @@ function enabled(): boolean {
   return workspace.getConfiguration().get(configs.experimentalSearchEmoji.key, false);
 }
 
-/** Whether this workspace or folder sets its own window.title, hiding the user-level one. */
-function workspaceTitle(): boolean {
-  const inspected = workspace.getConfiguration().inspect<string>(WINDOW_TITLE);
-  return inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined;
-}
-
 interface TitlePortsArgs {
   context: ExtensionContext;
   log: Log;
@@ -222,7 +217,7 @@ function titlePorts({ context, log }: TitlePortsArgs): TitlePorts {
       return {
         global: inspected?.globalValue,
         default: inspected?.defaultValue,
-        overridden: workspaceTitle(),
+        overridden: overriddenInWorkspace(WINDOW_TITLE),
       };
     },
     readChange: () => context.globalState.get<TitleChange>(CHANGE_KEY),

@@ -3,6 +3,7 @@ import type { ExtensionContext } from "vscode";
 import { AGENTS_CONTROL_OFFER } from "../../shared/messages/notifications.messages.ts";
 import type { Log } from "../../core/log.adapter.ts";
 import { AGENTS_CONTROL, agentsControlAction } from "./agentsControl.util.ts";
+import { overriddenInWorkspace } from "../settings/settings.adapter.ts";
 
 /** globalState key for "Not now" (per profile). */
 const DECLINED_KEY = "agentsControl.declined";
@@ -41,8 +42,7 @@ export class AgentsControlOffer {
     const action = agentsControlAction({
       registered: inspected?.defaultValue !== undefined,
       effective: configuration.get(AGENTS_CONTROL),
-      workspaceDecides:
-        inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined,
+      workspaceDecides: overriddenInWorkspace(AGENTS_CONTROL),
       declined: this.context.globalState.get<boolean>(DECLINED_KEY, false),
     });
 
