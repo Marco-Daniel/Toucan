@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tryCatch, tryCatchSync } from "../../../src/shared/async/tryCatch.util.ts";
+import { errorText, tryCatch, tryCatchSync } from "../../../src/shared/async/tryCatch.util.ts";
 
 describe("tryCatch", () => {
   it("gives the value and no error when the promise resolves", async () => {
@@ -20,6 +20,11 @@ describe("tryCatch", () => {
   it("never reports a rejection with null as success", async () => {
     const [, error] = await tryCatch(Promise.reject(null));
     expect(error).toEqual(new Error("null was thrown"));
+  });
+
+  it("never reports a rejection with undefined as no error", async () => {
+    const [, error] = await tryCatch(Promise.reject(undefined));
+    expect(error).toEqual(new Error("undefined was thrown"));
   });
 
   it("reports a value of null as success", async () => {
@@ -46,5 +51,11 @@ describe("tryCatchSync", () => {
       throw null;
     });
     expect(error).toEqual(new Error("null was thrown"));
+  });
+});
+
+describe("errorText", () => {
+  it("shows an error the way String() does", () => {
+    expect(errorText(new Error("EACCES"))).toBe("Error: EACCES");
   });
 });
