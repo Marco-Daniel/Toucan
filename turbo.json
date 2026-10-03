@@ -1,0 +1,52 @@
+{
+  "$schema": "./node_modules/turbo/schema.json",
+  "ui": "stream",
+  // Each checkout's own cache: by default git worktrees share the main
+  // checkout's, so one worktree would write into another.
+  "cacheDir": ".turbo/cache",
+  // Tasks see the whole environment, as they did before Turborepo: the tests
+  // and scripts read HOME, PATH, CI and the qmd variables.
+  "envMode": "loose",
+  // Root configs every package's lint and format run reads.
+  "globalDependencies": [".oxlintrc.json", ".oxfmtrc.json", ".nvmrc"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": []
+    },
+    // Regenerates files and compares them with git: never cached.
+    "check:generated": {
+      "cache": false
+    },
+    "check:bundle": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "check:vsix": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    // The root's own tooling: docs search, docs-sync and the ADR log test.
+    "//#lint:repo": {
+      "outputs": []
+    },
+    "//#typecheck:repo": {
+      "outputs": []
+    },
+    "//#test:repo": {
+      "outputs": []
+    }
+  }
+}

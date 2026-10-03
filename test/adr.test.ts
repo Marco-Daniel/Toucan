@@ -6,7 +6,18 @@ import { describe, expect, it } from "vitest";
 const ROOT = join(import.meta.dirname, "..");
 const ADR_DIR = join(ROOT, "docs", "adr");
 /** Live instructions: an ADR cited here must still be in force. */
-const LIVE = ["src", "scripts", "test", ".claude/CLAUDE.md", "README.md", "docs/adr/README.md"];
+const LIVE = [
+  "apps/extension/src",
+  "apps/extension/scripts",
+  "apps/extension/test",
+  "apps/extension/README.md",
+  "config/vite/src",
+  "scripts",
+  "test",
+  ".claude/CLAUDE.md",
+  "README.md",
+  "docs/adr/README.md",
+];
 /** History: the ADRs and plans may cite an ADR that was later superseded (that's how superseding reads). */
 const HISTORY = ["docs/adr", "docs/plans"];
 const CITATION = /\bADR-(\d{4})\b/g;

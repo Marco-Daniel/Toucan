@@ -1,16 +1,18 @@
 // `node scripts/docs-sync.mts [--since <ref>]`: what changed since the last
 // docs sync, for the /docs-sync skill to look up in the docs. It prints one
-// JSON object: the changed files, package.json script names, setting keys and
-// command ids, ADR status changes and exported names in src/ and scripts/.
+// JSON object: the changed files, the script names, setting keys and command
+// ids of every package.json, ADR status changes and exported names in the
+// root's and each package's src/ and scripts/.
 // The ref defaults to the `docs-sync/last` tag. Without it, or when the diff
 // can't be computed (a shallow clone missing the old commit, say), it asks for
 // a full sweep instead. It only reads git: it never fetches, tags or pushes.
 // import libraries
 import { spawnSync } from "node:child_process";
+import { posix } from "node:path";
 
 // import utils
-import { errorText, tryCatchSync } from "../src/shared/async/tryCatch.util.ts";
-import { isRecord } from "../src/shared/records/records.util.ts";
+import { errorText, tryCatchSync } from "../apps/extension/src/shared/async/tryCatch.util.ts";
+import { isRecord } from "../apps/extension/src/shared/records/records.util.ts";
 
 const DEFAULT_SINCE = "docs-sync/last";
 
@@ -256,7 +258,43 @@ export function diffSymbols({ before, after }: BeforeAfter<readonly string[]>): 
 
 /** Whether a changed file can hold exported names worth looking up in the docs. */
 export function isSourceFile(path: string): boolean {
-  return /^(src|scripts)\/.*\.m?ts$/.test(path) && !path.endsWith(".d.ts");
+  return (
+    /^(?:(?:apps|packages|config)\/[^/]+\/)?(?:src|scripts)\/.*\.m?ts$/.test(path) &&
+    !path.endsWith(".d.ts")
+  );
+}
+
+/** A workspace package's manifest, by the folder that holds it ("" for the root). */
+export interface FolderManifest {
+  folder: string;
+  manifest: unknown;
+}
+
+/**
+ * Every package.json as one manifest: the root's scripts by name, a package's
+ * as `<name>#<script>` (Turborepo's form), and every package's settings and
+ * commands together.
+ */
+export function mergeManifests(manifests: readonly FolderManifest[]): unknown {
+  const scripts: Record<string, unknown> = {};
+  const configuration: unknown[] = [];
+  const commands: unknown[] = [];
+  for (const { folder, manifest } of manifests) {
+    const name =
+      isRecord(manifest) && typeof manifest["name"] === "string" ? manifest["name"] : folder;
+    for (const [script, command] of Object.entries(scriptsOf(manifest))) {
+      scripts[folder === "" ? script : `${name}#${script}`] = command;
+    }
+    const contributes = isRecord(manifest) ? manifest["contributes"] : undefined;
+    if (isRecord(contributes)) {
+      configuration.push(contributes["configuration"]);
+      const listed: unknown[] = Array.isArray(contributes["commands"])
+        ? contributes["commands"]
+        : [];
+      commands.push(...listed);
+    }
+  }
+  return { scripts, contributes: { configuration: configuration.flat(), commands } };
 }
 
 /** `git` in the working directory; its stdout, or `undefined` when it fails. */
@@ -275,13 +313,20 @@ function show({ ref, path }: ShowArgs): string | undefined {
   return git(["show", `${ref}:${path}`]);
 }
 
-/** `package.json` at `ref`, parsed; `undefined` when it's missing or not JSON. */
+/** Every tracked package.json at `ref`, merged; one that isn't JSON counts as empty. */
 function manifestAt(ref: string): unknown {
-  const text = show({ ref, path: "package.json" });
-  const [manifest] = tryCatchSync((): unknown =>
-    text === undefined ? undefined : JSON.parse(text),
+  const listing = git(["ls-tree", "-r", "--name-only", ref]) ?? "";
+  const paths = listing.split("\n").filter((path) => /(?:^|\/)package\.json$/.test(path));
+  return mergeManifests(
+    paths.map((path) => {
+      const text = show({ ref, path });
+      const [manifest] = tryCatchSync((): unknown =>
+        text === undefined ? undefined : JSON.parse(text),
+      );
+      const folder = posix.dirname(path);
+      return { folder: folder === "." ? "" : folder, manifest };
+    }),
   );
-  return manifest ?? undefined;
 }
 
 /** Every ADR's Status line at `ref`, by number. */

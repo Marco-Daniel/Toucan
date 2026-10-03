@@ -1,0 +1,38 @@
+{
+  "name": "toucan-repo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Toucan monorepo: the VS Code extension, its shared configs and the repo's own tooling.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Marco-Daniel/Toucan.git"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "lint": "turbo run lint lint:repo",
+    "typecheck": "turbo run typecheck typecheck:repo",
+    "test": "turbo run test test:repo",
+    "lint:repo": "oxlint --type-aware --deny-warnings --report-unused-disable-directives scripts test vitest.config.ts",
+    "typecheck:repo": "tsc --noEmit",
+    "test:repo": "vitest run",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "docs:index": "node scripts/qmd/docs-index.mts",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@toucan/ts-config": "workspace:*",
+    "@toucan/vite-config": "workspace:*",
+    "@types/node": "catalog:",
+    "husky": "^9.1.7",
+    "oxfmt": "^0.71.0",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "turbo": "2.11.7",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "packageManager": "pnpm@12.8.1"
+}

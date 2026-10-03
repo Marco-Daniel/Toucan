@@ -1,0 +1,7 @@
+{
+  "extends": "@toucan/ts-config/base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["scripts", "test", "*.config.ts"]
+}

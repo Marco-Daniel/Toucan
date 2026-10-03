@@ -51,6 +51,7 @@ Toucan colors each VS Code window by its repository: the focused window's Comman
 |---|---|---|---|
 | [0006](0006-only-adapters-import-vscode.md) | Only adapters import vscode | constraint | Accepted |
 | [0010](0010-source-layout.md) | Source layout: core, shared and features | constraint | Accepted |
+| [0014](0014-monorepo-layout.md) | Monorepo layout: apps, packages, config, and the root's own tooling | constraint | Accepted |
 
 ### errors
 

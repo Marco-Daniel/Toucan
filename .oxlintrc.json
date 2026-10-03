@@ -10,7 +10,7 @@
     "node": true,
     "es2024": true
   },
-  "ignorePatterns": ["dist/**", "src/generated/**", "docs/**"],
+  "ignorePatterns": ["**/dist/**", "**/src/generated/**", "docs/**"],
   "rules": {
     "no-unused-vars": [
       "error",
@@ -71,7 +71,7 @@
   },
   "overrides": [
     {
-      "files": ["src/**"],
+      "files": ["**/src/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -88,13 +88,13 @@
     },
     {
       // The scripts run qmd and file steps in order on purpose.
-      "files": ["scripts/**"],
+      "files": ["**/scripts/**"],
       "rules": { "no-await-in-loop": "off" }
     },
     {
       // Tests use literal fixtures, long tables of cases, parsed JSON (any),
       // sequential awaits and no-op fakes for ports they don't check.
-      "files": ["test/**"],
+      "files": ["**/test/**"],
       "rules": {
         "typescript/no-magic-numbers": "off",
         "typescript/no-unsafe-assignment": "off",
