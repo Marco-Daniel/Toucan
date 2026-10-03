@@ -88,8 +88,11 @@ export function lowContrast({ color, background }: LowContrastArgs): boolean {
   );
 }
 
-/** The warning both pickers show (toucan-v1/0018): no measured ratio, since the background is a guess. */
+/** Set Color's warning (toucan-v1/0018): no measured ratio, since the background is a guess. */
 export const LOW_CONTRAST_WARNING = "May be hard to see on the status bar.";
+
+/** The same warning, short enough for a preset's one-line description. */
+export const LOW_CONTRAST_HINT = "hard to see on the status bar";
 
 /** The name of the preset with this color, if there is one. */
 export function presetName(hex: Hex): string | undefined {
