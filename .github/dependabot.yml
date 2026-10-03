@@ -47,7 +47,7 @@ updates:
       # together with engines.vscode.
       - dependency-name: "@types/vscode"
       # Kept at the Node 22 floor that matches the build target in
-      # tsdown.config.ts; minor and patch updates are fine.
+      # apps/extension/tsdown.config.ts; minor and patch updates are fine.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
     # Groups match in order; majors come as their own pull requests.

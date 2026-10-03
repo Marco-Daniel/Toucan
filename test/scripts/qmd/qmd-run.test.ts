@@ -56,9 +56,9 @@ function exclusiveInChild(renote: boolean) {
 
 describe("ROOT", () => {
   // qmd stores the collections' real paths, so this must be the repo itself.
-  it("is the repo root, where package.json names Toucan", () => {
+  it("is the repo root, where package.json names the Toucan repo", () => {
     const manifest: unknown = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
-    expect(manifest).toMatchObject({ name: "toucan" });
+    expect(manifest).toMatchObject({ name: "toucan-repo" });
   });
 });
 

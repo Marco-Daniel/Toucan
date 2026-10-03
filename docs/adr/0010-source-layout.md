@@ -20,13 +20,13 @@
 ## Decision Outcome
 
 Chosen: **topic folders with role suffixes**:
-- `src/core/`: the entry point and the extension-wide adapters and ids.
-- `src/shared/<topic>/`: code features share, generic from the start (`shared/` itself holds only folders).
-- `src/features/<feature>/`: one folder per feature.
-- `src/generated/`: generated code, unchanged.
+- `apps/extension/src/core/`: the entry point and the extension-wide adapters and ids.
+- `apps/extension/src/shared/<topic>/`: code features share, generic from the start (`shared/` itself holds only folders).
+- `apps/extension/src/features/<feature>/`: one folder per feature.
+- `apps/extension/src/generated/`: generated code, unchanged.
 - Suffixes: `.adapter.ts` (may import `vscode`), `.util.ts`, `.consts.ts`, `.types.ts`, `.view.ts`, `.messages.ts`. camelCase file names.
-- No barrel files and no re-exports: an import names the file that defines the symbol, with its `.ts` extension. A test fails on any `export … from` in `src/`.
-- `test/` mirrors `src/`.
+- No barrel files and no re-exports: an import names the file that defines the symbol, with its `.ts` extension. A test fails on any `export … from` in `apps/extension/src/`.
+- `apps/extension/test/` mirrors `apps/extension/src/`.
 
 ## Consequences
 

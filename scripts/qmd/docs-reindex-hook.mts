@@ -12,8 +12,8 @@
 import { text } from "node:stream/consumers";
 
 // import utils
-import { tryCatch } from "../../src/shared/async/tryCatch.util.ts";
-import { isRecord } from "../../src/shared/records/records.util.ts";
+import { tryCatch } from "../../apps/extension/src/shared/async/tryCatch.util.ts";
+import { isRecord } from "../../apps/extension/src/shared/records/records.util.ts";
 import { isIndexedDoc } from "./qmd-docs.mts";
 import { markPending } from "./qmd-lock.mts";
 import { exclusive, hasQmd, registeredNames, spawnWorker } from "./qmd-run.mts";

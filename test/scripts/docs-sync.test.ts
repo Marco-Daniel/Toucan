@@ -15,6 +15,7 @@ import {
   diffSymbols,
   exportedSymbols,
   isSourceFile,
+  mergeManifests,
   parseNameStatus,
 } from "../../scripts/docs-sync.mts";
 
@@ -330,6 +331,13 @@ describe("isSourceFile", () => {
   it.each([
     ["src/features/commands/setColor.adapter.ts", true],
     ["scripts/docs-sync.mts", true],
+    ["apps/extension/src/core/extension.ts", true],
+    ["apps/extension/scripts/check-vsix.mts", true],
+    ["packages/brand/src/presets.consts.ts", true],
+    ["config/vite/src/vitest.ts", true],
+    ["apps/extension/test/layout.test.ts", false],
+    ["apps/extension/src/types.d.ts", false],
+    ["apps/site/app/root.tsx", false],
     ["src/types.d.ts", false],
     ["docs/snippet.ts", false],
     ["vendor/src/lib.ts", false],
@@ -337,6 +345,69 @@ describe("isSourceFile", () => {
     ["README.md", false],
   ])("%s: %s", (path, expected) => {
     expect(isSourceFile(path)).toBe(expected);
+  });
+});
+
+describe("mergeManifests", () => {
+  it("keeps the root's script names and prefixes a package's with its name", () => {
+    expect(
+      mergeManifests([
+        { folder: "", manifest: { name: "root", scripts: { lint: "turbo run lint" } } },
+        {
+          folder: "apps/extension",
+          manifest: { name: "@toucan/extension", scripts: { lint: "oxlint", package: "vsce" } },
+        },
+      ]),
+    ).toEqual({
+      scripts: {
+        lint: "turbo run lint",
+        "@toucan/extension#lint": "oxlint",
+        "@toucan/extension#package": "vsce",
+      },
+      contributes: { configuration: [], commands: [] },
+    });
+  });
+
+  it("names an unnamed package's scripts by its folder", () => {
+    expect(
+      mergeManifests([{ folder: "config/vite", manifest: { scripts: { test: "v" } } }]),
+    ).toEqual({
+      scripts: { "config/vite#test": "v" },
+      contributes: { configuration: [], commands: [] },
+    });
+  });
+
+  it("gathers every package's settings and commands, a configuration list or a single one", () => {
+    const merged = mergeManifests([
+      {
+        folder: "apps/a",
+        manifest: {
+          contributes: {
+            configuration: { properties: { "a.one": {} } },
+            commands: [{ command: "a.go", title: "Go" }],
+          },
+        },
+      },
+      { folder: "apps/b", manifest: "not an object" },
+      {
+        folder: "apps/c",
+        manifest: {
+          contributes: {
+            configuration: [{ properties: { "c.one": {} } }, { properties: { "c.two": {} } }],
+          },
+        },
+      },
+    ]);
+    expect(diffSettings({ before: undefined, after: merged })).toEqual({
+      added: ["a.one", "c.one", "c.two"],
+      removed: [],
+      changed: [],
+    });
+    expect(diffCommands({ before: undefined, after: merged })).toEqual({
+      added: ["a.go"],
+      removed: [],
+      retitled: [],
+    });
   });
 });
 
@@ -486,6 +557,38 @@ describe("the docs-sync command", () => {
         { adr: "0002", from: null, to: "Accepted" },
       ],
       symbols: { added: ["arrived"], removed: ["gone"] },
+    });
+  });
+
+  it("follows a manifest that moves into a package: settings stay, scripts get its name", () => {
+    git("init", "-q", "-b", "main");
+    const extension = {
+      scripts: { lint: "oxlint", package: "vsce package" },
+      settings: { "t.repos": { type: "object" } },
+      commands: { "t.set": "Set" },
+    };
+    commit({ "package.json": manifest(extension) });
+    git("tag", "docs-sync/last");
+    commit({
+      "package.json": JSON.stringify({ name: "root", scripts: { lint: "turbo run lint" } }),
+      "apps/extension/package.json": JSON.stringify({
+        ...JSON.parse(manifest(extension)),
+        name: "@toucan/extension",
+      }),
+      // Only a file named package.json is a manifest.
+      "apps/extension/package.json.orig": JSON.stringify({ scripts: { stale: "x" } }),
+      "docs/scripts.json": JSON.stringify({ scripts: { sample: "y" } }),
+    });
+    const result = run();
+    expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      scripts: {
+        added: ["@toucan/extension#lint", "@toucan/extension#package"],
+        removed: ["package"],
+        changed: ["lint"],
+      },
+      settings: { added: [], removed: [], changed: [] },
+      commands: { added: [], removed: [], retitled: [] },
     });
   });
 
