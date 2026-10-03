@@ -1,8 +1,14 @@
 # The fast checks before a push; CI runs the full set. Skipped in CI, and
-# with HUSKY=0 (husky's own switch). Uses corepack when pnpm isn't on PATH.
+# with HUSKY=0 (husky's own switch). Turborepo starts each package's checks
+# with a pnpm binary, so without pnpm on PATH corepack provides one for the run.
 [ -n "$CI" ] && exit 0
-if command -v pnpm >/dev/null 2>&1; then pnpm="pnpm"; else pnpm="corepack pnpm"; fi
-export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 TURBO_TELEMETRY_DISABLED=1
+if ! command -v pnpm >/dev/null 2>&1; then
+  shims=$(mktemp -d) || exit 1
+  trap 'rm -rf "$shims"' EXIT
+  corepack enable --install-directory "$shims" pnpm || exit 1
+  PATH="$shims:$PATH"
+fi
 for check in typecheck lint format:check test; do
-  $pnpm "$check" </dev/null || exit 1
+  pnpm "$check" </dev/null || exit 1
 done

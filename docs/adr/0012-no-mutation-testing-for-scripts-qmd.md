@@ -18,7 +18,7 @@ Mutation testing (StrykerJS, on demand with `pnpm mutate`) runs the tests with d
 
 ## Decision Outcome
 
-Chosen: **exclude it**. Mutating code with file-system and process side effects is too risky and too much machinery for what it finds. `stryker.config.json` leaves `scripts/qmd/**` out, and `pnpm mutate` refuses files there and says why. Its tests still run as usual, and they keep their isolation (HOME and XDG_CACHE_HOME stubbed, detached workers stopped after each test).
+Chosen: **exclude it**. Mutating code with file-system and process side effects is too risky and too much machinery for what it finds. The root's `stryker.config.json` leaves `scripts/qmd/` out, and `pnpm mutate` refuses files there and says why; the extension's `pnpm -C apps/extension mutate` refuses any file outside its package. Its tests still run as usual, and they keep their isolation (HOME and XDG_CACHE_HOME stubbed, detached workers stopped after each test).
 
 ## Consequences
 

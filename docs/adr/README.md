@@ -8,7 +8,7 @@ Toucan colors each VS Code window by its repository: the focused window's Comman
 
 - **Where it writes.** Only user settings, never the repo ([ADR-0001](0001-keep-toucans-settings-in-user-scope.md)). In `workbench.colorCustomizations` it owns the `commandCenter.*` keys and nothing else ([ADR-0002](0002-toucan-owns-the-commandcenter-keys.md)).
 - **What it relies on.** Stable VS Code API; the one internal trick is opt-in and experimental ([ADR-0003](0003-use-stable-vs-code-api-only.md)). Every window with a configured repo shows it in the status bar, focused or not ([ADR-0005](0005-always-show-a-status-bar-glyph-and-repo-name.md)).
-- **How the code is organised.** `src/core/`, `src/shared/<topic>/` and `src/features/<name>/`, with role suffixes and no barrels ([ADR-0010](0010-source-layout.md)). Only adapters import `vscode`, so the logic is unit-tested without it ([ADR-0006](0006-only-adapters-import-vscode.md)). Caught errors go through tryCatch ([ADR-0009](0009-trycatch-for-caught-errors.md)).
+- **How the code is organised.** The extension lives in `apps/extension/`, with `src/core/`, `src/shared/<topic>/` and `src/features/<name>/`, role suffixes and no barrels ([ADR-0010](0010-source-layout.md)). Only adapters import `vscode`, so the logic is unit-tested without it ([ADR-0006](0006-only-adapters-import-vscode.md)). Caught errors go through tryCatch ([ADR-0009](0009-trycatch-for-caught-errors.md)).
 - **How it's checked.** A modern toolchain ([ADR-0004](0004-use-a-modern-toolchain.md)), lint with no warnings ([ADR-0007](0007-no-lint-warnings.md)), and mutation testing outside the qmd scripts ([ADR-0012](0012-no-mutation-testing-for-scripts-qmd.md)). Agents find the docs through qmd ([ADR-0011](0011-qmd-docs-search.md)); every release ships notes ([ADR-0013](0013-release-notes-for-every-release.md)).
 
 **Direction.** Every lint ignore states its reason; a lint rule will enforce that once oxlint's plugin support allows it ([ADR-0008](0008-lint-ignores-state-a-reason.md), tracked).
@@ -51,6 +51,7 @@ Toucan colors each VS Code window by its repository: the focused window's Comman
 |---|---|---|---|
 | [0006](0006-only-adapters-import-vscode.md) | Only adapters import vscode | constraint | Accepted |
 | [0010](0010-source-layout.md) | Source layout: core, shared and features | constraint | Accepted |
+| [0014](0014-monorepo-layout.md) | Monorepo layout: apps, packages, config, and the root's own tooling | constraint | Accepted |
 
 ### errors
 

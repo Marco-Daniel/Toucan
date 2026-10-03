@@ -13,7 +13,7 @@ Most of Toucan is logic that doesn't need VS Code: color derivation, config pars
 
 ## Considered Options
 
-- **Adapters only, by convention**: only `*.adapter.ts` files and `src/core/extension.ts` import `vscode`; everything else is plain TypeScript.
+- **Adapters only, by convention**: only `*.adapter.ts` files and `apps/extension/src/core/extension.ts` import `vscode`; everything else is plain TypeScript.
 - **A lint rule**: forbid `vscode` imports outside adapters with `no-restricted-imports`.
 - **No rule**: import `vscode` where it's convenient.
 

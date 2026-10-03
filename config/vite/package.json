@@ -1,0 +1,26 @@
+{
+  "name": "@toucan/vite-config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Vite and Vitest settings every Toucan package shares.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "vitest": "catalog:"
+  },
+  "devDependencies": {
+    "@toucan/ts-config": "workspace:*",
+    "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:"
+  }
+}
