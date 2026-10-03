@@ -15,11 +15,12 @@ import {
 import { FONT_CODEPOINTS } from "../../../src/features/glyphs/glyphFont.util.ts";
 
 // import consts
+import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
 import { GLYPH_PATHS } from "../../../src/generated/glyphPaths.ts";
-import { GLYPH_GROUPS, GLYPHS } from "../../../src/shared/model/model.consts.ts";
 
 // import types
-import type { Glyph, Hex } from "../../../src/shared/model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { Hex } from "../../../src/shared/model/model.types.ts";
 
 const RED = "#ff0000" as Hex;
 
@@ -62,16 +63,6 @@ describe("FONT_CODEPOINTS", () => {
 });
 
 describe("glyph groups", () => {
-  it("are the four themed groups, covering GLYPHS in order", () => {
-    expect(GLYPH_GROUPS.map(({ label, glyphs }) => `${label}: ${glyphs.join(" ")}`)).toEqual([
-      "Shapes: square bar pill circle",
-      "Toucan's world: toucan sun leaf drop moon",
-      "Characters: alien ghost robot cat",
-      "Fun & dev: bolt heart star rocket",
-    ]);
-    expect(GLYPH_GROUPS.flatMap(({ glyphs }) => glyphs)).toEqual([...GLYPHS]);
-  });
-
   it("give Set Glyph a separator per group, then its glyphs with swatches, the current one marked", () => {
     const items = glyphPickItems({ current: "sun", icon: (glyph) => `swatch:${glyph}` });
     expect(items.slice(0, 7)).toEqual([

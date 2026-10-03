@@ -17,8 +17,8 @@ import { commands } from "../../generated/meta.ts";
 import { NO_COLOR_YET } from "../../shared/messages/notifications.messages.ts";
 
 // import types
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
 import type { QuickPickItem } from "vscode";
-import type { Glyph } from "../../shared/model/model.types.ts";
 import type { CommandArgs } from "./commands.adapter.ts";
 
 export async function setGlyph({ host, name }: CommandArgs): Promise<void> {

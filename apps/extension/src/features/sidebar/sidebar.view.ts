@@ -3,12 +3,8 @@ import { opaque, parseColor, toHex } from "../../shared/color/color.util.ts";
 import { glyphSvg } from "../glyphs/glyphs.util.ts";
 
 // import types
-import type {
-  CommandCenterColors,
-  Glyph,
-  Hex,
-  SidebarStyle,
-} from "../../shared/model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { CommandCenterColors, Hex, SidebarStyle } from "../../shared/model/model.types.ts";
 
 /** Fill alpha of the `muted` style (toucan-v1/0013). */
 export const MUTED_ALPHA = 0.25;

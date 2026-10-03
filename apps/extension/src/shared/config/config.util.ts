@@ -11,16 +11,17 @@ import { isRecord } from "../records/records.util.ts";
 import { isOneOf } from "../guards/oneOf.util.ts";
 
 // import consts
+import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
 import {
   COMMAND_CENTER_KEYS,
   DEFAULT_GLYPH,
-  GLYPHS,
   RETIRED_GLYPHS,
   SIDEBAR_VISIBILITIES,
 } from "../model/model.consts.ts";
 
 // import types
-import type { ColorOverrides, Glyph, Hex, SidebarVisibility } from "../model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { ColorOverrides, Hex, SidebarVisibility } from "../model/model.types.ts";
 
 export interface RepoConfig {
   /** Command Center background, always opaque. */

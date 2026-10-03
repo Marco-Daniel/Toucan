@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - config/*
+  - packages/*
 
 # One version of each tool shared by several packages.
 catalog:
