@@ -37,9 +37,9 @@ export const DOCS_COLLECTIONS: readonly DocsCollection[] = [
   {
     name: "toucan-guides",
     dir: ".",
-    mask: "{README.md,GROUNDING.md}",
+    mask: "{README.md,GROUNDING.md,apps/*/README.md}",
     contexts: {
-      "": "Toucan repo guides: README (usage and development) and GROUNDING (repo facts and quality commands)",
+      "": "Toucan repo guides: the root README (development), each app's README (using it) and GROUNDING (repo facts and quality commands)",
     },
   },
 ];

@@ -19,7 +19,7 @@ Errors were caught in several styles: `try/catch` blocks, `.catch()` on promises
 
 ## Decision Outcome
 
-Chosen: **one Result-tuple helper**, `src/shared/async/tryCatch.util.ts`, in `src/` and `scripts/` alike. It takes the work, not a promise, so a synchronous throw while starting it is caught too; a thrown `null` or `undefined` becomes an Error, so the error half never reads as success, and once a caller has handled the error the data is typed as the value. `errorText(error)` shows an error in a message. Every promise is awaited; there's no `void` fire-and-forget.
+Chosen: **one Result-tuple helper**, `apps/extension/src/shared/async/tryCatch.util.ts`, in source and scripts alike. It takes the work, not a promise, so a synchronous throw while starting it is caught too; a thrown `null` or `undefined` becomes an Error, so the error half never reads as success, and once a caller has handled the error the data is typed as the value. `errorText(error)` shows an error in a message. Every promise is awaited; there's no `void` fire-and-forget.
 
 Exceptions:
 - `try/finally` stays for cleanup that must run (a lock or a flag reset).

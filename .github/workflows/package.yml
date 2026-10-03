@@ -6,6 +6,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
 jobs:
   package:
     runs-on: ubuntu-latest
@@ -23,16 +26,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # The same checks as CI: a release is never built from a red tree.
       - name: Check generated files are up to date
-        run: pnpm check:generated
-      - run: pnpm lint
+        run: pnpm -C apps/extension check:generated
       - run: pnpm format:check
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm package
-      - run: pnpm check:bundle
-      - run: pnpm check:vsix
+      - run: pnpm turbo run lint lint:repo typecheck typecheck:repo test test:repo
+      - run: pnpm -C apps/extension package
+      - run: pnpm -C apps/extension check:bundle
+      - run: pnpm -C apps/extension check:vsix
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: toucan-vsix
-          path: "*.vsix"
+          path: apps/extension/*.vsix
           if-no-files-found: error

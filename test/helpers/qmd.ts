@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { vi } from "vitest";
 
 // import utils
-import { tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
+import { tryCatchSync } from "../../apps/extension/src/shared/async/tryCatch.util.ts";
 
 export const SYSTEM_PATH = "/usr/bin:/bin";
 

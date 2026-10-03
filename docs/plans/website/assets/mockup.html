@@ -1,0 +1,148 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toucan Site Mockup</title>
+<style>
+:root{--ink:#101316;--cream:#f6efdc;--paper:#fbf7ec;--amber:#faa404;--orange:#e0620b;--jungle:#56915e;--teal:#14939c;--muted:#5b5e57;--line:#e4dcc6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Inter,sans-serif}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.beak{height:10px;background:linear-gradient(105deg,var(--cream) 0 70%,var(--amber) 70% 80%,var(--orange) 80% 90%,var(--ink) 90%)}
+nav{position:sticky;top:0;z-index:5;background:rgba(251,247,236,.92);backdrop-filter:blur(8px)}
+nav::after{content:"";display:block;height:4px;background:linear-gradient(105deg,var(--cream) 0 70%,var(--amber) 70% 80%,var(--orange) 80% 90%,var(--ink) 90%)}
+nav .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.02em;text-decoration:none}
+.logo{width:34px;height:34px}
+nav .links{display:flex;gap:22px;margin-left:auto;font-weight:600;font-size:15px}
+nav .links a{text-decoration:none;opacity:.8} nav .links a:hover{opacity:1}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:10px;font-weight:700;text-decoration:none;border:2px solid var(--ink);font-size:15px}
+.btn.primary{background:var(--ink);color:var(--cream)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:7px 13px;font-size:14px}
+.hero{position:relative;overflow:hidden;background:var(--jungle);color:var(--cream)}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding-top:72px;padding-bottom:64px}
+.eyebrow{display:inline-block;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;background:rgba(16,19,22,.25);padding:5px 10px;border-radius:6px}
+h1{font-size:64px;line-height:1.02;letter-spacing:-.035em;margin:18px 0 18px;font-weight:850}
+h1 em{font-style:normal;color:var(--amber)}
+.lede{font-size:19px;max-width:30em;opacity:.95;margin:0 0 28px}
+.hero .btn.primary{background:var(--cream);color:var(--ink);border-color:var(--cream)}
+.hero .btn.ghost{color:var(--cream);border-color:var(--cream)}
+.ctas{display:flex;gap:12px;flex-wrap:wrap}
+.meta{margin-top:18px;font-size:14px;opacity:.85}
+.hero-art{position:relative;display:flex;flex-direction:column;align-items:center}
+.hero-icon{width:100%;max-width:440px;height:auto;display:block;margin-bottom:-36px}
+.stack{position:relative;width:min(100%,400px);background:#181818;border-radius:12px;padding:10px;box-shadow:0 20px 40px rgba(0,0,0,.3)}
+.sbar{display:flex;align-items:center;gap:8px;height:30px;padding:0 12px;color:#ccc;font:13px ui-monospace,Menlo,monospace;border-bottom:1px solid #2a2a2a}
+.sbar:last-child{border:0} .sg .g{width:16px;height:16px;display:block}
+section{padding:88px 0}
+h2::before{content:"";display:block;width:84px;height:8px;margin-bottom:18px;border-radius:2px;background:linear-gradient(105deg,var(--cream) 0 38%,var(--amber) 38% 58%,var(--orange) 58% 78%,var(--ink) 78%);box-shadow:inset 0 0 0 1px rgba(16,19,22,.12)}
+.dark h2::before{box-shadow:none}
+h2{font-size:40px;letter-spacing:-.03em;line-height:1.1;margin:0 0 14px;font-weight:850}
+.sub{color:var(--muted);font-size:18px;max-width:36em;margin:0 0 40px}
+.gif{border-radius:14px;border:2px solid var(--ink);display:block;width:100%;background:#181818;box-shadow:8px 8px 0 var(--amber)}
+.caption{font-size:14px;color:var(--muted);margin-top:14px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.card{background:#fff;border:2px solid var(--ink);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.card img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top left;border-bottom:2px solid var(--ink)}
+
+.strip{aspect-ratio:16/10;background:#181818;border-bottom:2px solid var(--ink);display:flex;align-items:center;overflow:hidden}
+.card .strip img{width:270%;max-width:none;margin-left:-82%;aspect-ratio:auto;border:0;object-fit:fill}
+.hero .wrap>*,.features>*,.install>*,.glyphs>*{min-width:0}
+html,body{overflow-x:clip}
+.card .body{padding:18px 20px 22px}
+.card h3{margin:0 0 6px;font-size:20px;letter-spacing:-.01em}
+.card p{margin:0;color:var(--muted);font-size:15px}
+.tag{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+.dark{background:var(--ink);color:var(--cream)}
+.dark .sub{color:#b9b4a6}
+.glyphs{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.ggroup h4{margin:0 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#b9b4a6}
+.grow{display:flex;flex-wrap:wrap;gap:8px}
+.gchip{display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;padding:12px 0 8px;border-radius:12px;background:#1c2024;color:var(--c)}
+.gchip .g{height:28px;width:auto} .gchip em{font-style:normal;font-size:12px;color:#d8d2c2}
+.palette{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(8,1fr);gap:12px}
+.palette li{display:flex;flex-direction:column;gap:4px;font-size:12px}
+.palette span{display:block;aspect-ratio:1;border-radius:12px;background:var(--c);border:2px solid var(--ink)}
+.palette b{font-size:13px} .palette code{color:var(--muted);font-size:12px}
+.install{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.install .card{padding:24px}
+.install code{display:block;margin-top:12px;background:var(--ink);color:var(--cream);padding:10px 12px;border-radius:8px;font-size:13px;overflow-x:auto}
+footer{border-top:1px solid var(--line);padding:36px 0 48px;color:var(--muted);font-size:14px}
+footer .wrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.note{position:fixed;right:16px;bottom:16px;z-index:9;max-width:300px;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:12px 14px;font-size:13px;box-shadow:4px 4px 0 var(--amber)}
+@media (max-width:860px){
+ .hero .wrap{grid-template-columns:1fr} h1{font-size:44px} .features,.install{grid-template-columns:1fr}
+ .glyphs{grid-template-columns:repeat(2,1fr)} .palette{grid-template-columns:repeat(4,1fr)} nav .links{display:none} .note{display:none}}
+</style></head><body>
+<nav><div class="wrap"><a class="brand" href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class="logo"><defs><mask id="beak" maskUnits="userSpaceOnUse" x="0" y="0" width="128" height="128"><polygon points="71,12 89,10 106,15 115,21 119,34 100,29 72,32" fill="#fff" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></mask></defs><polygon points="62,10 72,12 72,32 77,36 83,52 76,71 64,84 46,121 37,121 38,99 23,93 39,55 47,30 52,14" fill="#101316" stroke="#101316" stroke-width="2.5" stroke-linejoin="round"/><g mask="url(#beak)"><rect x="60" y="0" width="70" height="48" fill="#f6efdc"/><polygon points="100,0 107,0 99,48 92,48" fill="#faa404"/><polygon points="107,0 114,0 106,48 99,48" fill="#e0620b"/><polygon points="114,0 134,0 126,48 106,48" fill="#101316"/></g></svg>
+Toucan</a>
+<div class="links"><a href="#features">Features</a><a href="#glyphs">Glyphs</a><a href="#">Docs</a><a href="#">Changelog</a><a href="#">GitHub</a></div>
+<a class="btn primary sm" href="#install">Install</a></div></nav>
+
+<header class="hero"><div class="wrap">
+<div><span class="eyebrow">VS Code extension</span>
+<h1>Every repo gets its <em>own color</em>.</h1>
+<p class="lede">Toucan tints the Command Center, marks the status bar with a glyph and can fill the sidebar, so you always know which window you're typing in.</p>
+<div class="ctas"><a class="btn primary" href="#install">Install for VS Code</a><a class="btn ghost" href="#features">See how it works</a></div>
+<p class="meta">Free and open source · Works with Cursor and VSCodium via Open VSX</p></div>
+<div class="hero-art"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class="hero-icon"><clipPath id="hero-sky"><rect width="128" height="81"/></clipPath><g clip-path="url(#hero-sky)"><polygon points="60.0,20.0 77.0,24.6 89.4,37.0 94.0,54.0 89.4,71.0 77.0,83.4 60.0,88.0 43.0,83.4 30.6,71.0 26.0,54.0 30.6,37.0 43.0,24.6" fill="#e0620b" stroke="#e0620b" stroke-width="3" stroke-linejoin="round"/><rect x="0" y="73" width="128" height="2.5" fill="#56915e"/><rect x="0" y="78" width="128" height="1.6" fill="#56915e"/></g><g transform="translate(2.0 8.8) scale(0.85)"><defs><mask id="hero-beak" maskUnits="userSpaceOnUse" x="0" y="0" width="128" height="128"><polygon points="71,12 89,10 106,15 115,21 119,34 100,29 72,32" fill="#fff" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></mask></defs><polygon points="62,10 72,12 72,32 77,36 83,52 76,71 64,84 46,121 37,121 38,99 23,93 39,55 47,30 52,14" fill="#101316" stroke="#101316" stroke-width="2.5" stroke-linejoin="round"/><g mask="url(#hero-beak)"><rect x="60" y="0" width="70" height="48" fill="#f6efdc"/><polygon points="100,0 107,0 99,48 92,48" fill="#faa404"/><polygon points="107,0 114,0 106,48 99,48" fill="#e0620b"/><polygon points="114,0 134,0 126,48 106,48" fill="#101316"/></g></g></svg>
+<div class="stack"><div class="sbar" style="color:#e8579b"><span class="sg"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M6.84 1.33L7.08 1.52L8 2.63L8.92 1.52L9.2 1.31L9.5 1.25L12 1.25L12.34 1.33L12.54 1.48L15.04 4.08L15.22 4.38L15.25 4.6L15.25 8L15.17 8.34L15.03 8.53L8.53 14.93L8.23 15.11L7.89 15.14L7.47 14.93L0.97 8.53L0.79 8.24L0.75 8L0.75 4.6L0.83 4.26L0.96 4.08L3.46 1.48L3.75 1.29L4 1.25L6.5 1.25Z"/></svg>
+</span>webshop</div><div class="sbar" style="color:#14939c"><span class="sg"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M8.4 0.17L8.55 0.29L11.05 2.99L11.25 3.43L11.73 8.7L14.08 11.52L14.23 11.83L14.25 12L14.25 14.6L14.17 14.94L13.95 15.2L13.64 15.34L13.15 15.26L10.83 14.02L10.17 15.34L9.95 15.6L9.5 15.75L6.5 15.75L6.17 15.67L5.83 15.34L5.17 14.02L2.85 15.26L2.52 15.35L2.18 15.28L1.91 15.07L1.75 14.6L1.75 12L1.83 11.67L1.92 11.52L4.27 8.7L4.75 3.43L4.95 2.99L7.45 0.29L7.74 0.1L8.08 0.05ZM7.87 4.99L6.95 5.37L6.77 5.55L6.39 6.47L6.39 6.73L6.77 7.65L6.95 7.83L7.87 8.21L8.13 8.21L9.05 7.83L9.23 7.65L9.61 6.73L9.61 6.47L9.23 5.55L9.05 5.37L8.13 4.99Z"/></svg>
+</span>payments-api</div><div class="sbar" style="color:#faa404"><span class="sg"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M14.62 1.02L14.89 1.24L15.05 1.71L15.02 3.47L15.01 3.6L14.7 5.18L14.24 6.6L13.69 7.84L13.64 7.94L12.96 9.03L12.89 9.11L12.07 10.08L11.98 10.17L11.01 10.99L10.93 11.06L9.84 11.74L9.74 11.79L8.43 12.37L7.08 12.8L5.5 13.11L5.37 13.12L4.28 13.14L1.91 15.51L1.62 15.69L1.27 15.72L0.85 15.51L0.49 15.15L0.31 14.86L0.28 14.52L0.49 14.09L2.86 11.72L2.88 10.63L2.89 10.5L3.21 8.92L3.66 7.5L4.21 6.26L4.26 6.16L4.94 5.07L5.01 4.99L5.83 4.02L5.92 3.93L6.89 3.11L6.97 3.04L8.06 2.36L8.16 2.31L9.47 1.74L10.82 1.31L12.4 0.99L12.53 0.98L14.29 0.95Z"/></svg>
+</span>docs-site</div></div></div>
+</div></header>
+
+<section><div class="wrap">
+<h2>Three windows, three colors.</h2>
+<p class="sub">Open your repos side by side and tell them apart at a glance. The Command Center follows the focused window; the status bar always shows each window's own color.</p>
+<img class="gif" src="../../../../apps/extension/media/readme/hero.gif" alt="Three VS Code windows, each with its own Toucan color and glyph">
+</div></section>
+
+<section id="features" style="padding-top:0"><div class="wrap">
+<h2>What Toucan colors</h2><p class="sub">Pick a color once per repo. Toucan stores it in your settings and repaints every window that opens it.</p>
+<div class="features">
+<div class="card"><div class="strip"><img src="../../../../apps/extension/media/readme/command-center.png" alt=""></div><div class="body"><h3><span class="tag" style="background:#e8579b"></span>Command Center</h3><p>The search bar at the top takes the repo's color, with a readable text color worked out for you.</p></div></div>
+<div class="card"><img src="../../../../apps/extension/media/readme/status-bar.png" alt=""><div class="body"><h3><span class="tag" style="background:#14939c"></span>Status bar glyph</h3><p>A small glyph in the repo's color, from 17 hand-drawn shapes, sits next to the repo name.</p></div></div>
+<div class="card"><img src="../../../../apps/extension/media/readme/sidebar-block.png" alt=""><div class="body"><h3><span class="tag" style="background:#faa404"></span>Sidebar block</h3><p>Optionally fill the secondary sidebar with the color, full or muted. Toucan only closes a bar it opened.</p></div></div>
+<div class="card"><img src="../../../../apps/extension/media/readme/preset-color.png" alt=""><div class="body"><h3><span class="tag" style="background:#56915e"></span>16 presets</h3><p>A toucan-themed palette with a live preview, and a warning when a color is hard to see on the status bar.</p></div></div>
+<div class="card"><img src="../../../../apps/extension/media/readme/set-glyph.png" alt=""><div class="body"><h3><span class="tag" style="background:#6241bd"></span>Glyph picker</h3><p>Shapes, Toucan's world, characters and fun &amp; dev glyphs, previewed as you move through them.</p></div></div>
+<div class="card"><div class="strip"><img src="../../../../apps/extension/media/readme/search-emoji.png" alt=""></div><div class="body"><h3><span class="tag" style="background:#e0620b"></span>Search emoji</h3><p>Experimental: an emoji in the window title, so the repo shows in the Command Center even when it's not focused.</p></div></div>
+</div></div></section>
+
+<section id="glyphs" class="dark"><div class="wrap">
+<h2>17 glyphs, drawn for 16 pixels.</h2><p class="sub">Every glyph is drawn in Toucan's own font, sized for the status bar and readable on dark and light themes.</p>
+<div class="glyphs"><div class="ggroup"><h4>Shapes</h4><div class="grow"><span class="gchip" style="--c:#e0620b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M15.14 0.53L15.4 0.75L15.55 1.2L15.55 14.8L15.47 15.14L15.25 15.4L14.8 15.55L1.2 15.55L0.87 15.47L0.6 15.25L0.45 14.8L0.45 1.2L0.53 0.87L0.75 0.6L1.2 0.45L14.8 0.45Z"/></svg>
+<em>square</em></span><span class="gchip" style="--c:#14939c"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 6 16" fill="currentColor"><path d="M5.14 0.08L5.4 0.3L5.55 0.75L5.55 15.25L5.47 15.59L5.25 15.85L4.8 16L1.2 16L0.87 15.92L0.6 15.7L0.45 15.25L0.45 0.75L0.53 0.42L0.75 0.15L1.2 0L4.8 0Z"/></svg>
+<em>bar</em></span><span class="gchip" style="--c:#e8579b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 44 16" fill="currentColor"><path d="M37.33 0.53L43.13 3.33L43.39 3.54L43.55 4L43.55 12L43.47 12.34L43.13 12.68L37.33 15.48L37 15.55L7 15.55L6.67 15.48L0.87 12.68L0.61 12.46L0.45 12L0.45 4L0.53 3.67L0.87 3.33L6.67 0.53L7 0.45L37 0.45Z"/></svg>
+<em>pill</em></span><span class="gchip" style="--c:#56915e"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M11.12 1.14L11.42 1.28L13.79 3.17L14 3.44L15.31 6.17L15.38 6.49L15.38 9.51L15.31 9.83L14 12.56L13.79 12.83L11.42 14.72L11.12 14.86L8.17 15.53L7.83 15.53L4.88 14.86L4.58 14.72L2.21 12.83L2 12.56L0.69 9.83L0.62 9.51L0.62 6.49L0.69 6.17L2 3.44L2.21 3.17L4.58 1.28L4.88 1.14L7.83 0.47L8.17 0.47Z"/></svg>
+<em>circle</em></span></div></div><div class="ggroup"><h4>Toucan's world</h4><div class="grow"><span class="gchip" style="--c:#e0620b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 18 16" fill="currentColor"><path d="M11.84 0.19L15.04 1.29L15.36 1.5L17.36 3.7L17.55 4.13L17.85 7.33L17.8 7.67L17.61 7.96L17.3 8.12L16.96 8.14L16.61 7.96L14.32 5.96L9.91 6.03L11.09 7.03L11.29 7.31L11.34 7.49L11.74 10.29L11.71 10.64L11.59 10.86L9.39 13.66L9.29 13.77L6.89 15.82L6.58 15.98L6.4 16L4.4 16L4.07 15.92L3.8 15.7L3.65 15.25L3.65 13.39L1.16 11.61L0.94 11.35L0.85 10.97L1.05 5.97L1.1 5.74L2.3 2.54L2.47 2.27L4.07 0.67L4.36 0.49L4.63 0.45L7.43 0.55L7.47 0.56L7.35 0.56L7.08 0.7L7.01 0.92L7.31 5.72L7.44 5.96L7.65 6.04L8.05 6.04L8.32 5.9L8.39 5.68L8.09 0.88L7.97 0.64L7.95 0.64L11.5 0.16ZM5.07 2.39L4.43 2.65L4.25 2.83L3.99 3.47L3.99 3.73L4.25 4.37L4.43 4.55L5.07 4.81L5.33 4.81L5.97 4.55L6.15 4.37L6.41 3.73L6.41 3.47L6.15 2.83L5.97 2.65L5.33 2.39Z"/></svg>
+<em>toucan</em></span><span class="gchip" style="--c:#14939c"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M9 12.67L9.12 12.87L9.12 13.04L8.34 15.75L8.2 15.94L7.98 16L7.76 15.91L7.66 15.75L6.88 13.04L6.9 12.8L7.06 12.63L7.22 12.59L8.78 12.59ZM12.24 10.65L12.36 10.77L13.72 13.24L13.76 13.47L13.64 13.67L13.42 13.76L13.24 13.72L10.77 12.36L10.62 12.18L10.61 11.95L10.69 11.8L11.8 10.69L12.01 10.59ZM4.2 10.69L5.31 11.8L5.41 12.01L5.35 12.24L5.23 12.36L2.76 13.72L2.53 13.76L2.33 13.64L2.24 13.42L2.28 13.24L3.64 10.77L3.82 10.62L4.05 10.61ZM9.49 5.24L9.65 5.33L10.67 6.35L10.76 6.51L11.14 7.91L11.14 8.09L10.76 9.49L10.67 9.65L9.65 10.67L9.49 10.76L8.09 11.14L7.91 11.14L6.51 10.76L6.35 10.67L5.33 9.65L5.24 9.49L4.86 8.09L4.86 7.91L5.24 6.51L5.33 6.35L6.35 5.33L6.51 5.24L7.91 4.86L8.09 4.86ZM3.2 6.9L3.37 7.06L3.41 7.22L3.41 8.78L3.33 9L3.13 9.12L2.96 9.12L0.25 8.34L0.06 8.2L0 7.98L0.09 7.76L0.25 7.66L2.96 6.88ZM13.04 6.88L15.75 7.66L15.94 7.8L16 8.02L15.91 8.24L15.75 8.34L13.04 9.12L12.8 9.1L12.63 8.95L12.59 8.78L12.59 7.22L12.67 7L12.87 6.88ZM2.76 2.28L5.23 3.64L5.38 3.82L5.4 4.05L5.31 4.2L4.2 5.31L3.99 5.41L3.76 5.35L3.64 5.23L2.28 2.76L2.25 2.53L2.36 2.33L2.58 2.24ZM13.67 2.36L13.76 2.58L13.72 2.76L12.36 5.23L12.18 5.38L11.95 5.4L11.8 5.31L10.69 4.2L10.59 3.99L10.65 3.76L10.77 3.64L13.24 2.28L13.47 2.25ZM8.24 0.09L8.34 0.25L9.12 2.96L9.1 3.2L8.95 3.37L8.78 3.41L7.22 3.41L7 3.33L6.88 3.13L6.88 2.96L7.66 0.25L7.8 0.06L8.02 0Z"/></svg>
+<em>sun</em></span><span class="gchip" style="--c:#e8579b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M14.62 1.02L14.89 1.24L15.05 1.71L15.02 3.47L15.01 3.6L14.7 5.18L14.24 6.6L13.69 7.84L13.64 7.94L12.96 9.03L12.89 9.11L12.07 10.08L11.98 10.17L11.01 10.99L10.93 11.06L9.84 11.74L9.74 11.79L8.43 12.37L7.08 12.8L5.5 13.11L5.37 13.12L4.28 13.14L1.91 15.51L1.62 15.69L1.27 15.72L0.85 15.51L0.49 15.15L0.31 14.86L0.28 14.52L0.49 14.09L2.86 11.72L2.88 10.63L2.89 10.5L3.21 8.92L3.66 7.5L4.21 6.26L4.26 6.16L4.94 5.07L5.01 4.99L5.83 4.02L5.92 3.93L6.89 3.11L6.97 3.04L8.06 2.36L8.16 2.31L9.47 1.74L10.82 1.31L12.4 0.99L12.53 0.98L14.29 0.95Z"/></svg>
+<em>leaf</em></span><span class="gchip" style="--c:#56915e"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M8.3 0.21L8.62 0.48L13.02 7.08L13.14 7.39L13.64 10.89L13.56 11.37L11.66 14.77L11.42 15.02L11.19 15.13L8.19 15.93L7.81 15.93L4.81 15.13L4.5 14.96L4.35 14.77L2.44 11.37L2.36 10.89L2.86 7.39L2.98 7.08L7.38 0.48L7.63 0.25L7.96 0.15Z"/></svg>
+<em>drop</em></span><span class="gchip" style="--c:#6241bd"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M6.66 1.52L6.57 1.63L5.45 3.96L5.41 4.11L5.41 6.69L5.45 6.84L6.57 9.17L6.66 9.28L8.67 10.89L8.81 10.96L11.33 11.53L11.47 11.53L13.99 10.96L14.13 10.89L15.21 10.03L14 12.56L13.79 12.83L11.42 14.72L11.12 14.86L8.17 15.53L7.83 15.53L4.88 14.86L4.58 14.72L2.21 12.83L2 12.56L0.69 9.83L0.62 9.51L0.62 6.49L0.69 6.17L2 3.44L2.21 3.17L4.58 1.28L4.88 1.14L7.83 0.47L7.97 0.47Z"/></svg>
+<em>moon</em></span></div></div><div class="ggroup"><h4>Characters</h4><div class="grow"><span class="gchip" style="--c:#e0620b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M8.31 0.32L12.81 2.32L13.16 2.65L15.26 6.65L15.35 6.99L15.27 7.35L12.67 12.35L12.45 12.6L8.45 15.6L8.14 15.74L7.79 15.72L7.55 15.6L3.55 12.6L3.34 12.35L0.74 7.35L0.65 7.01L0.74 6.65L2.84 2.65L3.2 2.32L7.7 0.32L8.03 0.25ZM12.05 6.3L8.75 7.9L8.6 8.05L8.57 8.28L9.07 10.28L9.29 10.52L9.52 10.52L11.62 9.72L11.83 9.48L12.53 6.68L12.47 6.4L12.28 6.27ZM3.5 6.45L3.47 6.68L4.17 9.48L4.38 9.72L6.48 10.52L6.8 10.47L6.93 10.28L7.43 8.28L7.41 8.06L7.25 7.9L3.95 6.3L3.66 6.29Z"/></svg>
+<em>alien</em></span><span class="gchip" style="--c:#14939c"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M8.31 0.32L12.81 2.32L13.08 2.52L13.2 2.74L14.7 6.74L14.75 7L14.75 15L14.67 15.34L14.45 15.6L14.14 15.74L13.79 15.72L13.53 15.59L11.56 14.01L10.03 15.53L9.74 15.71L9.4 15.74L9.07 15.62L8.9 15.45L8 14.25L7.1 15.45L6.84 15.67L6.5 15.75L6.17 15.67L5.97 15.53L4.45 14.01L2.47 15.59L2.16 15.73L1.81 15.73L1.51 15.57L1.31 15.29L1.25 15L1.25 7L1.3 6.74L2.8 2.74L2.99 2.45L3.2 2.32L7.7 0.32L8.03 0.25ZM4.8 5.86L4.54 5.99L4.46 6.2L4.46 9.4L4.59 9.66L4.8 9.74L7 9.74L7.26 9.62L7.34 9.4L7.34 6.2L7.22 5.94L7 5.86ZM9 5.86L8.74 5.99L8.66 6.2L8.66 9.4L8.79 9.66L9 9.74L11.2 9.74L11.46 9.62L11.54 9.4L11.54 6.2L11.42 5.94L11.2 5.86Z"/></svg>
+<em>ghost</em></span><span class="gchip" style="--c:#e8579b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M9.34 0.53L9.6 0.75L9.75 1.2L9.75 3.65L14 3.65L14.34 3.73L14.6 3.95L14.75 4.4L14.75 14.6L14.67 14.94L14.45 15.2L14 15.35L2 15.35L1.67 15.27L1.4 15.05L1.25 14.6L1.25 4.4L1.33 4.07L1.55 3.8L2 3.65L6.25 3.65L6.25 1.2L6.33 0.87L6.55 0.6L7 0.45L9 0.45ZM5 10.86L4.74 10.99L4.66 11.2L4.66 12.6L4.79 12.86L5 12.94L11 12.94L11.26 12.82L11.34 12.6L11.34 11.2L11.22 10.94L11 10.86ZM4.3 6.66L4.04 6.79L3.96 7L3.96 9.6L4.09 9.86L4.3 9.94L6.7 9.94L6.96 9.82L7.04 9.6L7.04 7L6.92 6.74L6.7 6.66ZM9.3 6.66L9.04 6.79L8.96 7L8.96 9.6L9.09 9.86L9.3 9.94L11.7 9.94L11.96 9.82L12.04 9.6L12.04 7L11.92 6.74L11.7 6.66Z"/></svg>
+<em>robot</em></span><span class="gchip" style="--c:#56915e"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M3.08 0.62L6.27 3.25L9.73 3.25L12.92 0.62L13.23 0.47L13.58 0.47L13.88 0.63L14.13 1.03L15.23 5.83L15.25 6.04L14.75 15.04L14.65 15.37L14.42 15.62L14 15.75L2 15.75L1.67 15.67L1.4 15.45L1.25 15.04L0.75 6.04L0.77 5.83L1.87 1.03L2.02 0.72L2.29 0.52L2.63 0.45ZM4.3 7.46L4.04 7.59L3.96 7.8L3.96 10.2L4.09 10.46L4.3 10.54L6.6 10.54L6.86 10.42L6.94 10.2L6.94 7.8L6.82 7.54L6.6 7.46ZM9.4 7.46L9.14 7.59L9.06 7.8L9.06 10.2L9.19 10.46L9.4 10.54L11.7 10.54L11.96 10.42L12.04 10.2L12.04 7.8L11.92 7.54L11.7 7.46Z"/></svg>
+<em>cat</em></span></div></div><div class="ggroup"><h4>Fun &amp; dev</h4><div class="grow"><span class="gchip" style="--c:#e0620b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M10.38 0.15L10.63 0.39L10.75 0.71L10.72 1.01L9.5 5.25L13 5.25L13.34 5.33L13.6 5.55L13.74 5.86L13.72 6.21L13.6 6.45L6.6 15.65L6.33 15.87L6 15.95L5.66 15.87L5.4 15.65L5.26 15.33L5.27 15.02L6.55 9.75L3 9.75L2.67 9.67L2.4 9.45L2.26 9.14L2.28 8.79L2.43 8.51L9.43 0.31L9.71 0.11L10.05 0.05Z"/></svg>
+<em>bolt</em></span><span class="gchip" style="--c:#14939c"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M6.84 1.33L7.08 1.52L8 2.63L8.92 1.52L9.2 1.31L9.5 1.25L12 1.25L12.34 1.33L12.54 1.48L15.04 4.08L15.22 4.38L15.25 4.6L15.25 8L15.17 8.34L15.03 8.53L8.53 14.93L8.23 15.11L7.89 15.14L7.47 14.93L0.97 8.53L0.79 8.24L0.75 8L0.75 4.6L0.83 4.26L0.96 4.08L3.46 1.48L3.75 1.29L4 1.25L6.5 1.25Z"/></svg>
+<em>heart</em></span><span class="gchip" style="--c:#e8579b"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M8.47 0.61L8.69 0.92L10.46 5.22L15.1 5.56L15.42 5.67L15.67 5.91L15.79 6.23L15.74 6.57L15.53 6.88L11.98 9.89L13.08 14.41L13.08 14.76L12.93 15.07L12.66 15.28L12.32 15.34L11.96 15.23L8 12.78L4.04 15.23L3.72 15.34L3.38 15.29L3.09 15.09L2.93 14.79L2.92 14.41L4.02 9.89L0.48 6.88L0.27 6.61L0.21 6.27L0.31 5.94L0.55 5.69L0.9 5.56L5.54 5.22L7.31 0.92L7.51 0.64L7.81 0.47L8.15 0.47Z"/></svg>
+<em>star</em></span><span class="gchip" style="--c:#56915e"><svg xmlns="http://www.w3.org/2000/svg" class="g" viewBox="0 0 16 16" fill="currentColor"><path d="M8.4 0.17L8.55 0.29L11.05 2.99L11.25 3.43L11.73 8.7L14.08 11.52L14.23 11.83L14.25 12L14.25 14.6L14.17 14.94L13.95 15.2L13.64 15.34L13.15 15.26L10.83 14.02L10.17 15.34L9.95 15.6L9.5 15.75L6.5 15.75L6.17 15.67L5.83 15.34L5.17 14.02L2.85 15.26L2.52 15.35L2.18 15.28L1.91 15.07L1.75 14.6L1.75 12L1.83 11.67L1.92 11.52L4.27 8.7L4.75 3.43L4.95 2.99L7.45 0.29L7.74 0.1L8.08 0.05ZM7.87 4.99L6.95 5.37L6.77 5.55L6.39 6.47L6.39 6.73L6.77 7.65L6.95 7.83L7.87 8.21L8.13 8.21L9.05 7.83L9.23 7.65L9.61 6.73L9.61 6.47L9.23 5.55L9.05 5.37L8.13 4.99Z"/></svg>
+<em>rocket</em></span></div></div></div></div></section>
+
+<section><div class="wrap">
+<h2>A palette from the toucan.</h2><p class="sub">Sixteen presets taken from the bird's beak, plumage and jungle. Or type any CSS color.</p>
+<ul class="palette"><li style="--c:#f92824"><span></span><b>Beak Red</b><code>#f92824</code></li><li style="--c:#a3161a"><span></span><b>Berry Red</b><code>#a3161a</code></li><li style="--c:#e0620b"><span></span><b>Beak Orange</b><code>#e0620b</code></li><li style="--c:#faa404"><span></span><b>Bill Amber</b><code>#faa404</code></li><li style="--c:#fde246"><span></span><b>Beak Yellow</b><code>#fde246</code></li><li style="--c:#8a9c05"><span></span><b>Bill Lime</b><code>#8a9c05</code></li><li style="--c:#56915e"><span></span><b>Jungle Green</b><code>#56915e</code></li><li style="--c:#14939c"><span></span><b>Canopy Teal</b><code>#14939c</code></li><li style="--c:#2c4a51"><span></span><b>Slate Blue</b><code>#2c4a51</code></li><li style="--c:#6241bd"><span></span><b>Orchid Purple</b><code>#6241bd</code></li><li style="--c:#b59ae0"><span></span><b>Lilac</b><code>#b59ae0</code></li><li style="--c:#70486c"><span></span><b>Plum</b><code>#70486c</code></li><li style="--c:#e8579b"><span></span><b>Tropical Pink</b><code>#e8579b</code></li><li style="--c:#f5a3c7"><span></span><b>Blossom Pink</b><code>#f5a3c7</code></li><li style="--c:#a7a8b3"><span></span><b>Silver</b><code>#a7a8b3</code></li><li style="--c:#101316"><span></span><b>Plumage Black</b><code>#101316</code></li></ul></div></section>
+
+<section id="install" style="background:var(--cream)"><div class="wrap">
+<h2>Install</h2><p class="sub">Pick your editor. Then run <b>Toucan: Set Color</b> from the Command Palette.</p>
+<div class="install">
+<div class="card"><h3>Visual Studio Marketplace</h3><p>For VS Code.</p><code>code --install-extension marco-daniel.toucan</code></div>
+<div class="card"><h3>Open VSX</h3><p>For Cursor, VSCodium and Windsurf.</p><code>ext install marco-daniel.toucan</code></div>
+<div class="card"><h3>GitHub release</h3><p>Download the .vsix, check its sha256, install from file.</p><code>code --install-extension toucan-0.0.4.vsix</code></div>
+</div></div></section>
+
+<footer><div class="wrap"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class="logo" style="width:26px;height:26px"><defs><mask id="beak" maskUnits="userSpaceOnUse" x="0" y="0" width="128" height="128"><polygon points="71,12 89,10 106,15 115,21 119,34 100,29 72,32" fill="#fff" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></mask></defs><polygon points="62,10 72,12 72,32 77,36 83,52 76,71 64,84 46,121 37,121 38,99 23,93 39,55 47,30 52,14" fill="#101316" stroke="#101316" stroke-width="2.5" stroke-linejoin="round"/><g mask="url(#beak)"><rect x="60" y="0" width="70" height="48" fill="#f6efdc"/><polygon points="100,0 107,0 99,48 92,48" fill="#faa404"/><polygon points="107,0 114,0 106,48 99,48" fill="#e0620b"/><polygon points="114,0 134,0 126,48 106,48" fill="#101316"/></g></svg>
+<span>Toucan · MIT licensed</span><a href="#">Docs</a><a href="#">Changelog</a><a href="#">GitHub</a><span style="margin-left:auto">Built with React Router and Tailwind</span></div></footer>
+<div class="note"><b>Mockup</b> for sign-off: layout, colors and tone only. Copy, the extension ID and store links are placeholders. Docs and changelog pages use the same nav, beak band and cream background.</div>
+</body></html>

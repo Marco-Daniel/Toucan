@@ -50,7 +50,7 @@ describe("planIndex", () => {
           "--name",
           "toucan-guides",
           "--mask",
-          "{README.md,GROUNDING.md}",
+          "{README.md,GROUNDING.md,apps/*/README.md}",
         ],
         ["context", "add", "qmd://toucan-guides/", GUIDES_CONTEXT[""]],
         ["update"],
@@ -79,7 +79,7 @@ describe("planIndex", () => {
     const { commands } = plan({
       registered: {
         "toucan-docs": { path: "/repo/docs", pattern: "**/*.md" },
-        "toucan-guides": { path: "/repo", pattern: "{README.md,GROUNDING.md}" },
+        "toucan-guides": { path: "/repo", pattern: "{README.md,GROUNDING.md,apps/*/README.md}" },
       },
     });
     expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual([
@@ -108,7 +108,7 @@ describe("planIndex", () => {
         "--name",
         "toucan-guides",
         "--mask",
-        "{README.md,GROUNDING.md}",
+        "{README.md,GROUNDING.md,apps/*/README.md}",
       ],
     ]);
   });
@@ -230,6 +230,9 @@ describe("isIndexedDoc", () => {
     ["/repo/docs/adr/0001-rules.md", true],
     ["/repo/README.md", true],
     ["/repo/GROUNDING.md", true],
+    ["/repo/apps/extension/README.md", true],
+    ["/repo/apps/extension/media/README.md", false],
+    ["/repo/config/vite/README.md", false],
     ["/repo/docs/plans/glyph-set/assets/glyph-sheet.py", false],
     ["/repo/.claude/CLAUDE.md", false],
     ["/repo/src/features/glyphs/glyphs.util.ts", false],
