@@ -10,6 +10,8 @@ import {
   appendFileSync,
   existsSync,
   mkdtempSync,
+  readdirSync,
+  readFileSync,
   realpathSync,
   rmSync,
   writeFileSync,
@@ -78,6 +80,7 @@ const guardedPorts: CleanupPorts = {
 const realKill = process.kill.bind(process);
 let folderWatcher: ChildProcess | undefined;
 beforeAll(() => {
+  sweepStaleRuns();
   folderWatcher = startFolderWatcher();
   process.kill = (target, signal) => {
     if (signal === 0 && target > 1) {
@@ -179,9 +182,11 @@ function startFolderWatcher(): ChildProcess {
          try { process.kill(owner, 0); return; } catch {}
          const folders = fs.existsSync(list) ? fs.readFileSync(list, "utf8").split("\\n") : [];
          for (const folder of folders) {
-           if (path.basename(folder).startsWith(prefix) && parents.includes(fs.realpathSync(path.dirname(folder)))) {
-             fs.rmSync(folder, { recursive: true, force: true });
-           }
+           try {
+             if (path.basename(folder).startsWith(prefix) && parents.includes(fs.realpathSync(path.dirname(folder)))) {
+               fs.rmSync(folder, { recursive: true, force: true });
+             }
+           } catch {}
          }
          fs.rmSync(list, { force: true });
          process.exit(0);
@@ -193,6 +198,38 @@ function startFolderWatcher(): ChildProcess {
   return watcher;
 }
 
+const WATCH_LIST_NAME = /^toucan-cleanup-watch-(\d+)\.txt$/;
+
+/**
+ * Removes what earlier runs left behind: a mutant that times out has its whole
+ * process tree killed, the watcher included. So each run first reads the watch
+ * lists of test processes that are gone and removes their run folders (only
+ * toucan-shots-* folders directly in a temp folder), then the lists.
+ */
+function sweepStaleRuns(): void {
+  const parents = new Set([realpathSync(tmpdir()), realpathSync("/tmp")]);
+  for (const name of readdirSync(tmpdir())) {
+    const pid = Number(WATCH_LIST_NAME.exec(name)?.[1] ?? Number.NaN);
+    if (!Number.isInteger(pid) || pid <= 1 || pid === process.pid || isRunning(pid)) {
+      continue;
+    }
+    const list = join(tmpdir(), name);
+    for (const folder of readFileSync(list, "utf8").split("\n")) {
+      try {
+        if (
+          basename(folder).startsWith(TEMP_PREFIX) &&
+          parents.has(realpathSync(dirname(folder)))
+        ) {
+          rmSync(folder, { recursive: true, force: true });
+        }
+      } catch {
+        // Its parent is gone too: nothing left to remove.
+      }
+    }
+    rmSync(list, { force: true });
+  }
+}
+
 /** Adds a run folder to the watcher's list. */
 function guardFolder(folder: string): void {
   appendFileSync(WATCH_LIST, `${folder}\n`);
@@ -201,9 +238,10 @@ function guardFolder(folder: string): void {
 /** A run folder in the OS temp folder, standing in for the capture profile. */
 function tempFolder(): string {
   const folder = mkdtempSync(join(tmpdir(), TEMP_PREFIX));
-  writeFileSync(join(folder, "settings.json"), "{}");
-  made.folders.push(folder);
+  // Listed first, so a run killed right after still gets it swept.
   guardFolder(folder);
+  made.folders.push(folder);
+  writeFileSync(join(folder, "settings.json"), "{}");
   return folder;
 }
 
@@ -254,8 +292,8 @@ describe("safeTemp", () => {
 
   it("accepts a run folder directly in /tmp, where the script puts its own", () => {
     const folder = mkdtempSync(join("/tmp", TEMP_PREFIX));
-    made.folders.push(folder);
     guardFolder(folder);
+    made.folders.push(folder);
     expect(safeTemp(folder)).toBe(folder);
   });
 
@@ -515,12 +553,14 @@ describe("Cleanup with real processes", { timeout: HARD_TIMEOUT_MS }, () => {
  */
 async function runHarness(end: string) {
   const script = `
-    import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+    import { appendFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
     import { spawn } from "node:child_process";
     import { tmpdir } from "node:os";
     import { join } from "node:path";
     import { Cleanup } from ${JSON.stringify(CLEANUP)};
     const temp = mkdtempSync(join(tmpdir(), ${JSON.stringify(TEMP_PREFIX)}));
+    // Listed at once in the test's watch list, so a run killed now still gets it swept.
+    appendFileSync(${JSON.stringify(WATCH_LIST)}, temp + "\\n");
     writeFileSync(join(temp, "settings.json"), "{}");
     const child = spawn(process.execPath, ["-e", ${JSON.stringify(SLEEP)}], { detached: true, stdio: "ignore" });
     const isMine = (target) => Number.isInteger(target) && child.pid > 1 && Math.abs(target) === child.pid;
@@ -554,7 +594,6 @@ async function runHarness(end: string) {
   const started = JSON.parse(await firstLine(runner)) as { pid: number; temp: string };
   made.pids.push(started.pid);
   made.folders.push(started.temp);
-  guardFolder(started.temp);
   return { runner, ...started };
 }
 
