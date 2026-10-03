@@ -1,0 +1,42 @@
+{
+  "name": "@toucan/site",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Toucan's website: a landing page, docs and a changelog, pre-rendered with React Router.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build && node scripts/not-found-page.mts",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "lint": "react-router typegen && oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",
+    "test": "vitest run",
+    "releases:snapshot": "node scripts/snapshot-releases.mts",
+    "screenshots": "node scripts/screenshots.mts",
+    "check:pages": "node scripts/check-pages.mts"
+  },
+  "dependencies": {
+    "@react-router/node": "^8.4.0",
+    "isbot": "^5.2.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router": "^8.4.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^8.4.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@toucan/brand": "workspace:*",
+    "@toucan/ts-config": "workspace:*",
+    "@toucan/vite-config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "marked": "^18.0.14",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "tailwindcss": "^4.3.3",
+    "typescript": "catalog:",
+    "vite": "^8.3.2",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* The brand's colors arrive as --brand-* variables, rendered from
+   @toucan/brand in root.tsx (website/0002); the site's own neutrals are here. */
+@theme inline {
+  --color-ink: var(--brand-plumage-black);
+  --color-cream: var(--brand-cream);
+  --color-amber: var(--brand-bill-amber);
+  --color-orange: var(--brand-beak-orange);
+  --color-jungle: var(--brand-jungle-green);
+  --color-paper: #fbf7ec;
+  --color-muted: #5b5e57;
+  --color-line: #e4dcc6;
+  --color-code: #181818;
+  --color-chip: #1c2024;
+  --color-faded: #b9b4a6;
+  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, sans-serif;
+  --font-mono: ui-monospace, Menlo, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+  body {
+    @apply bg-paper font-sans text-base/relaxed text-ink;
+  }
+}
+
+/* The beak's bands (cream, amber, orange, black) at a slant, as on the icon. */
+@utility beak-band {
+  background: linear-gradient(
+    105deg,
+    var(--color-cream) 0 70%,
+    var(--color-amber) 70% 80%,
+    var(--color-orange) 80% 90%,
+    var(--color-ink) 90%
+  );
+}
+
+/* The short band above every section heading. */
+@utility beak-marker {
+  &::before {
+    content: "";
+    display: block;
+    width: 84px;
+    height: 8px;
+    margin-bottom: 18px;
+    border-radius: 2px;
+    background: linear-gradient(
+      105deg,
+      var(--color-cream) 0 38%,
+      var(--color-amber) 38% 58%,
+      var(--color-orange) 58% 78%,
+      var(--color-ink) 78%
+    );
+    box-shadow: inset 0 0 0 1px rgb(16 19 22 / 0.12);
+  }
+}
+
+/* Markdown from the docs and the release notes. */
+@utility prose {
+  & h2 {
+    @apply mt-10 mb-3 text-2xl font-extrabold tracking-tight;
+  }
+  & h3 {
+    @apply mt-8 mb-2 text-xl font-bold;
+  }
+  & p,
+  & ul,
+  & ol,
+  & table,
+  & pre {
+    @apply my-4;
+  }
+  & ul {
+    @apply list-disc pl-6;
+  }
+  & ol {
+    @apply list-decimal pl-6;
+  }
+  & li {
+    @apply my-1;
+  }
+  & a {
+    @apply font-semibold underline decoration-amber decoration-2 underline-offset-2;
+  }
+  & code {
+    @apply rounded bg-cream px-1.5 py-0.5 font-mono text-[0.9em];
+  }
+  & pre {
+    @apply overflow-x-auto rounded-xl bg-ink p-4 text-sm text-cream;
+  }
+  & pre code {
+    @apply bg-transparent p-0 text-inherit;
+  }
+  & img {
+    @apply my-6 w-full rounded-xl border-2 border-ink;
+  }
+  & table {
+    @apply block w-full overflow-x-auto text-sm;
+  }
+  & th,
+  & td {
+    @apply border-b border-line px-3 py-2 text-left align-top;
+  }
+}

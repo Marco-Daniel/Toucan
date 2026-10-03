@@ -14,7 +14,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "build/**"]
     },
     "lint": {
       "dependsOn": ["^lint"],
@@ -43,6 +43,10 @@
       "outputs": []
     },
     "check:vsix": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "check:pages": {
       "dependsOn": ["build"],
       "outputs": []
     },

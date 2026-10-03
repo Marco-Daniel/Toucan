@@ -2,9 +2,10 @@
   "name": "@toucan/ts-config",
   "version": "0.0.0",
   "private": true,
-  "description": "The TypeScript compiler options every Toucan package shares.",
+  "description": "The TypeScript compiler options every Toucan package shares, with a variant for React.",
   "license": "MIT",
   "exports": {
-    "./base.json": "./base.json"
+    "./base.json": "./base.json",
+    "./react.json": "./react.json"
   }
 }

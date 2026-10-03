@@ -1,0 +1,10 @@
+{
+  "extends": "@toucan/ts-config/react.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "resolveJsonModule": true,
+    // React Router's generated route types (`./+types/<route>`) sit beside the app.
+    "rootDirs": [".", "./.react-router/types"]
+  },
+  "include": ["app", "test", "scripts", "*.config.ts", ".react-router/types/**/*"]
+}

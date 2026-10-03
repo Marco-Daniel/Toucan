@@ -31,7 +31,10 @@ jobs:
         run: pnpm -C apps/extension check:generated
       - run: pnpm format:check
       # Every package's gates and the root's own tooling, in dependency order.
-      - name: Lint, typecheck, test, build and check the bundle and VSIX
+      # The site's changelog reads the GitHub releases with the workflow's token.
+      - name: Lint, typecheck, test, build and check the bundle, VSIX and site pages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: >-
           pnpm turbo run lint lint:repo typecheck typecheck:repo test test:repo build
-          check:bundle check:vsix
+          check:bundle check:vsix check:pages
