@@ -2,9 +2,9 @@
 
 See at a glance which repository a VS Code window has open, in the spirit of Peacock and Kingfisher. Colors are configured once, by repository name, in your own user settings. Toucan never writes anything into the opened repository.
 
-![Three VS Code windows in different colors: as focus moves, the focused one's Command Center takes its repository's color, and Set Color previews a new one](media/readme/hero.gif)
+![Three VS Code windows: as focus moves, the Command Center takes the focused repository's color while each status bar keeps its own; then Set Color previews a new color and saves it](media/readme/hero.gif)
 
-- The focused window's Command Center (the search bar in the title bar) takes its repository's color.
+- The Command Center (the search bar in the title bar) takes the focused window's repository color.
 - Every window, focused or not, shows a glyph and the repository name in that color on the status bar.
 - Opt-in extras: a color block in the secondary sidebar, and an experimental colored emoji in the search bar.
 - One setting for every repository you open, set through commands with a live preview, or by hand.
@@ -19,7 +19,7 @@ VS Code has no per-window color API, so Toucan layers a few signals. Repositorie
 
 ![The Command Center in the repository's color](media/readme/command-center.png)
 
-The focused window's Command Center takes the repository color. Toucan writes it to your user-level `workbench.colorCustomizations` when the window gains focus and clears it again shortly after the window loses focus, because user settings are shared by every window. The other Command Center colors (text, hover, border, the unfocused look) are derived from the background so they stay readable; [`toucan.repos`](#toucanrepos) can override any of them.
+The Command Center takes the focused window's repository color. Toucan writes it to your user-level `workbench.colorCustomizations` when a window gains focus, and that setting is shared by every window: the other windows' Command Centers show the same color, dimmed while they're unfocused. Each window's own color stays on its status bar, and on its sidebar block or search emoji if those are on. Switching to another window with a Toucan color replaces it at once; a window whose repository has no color clears it, and so does leaving VS Code, after a short delay. The other Command Center colors (text, hover, border, the unfocused look) are derived from the background so they stay readable; [`toucan.repos`](#toucanrepos) can override any of them.
 
 ### Status bar indicator
 
@@ -98,8 +98,6 @@ Run them from the Command Palette, or from the status bar item: click it for Set
 All of Toucan's settings apply from user settings only, never from a repository's `.vscode/settings.json`, and they are shared across all VS Code profiles.
 
 ### toucan.repos
-
-![The toucan.repos setting in settings.json](media/readme/settings-repos.png)
 
 Colors per repository, keyed by workspace folder name: the directory name, or the `name` a `.code-workspace` file gives the folder. In a multi-root window, the first folder is used. Repositories without an entry get no colors. The commands above write this setting for you; you can also edit it by hand.
 
