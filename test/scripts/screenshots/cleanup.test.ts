@@ -6,7 +6,14 @@
 // reaches every process of the user.
 // import libraries
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -69,7 +76,9 @@ const guardedPorts: CleanupPorts = {
 
 /** process.kill itself refuses foreign targets during these tests; signal 0 only asks. */
 const realKill = process.kill.bind(process);
+let folderWatcher: ChildProcess | undefined;
 beforeAll(() => {
+  folderWatcher = startFolderWatcher();
   process.kill = (target, signal) => {
     if (signal === 0 && target > 1) {
       return realKill(target, signal);
@@ -82,6 +91,9 @@ beforeAll(() => {
 });
 afterAll(() => {
   process.kill = realKill;
+  // A normal end: afterEach removed every folder, so the watcher has nothing left to do.
+  folderWatcher?.kill("SIGKILL");
+  rmSync(WATCH_LIST, { force: true });
 });
 
 function isRunning(pid: number): boolean {
@@ -149,20 +161,41 @@ async function exitOf(child: ChildProcess): Promise<NodeJS.Signals | number | nu
 }
 
 /**
- * Removes this exact folder once the test process is gone. afterEach does it
- * normally; this covers a mutant that times out, whose test process is killed
- * before afterEach can run.
+ * The folders to remove if this test process is killed before afterEach runs
+ * (a mutant that times out): one list file, read by one watcher.
  */
-function guardFolder(folder: string): void {
+const WATCH_LIST = join(tmpdir(), `toucan-cleanup-watch-${process.pid}.txt`);
+
+/** Starts the one watcher: once this test process is gone, it removes the listed run folders. */
+function startFolderWatcher(): ChildProcess {
   const watcher = spawn(
     process.execPath,
     [
       "-e",
-      `const owner = ${process.pid}; const folder = ${JSON.stringify(folder)}; setInterval(() => { try { process.kill(owner, 0); } catch { require("node:fs").rmSync(folder, { recursive: true, force: true }); process.exit(0); } }, 250);`,
+      `const fs = require("node:fs"), path = require("node:path");
+       const owner = ${process.pid}, list = ${JSON.stringify(WATCH_LIST)}, prefix = ${JSON.stringify(TEMP_PREFIX)};
+       const parents = [${JSON.stringify(realpathSync(tmpdir()))}, ${JSON.stringify(realpathSync("/tmp"))}];
+       setInterval(() => {
+         try { process.kill(owner, 0); return; } catch {}
+         const folders = fs.existsSync(list) ? fs.readFileSync(list, "utf8").split("\\n") : [];
+         for (const folder of folders) {
+           if (path.basename(folder).startsWith(prefix) && parents.includes(fs.realpathSync(path.dirname(folder)))) {
+             fs.rmSync(folder, { recursive: true, force: true });
+           }
+         }
+         fs.rmSync(list, { force: true });
+         process.exit(0);
+       }, 250);`,
     ],
     { detached: true, stdio: "ignore" },
   );
   watcher.unref();
+  return watcher;
+}
+
+/** Adds a run folder to the watcher's list. */
+function guardFolder(folder: string): void {
+  appendFileSync(WATCH_LIST, `${folder}\n`);
 }
 
 /** A run folder in the OS temp folder, standing in for the capture profile. */
