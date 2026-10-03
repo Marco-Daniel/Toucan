@@ -32,7 +32,7 @@ The proof that nothing changed: the VSIX holds the same 8 files, `dist/extension
 
 The extension switches its imports to it. Glyph and font generation moves with the assets, or points at them. `check:generated` keeps passing.
 
-**PR 3: the site and its deploy.** `apps/site/` uses React Router v8 framework mode with `ssr: false` and `prerender` (→ 0001), Tailwind themed from `@toucan/brand` (→ 0002), and the approved mockup's design (→ 0011, [assets/mockup.html](assets/mockup.html)). Every page is checked at three widths (→ 0012). A workflow deploys it to Netlify (→ 0010).
+**PR 3: the site and its deploy.** `apps/site/` uses React Router v8 framework mode with `ssr: false` and `prerender` (→ 0001), Tailwind themed from `@toucan/brand` (→ 0002), and the approved mockup's design (→ 0011, [assets/mockup.html](assets/mockup.html)). Every page is checked at three widths (→ 0012). A workflow deploys it to Netlify from `main` only, with the token locked in a `production` environment (→ 0010).
 
 ## Components
 
@@ -48,7 +48,7 @@ The extension switches its imports to it. Glyph and font generation moves with t
   - screenshots from `apps/extension/media/readme/`;
   - releases from the GitHub releases API at build time, with markdown rendered to HTML.
 - **Theme**: the Tailwind tokens from `@toucan/brand` (plumage black, cream, amber, orange, jungle green, the presets).
-- **Deploy workflow**: production on `main`, previews on PRs, gated on Turborepo's affected graph.
+- **Deploy workflow**: production deploys from `main` only, gated on Turborepo's affected graph, with the token in the `production` environment.
 
 ## Data flow
 
@@ -61,7 +61,7 @@ At build time, the route loaders read `@toucan/brand`, the README screenshots an
 - **The changelog's GitHub API call fails or hits its rate limit at build time.** Mitigation: use the workflow's token, and fall back to the last committed snapshot instead of failing the deploy.
 - **The site and the extension's README drift.** Mitigation: docs-sync covers `apps/site` content too.
 - **React Router ships a major version yearly.** Upgrades are planned work, not surprises.
-- **Fork PRs get no secrets.** So they get no preview deploy; the workflow skips the deploy step cleanly instead of failing.
+- **A leaked deploy token.** The repo is public. Mitigation: the token sits in a `production` environment only `main` may use, there are no pull-request deploys, permissions are read-only and the tooling is pinned.
 - **Turborepo cache outputs.** A task without declared outputs replays its logs without restoring files. Every task that writes files declares them.
 
 ## Open questions

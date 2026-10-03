@@ -38,7 +38,7 @@
 
 ## Integration points
 
-- **Netlify**: site `toucan-vscode`, not linked to Git. The site ID is the repository variable `NETLIFY_SITE_ID`, the token the repository secret `NETLIFY_AUTH_TOKEN`; both are set.
+- **Netlify**: site `toucan-vscode`, not linked to Git. The site ID is the repository variable `NETLIFY_SITE_ID`, the token `NETLIFY_AUTH_TOKEN` (set as a repository secret, to be moved into the `production` environment by DevOps).
 - **GitHub releases API**: the changelog source, read at build time with the workflow's token.
 - **vsce**: packages from `apps/extension` after the move. It reads that folder's README, and rewrites relative image links using the `repository` field, so the README's image links must resolve from the repo root.
 - **qmd**: the collection paths for `docs/` stay; `toucan-guides` gains the app READMEs.
@@ -46,5 +46,5 @@
 ## Constraints
 
 - PR 1 changes no behaviour: identical VSIX contents, all tests unchanged except their paths.
-- No secrets in the repo. Deploys skip cleanly when the token is missing (on forks).
+- No secrets in the repo. Only `main` deploys can read the token.
 - Every page works at 390 px with no horizontal scroll.

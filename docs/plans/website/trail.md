@@ -37,6 +37,8 @@ We left out the parts that don't fit a small project: per-app root scripts, sepa
 
 **Netlify set up before the build.** Marco created the `toucan-vscode` site with a placeholder upload. The site ID went into a repository variable. The token's `gh secret set` first failed with the work account active, and worked with the personal account's token. → 0010
 
+**Previews dropped for security.** DevOps pointed out that a plain repository secret can be read by a workflow on any branch of the repo. Preview deploys need the token on pull-request branches. Marco dropped the previews: in a public repo, security of the secrets and actions comes first, and DevOps carries extra responsibility for it. → 0010
+
 ## Rejected without a decision file
 
 - A hand-written root script per app: generic `turbo run <task> --filter` covers it.
