@@ -4,6 +4,7 @@ import {
   titleToRestore,
   titleWithRepoVariable,
   unappliedChange,
+  withEmojiSlot,
 } from "./windowTitle.util.ts";
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
@@ -65,6 +66,9 @@ export class TitleSetup {
       await ports.writeChange(undefined);
       change = undefined;
     }
+    if (enabled && focused && change) {
+      change = await this.upgrade(change);
+    }
     const step = searchEmojiStep({ enabled, focused, change });
     if (step === "ask") {
       const [, error] = await tryCatch(() => this.askAndApply());
@@ -115,6 +119,39 @@ export class TitleSetup {
     } finally {
       this.asking = false;
     }
+  }
+
+  /**
+   * Adds the emoji slot to a title an earlier version wrote without it
+   * (toucan-v1/0007), so the no-editor look applies without asking again: the
+   * user consented to Toucan's title, and restore still brings back theirs.
+   * The title goes first; if the window dies before the record, the next
+   * focused window finds the slot already there and records it, and restore
+   * accepts either form meanwhile.
+   */
+  private async upgrade(change: TitleChange): Promise<TitleChange> {
+    const { ports } = this;
+    const { written } = change;
+    if (written === undefined) {
+      return change;
+    }
+    const upgraded = withEmojiSlot(written);
+    const current = ports.title().global;
+    if (upgraded === written || (current !== written && current !== upgraded)) {
+      return change;
+    }
+    if (current !== upgraded) {
+      const [, error] = await tryCatch(() => ports.writeTitle(upgraded));
+      if (error !== null) {
+        // The old title and its record still match, so nothing to undo.
+        ports.failed(error);
+        return change;
+      }
+    }
+    const next = { previous: change.previous, written: upgraded };
+    await ports.writeChange(next);
+    ports.info("Added the search emoji's slot in front of the folder name in window.title.");
+    return next;
   }
 
   private written(title: TitleSettings): string | undefined {

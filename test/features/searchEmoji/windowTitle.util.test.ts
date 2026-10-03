@@ -3,19 +3,28 @@ import { describe, expect, it } from "vitest";
 
 // import utils
 import {
-  repoVariableValue,
   searchEmojiStep,
   shouldLabel,
   titleToRestore,
+  titleValues,
   titleWithRepoVariable,
   unappliedChange,
+  withEmojiSlot,
 } from "../../../src/features/searchEmoji/windowTitle.util.ts";
 
 const DEFAULT = "${dirty}${activeEditorShort}${separator}${rootName}${separator}${appName}";
 
 describe("titleWithRepoVariable", () => {
-  it("puts the repository variable in front", () => {
-    expect(titleWithRepoVariable(DEFAULT)).toBe(`\${activeRepositoryName}${DEFAULT}`);
+  it("puts the repository variable in front and the emoji slot before the folder name", () => {
+    expect(titleWithRepoVariable(DEFAULT)).toBe(
+      "${activeRepositoryName}${dirty}${activeEditorShort}${separator}${toucanRepoEmoji}${rootName}${separator}${appName}",
+    );
+  });
+
+  it("adds only the repository variable to a title without a folder name", () => {
+    expect(titleWithRepoVariable("${activeEditorShort}")).toBe(
+      "${activeRepositoryName}${activeEditorShort}",
+    );
   });
 
   it("needs no change when the variable is already there", () => {
@@ -42,6 +51,16 @@ describe("titleToRestore", () => {
     });
   });
 
+  it("restores a title Toucan gave the emoji slot but didn't record yet", () => {
+    const older = "${activeRepositoryName}${rootName}";
+    expect(
+      titleToRestore({
+        change: { previous: "${rootName}", written: older },
+        current: "${activeRepositoryName}${toucanRepoEmoji}${rootName}",
+      }),
+    ).toEqual({ restore: true, value: "${rootName}" });
+  });
+
   it("keeps the user's own edit", () => {
     expect(
       titleToRestore({ change: { previous: undefined, written }, current: "${rootName} edited" }),
@@ -57,23 +76,62 @@ describe("titleToRestore", () => {
   });
 });
 
-describe("repoVariableValue", () => {
-  const repo = { name: "webshop", emoji: "🟦" };
+describe("withEmojiSlot", () => {
+  it("puts the slot in front of the first folder name only", () => {
+    expect(withEmojiSlot("${activeRepositoryName}${rootName} (${rootName})")).toBe(
+      "${activeRepositoryName}${toucanRepoEmoji}${rootName} (${rootName})",
+    );
+  });
 
-  it("is the emoji and a space when Toucan added the variable", () => {
-    expect(repoVariableValue({ change: { previous: undefined, written: "x" }, repo })).toBe("🟦 ");
-    expect(
-      repoVariableValue({ change: { previous: undefined, written: "x" }, repo: undefined }),
-    ).toBe("");
+  it("leaves a title that has the slot, or no folder name", () => {
+    expect(withEmojiSlot("${toucanRepoEmoji}${rootName}")).toBe("${toucanRepoEmoji}${rootName}");
+    expect(withEmojiSlot("${activeEditorShort}")).toBe("${activeEditorShort}");
+  });
+});
+
+describe("titleValues", () => {
+  const repo = { name: "webshop", emoji: "🟦" };
+  const toucans = {
+    previous: undefined,
+    written: "${activeRepositoryName}${toucanRepoEmoji}${rootName}",
+  };
+
+  it("puts the emoji in front while an editor is open", () => {
+    expect(titleValues({ change: toucans, repo, hasEditor: true })).toEqual({
+      lead: "🟦 ",
+      beforeRoot: "",
+    });
+  });
+
+  it("moves the emoji to the folder name while no editor is open", () => {
+    expect(titleValues({ change: toucans, repo, hasEditor: false })).toEqual({
+      lead: "",
+      beforeRoot: "🟦 ",
+    });
+  });
+
+  it("keeps the emoji in front in a title written before the slot existed", () => {
+    const older = { previous: undefined, written: "${activeRepositoryName}${rootName}" };
+    expect(titleValues({ change: older, repo, hasEditor: false })).toEqual({
+      lead: "🟦 ",
+      beforeRoot: "",
+    });
+  });
+
+  it("shows nothing for a repo without a color", () => {
+    expect(titleValues({ change: toucans, repo: undefined, hasEditor: false })).toEqual({
+      lead: "",
+      beforeRoot: "",
+    });
   });
 
   it("is emoji and name when the user's own title uses the variable", () => {
-    expect(repoVariableValue({ change: { previous: "y", written: undefined }, repo })).toBe(
-      "🟦 webshop",
-    );
-    expect(
-      repoVariableValue({ change: { previous: "y", written: undefined }, repo: undefined }),
-    ).toBeUndefined();
+    const own = { previous: "y", written: undefined };
+    expect(titleValues({ change: own, repo, hasEditor: false })).toEqual({
+      lead: "🟦 webshop",
+      beforeRoot: "",
+    });
+    expect(titleValues({ change: own, repo: undefined, hasEditor: true })).toBeUndefined();
   });
 });
 

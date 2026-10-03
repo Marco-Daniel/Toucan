@@ -21,33 +21,70 @@ export interface TitleChange {
  */
 export const PENDING_STALE_MS = 30_000;
 
+/** Toucan's own title variable, registered for the emoji in front of the folder name. */
+export const EMOJI_VARIABLE_NAME = "toucanRepoEmoji";
+export const EMOJI_VARIABLE = `\${${EMOJI_VARIABLE_NAME}}`;
+const ROOT_NAME = "${rootName}";
+
+/**
+ * The title with Toucan's emoji slot directly in front of the first
+ * `${rootName}`, where the emoji goes while no editor is open (toucan-v1/0007).
+ * Unchanged when the slot is already there or the title has no `${rootName}`.
+ */
+export function withEmojiSlot(title: string): string {
+  return title.includes(EMOJI_VARIABLE) || !title.includes(ROOT_NAME)
+    ? title
+    : title.replace(ROOT_NAME, `${EMOJI_VARIABLE}${ROOT_NAME}`);
+}
+
 /**
  * The title Toucan needs: the current one (or VS Code's default) with the
- * repository variable in front, so the Command Center label starts with it.
- * No space or separator in between: the value carries its own trailing space
- * (see `repoVariableValue`), so a repo without a color leaves no stray space
- * or dangling separator. `undefined` when the variable is already there.
+ * repository variable in front, so the Command Center label starts with it,
+ * and the emoji slot in front of the folder name (see `withEmojiSlot`).
+ * No space or separator next to either: the values carry their own trailing
+ * space (see `titleValues`), so an empty one leaves no stray space and lets
+ * VS Code drop the separator beside it. `undefined` when the repository
+ * variable is already there: the user's own title, which Toucan leaves as is.
  */
 export function titleWithRepoVariable(current: string): string | undefined {
-  return current.includes(REPO_VARIABLE) ? undefined : `${REPO_VARIABLE}${current}`;
+  return current.includes(REPO_VARIABLE) ? undefined : withEmojiSlot(`${REPO_VARIABLE}${current}`);
 }
 
-interface RepoVariableValueArgs {
+interface TitleValuesArgs {
   change: TitleChange;
   repo: { name: string; emoji: string } | undefined;
+  /** Whether the window has an active editor, so `${activeEditorShort}` isn't empty. */
+  hasEditor: boolean;
+}
+
+/** What the repository variable (`lead`) and Toucan's emoji slot (`beforeRoot`) show. */
+export interface TitleValues {
+  lead: string;
+  beforeRoot: string;
 }
 
 /**
- * What the variable shows. When Toucan added it, the title already names the
- * repo elsewhere, so the emoji and a space (nothing for a repo without a
- * color, so VS Code drops the separator after it). When the user's own title
- * used it, it stands in for SCM's repo name, so the emoji plus the name.
+ * What the two variables show. When Toucan added them, the title already
+ * names the repo, so the emoji and a space go in one of them and the other
+ * stays empty: in front while an editor is open ("🟦 file.ts — webshop"),
+ * in front of the folder name while none is, so VS Code drops the separator
+ * that would otherwise trail the emoji ("🟦 webshop"). A title Toucan wrote
+ * before the slot existed keeps the emoji in front. Both are empty for a repo
+ * without a color. When the user's own title used the repository variable, it
+ * stands in for SCM's repo name, so the emoji plus the name; `undefined`
+ * without a color, so SCM's own value comes back.
  */
-export function repoVariableValue({ change, repo }: RepoVariableValueArgs): string | undefined {
-  if (change.written !== undefined) {
-    return repo ? `${repo.emoji} ` : "";
+export function titleValues({ change, repo, hasEditor }: TitleValuesArgs): TitleValues | undefined {
+  if (change.written === undefined) {
+    return repo && { lead: `${repo.emoji} ${repo.name}`, beforeRoot: "" };
   }
-  return repo && `${repo.emoji} ${repo.name}`;
+  if (!repo) {
+    return { lead: "", beforeRoot: "" };
+  }
+  const emoji = `${repo.emoji} `;
+  return !hasEditor && change.written.includes(EMOJI_VARIABLE)
+    ? { lead: "", beforeRoot: emoji }
+    : { lead: emoji, beforeRoot: "" };
 }
 
 interface TitleToRestoreArgs {
@@ -64,7 +101,11 @@ export function titleToRestore({
   change,
   current,
 }: TitleToRestoreArgs): { restore: true; value: string | undefined } | { restore: false } {
-  if (change.written === undefined || current !== change.written) {
+  // A title Toucan upgraded with the emoji slot but crashed before recording still counts.
+  if (
+    change.written === undefined ||
+    (current !== change.written && current !== withEmojiSlot(change.written))
+  ) {
     return { restore: false };
   }
   return { restore: true, value: change.previous };

@@ -30,3 +30,13 @@ The key's value (revised during implementation, to avoid showing the repo name t
 - Good: the search box itself is marked in every window.
 - Bad: relies on an undocumented internal key (may break in any release); brief flicker when SCM rewrites it; only ~9 colors; emoji also appears in the OS window title.
 - Follow-ups: the consent flow is settled in [0015](0015-ask-before-changing-window-title.md).
+
+## Amendment (2026-10-03)
+
+With no editor open, the label read "🟦 — webshop": the emoji in front kept VS Code's separator alive, because VS Code only drops a separator with nothing on one side. Toucan now registers its own title variable, `${toucanRepoEmoji}` (VS Code's `registerWindowTitleVariable` command, backed by Toucan's context key `toucan.repoEmoji`), and puts it directly in front of the first `${rootName}` when it writes `window.title`. The emoji goes in exactly one of the two places:
+
+- An editor is open: in `${activeRepositoryName}`, so "🟦 file.ts — webshop" as before.
+- No editor is open: in `${toucanRepoEmoji}`, with `${activeRepositoryName}` empty, so VS Code drops the separator: "🟦 webshop".
+
+A title written before this change, without the slot, gets it added in the focused window without asking again (the user consented to Toucan's title); restore accepts the title with or without the slot. A title without `${rootName}`, and the user's own title that already uses `${activeRepositoryName}`, keep the earlier behaviour.
+
