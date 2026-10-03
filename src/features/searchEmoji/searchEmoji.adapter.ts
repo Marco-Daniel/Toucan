@@ -7,8 +7,9 @@ import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.ad
 
 // import utils
 import { emojiFor } from "./emoji.util.ts";
+import { EMOJI_CONTEXT, EmojiLabel, REPO_NAME_CONTEXT } from "./emojiLabel.util.ts";
 import { TitleSetup } from "./titleSetup.util.ts";
-import { EMOJI_VARIABLE_NAME, shouldLabel, titleValues } from "./windowTitle.util.ts";
+import { EMOJI_VARIABLE_NAME, shouldLabel } from "./windowTitle.util.ts";
 import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
 import { logFailure } from "../../shared/async/logFailure.util.ts";
@@ -22,15 +23,12 @@ import { titleChangeFailed } from "../../shared/messages/notifications.messages.
 // import types
 import type { Disposable, Event, ExtensionContext } from "vscode";
 import type { Log } from "../../core/log.adapter.ts";
+import type { EmojiLabelPorts } from "./emojiLabel.util.ts";
 import type { TitlePorts } from "./titleSetup.util.ts";
 import type { TitleChange } from "./windowTitle.util.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
 const WINDOW_TITLE = "window.title";
-/** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
-const REPO_NAME_CONTEXT = "scmActiveRepositoryName";
-/** Toucan's own context key behind `${toucanRepoEmoji}` (toucan-v1/0007). */
-const EMOJI_CONTEXT = "toucan.repoEmoji";
 /** globalState: what Toucan changed in window.title (toucan-v1/0015). */
 const CHANGE_KEY = "searchEmoji.titleChange";
 /** SCM rewrites the key after its own events; reassert just after them. */
@@ -65,8 +63,6 @@ export class SearchEmoji implements Disposable {
   private gitHasRepository = false;
   /** Whether this window has set the keys, so it can hand them back. */
   private labelled = false;
-  /** Whether `${toucanRepoEmoji}` is registered in this window. */
-  private registered = false;
   /** Whether the workspace's own window.title was logged, so it's logged once per change. */
   private reportedOverride = false;
   private readonly timer = createTimer();
@@ -75,12 +71,14 @@ export class SearchEmoji implements Disposable {
   private readonly log: Log;
   private readonly repo: () => ActiveRepo | undefined;
   private readonly title: TitleSetup;
+  private readonly label: EmojiLabel;
 
   constructor({ context, log, repo }: SearchEmojiArgs) {
     this.context = context;
     this.log = log;
     this.repo = repo;
     this.title = new TitleSetup(titlePorts({ context, log }));
+    this.label = new EmojiLabel(labelPorts(log));
     // The emoji moves when the last editor closes or the first opens (see `titleValues`).
     this.disposables.push(
       window.onDidChangeActiveTextEditor(() => this.reassertSoon()),
@@ -123,14 +121,14 @@ export class SearchEmoji implements Disposable {
     }
   }
 
-  /** Sets the variable's value; see `repoVariableValue`. */
+  /** Sets the variables' values; see `EmojiLabel` and `titleValues`. */
   private async assert(): Promise<void> {
     const change = this.context.globalState.get<TitleChange>(CHANGE_KEY);
     if (!change) {
       return;
     }
     const repo = this.repo();
-    const values = titleValues({
+    const labelled = await this.label.apply({
       change,
       repo: repo && {
         name: repo.name,
@@ -139,14 +137,11 @@ export class SearchEmoji implements Disposable {
       // VS Code's `${activeEditorShort}` is the active editor's title, empty without one.
       hasEditor: window.tabGroups.activeTabGroup.activeTab !== undefined,
     });
-    if (values === undefined) {
+    if (!labelled) {
       // A repo without a color shows SCM's own value.
       await this.handBack();
       return;
     }
-    await this.registerEmojiVariable();
-    await vscodeCommands.executeCommand("setContext", REPO_NAME_CONTEXT, values.lead);
-    await vscodeCommands.executeCommand("setContext", EMOJI_CONTEXT, values.beforeRoot);
     this.labelled = true;
   }
 
@@ -163,26 +158,6 @@ export class SearchEmoji implements Disposable {
     const name = this.gitHasRepository ? workspace.workspaceFolders?.[0]?.name : undefined;
     await vscodeCommands.executeCommand("setContext", REPO_NAME_CONTEXT, name ?? "");
     await vscodeCommands.executeCommand("setContext", EMOJI_CONTEXT, "");
-  }
-
-  /**
-   * Registers `${toucanRepoEmoji}` with VS Code's window title, backed by
-   * Toucan's own context key. Per window; registering again is harmless.
-   *
-   * `registerWindowTitleVariable` is an internal command, not public API, so
-   * under ADR-0003 it may only serve this opt-in experimental feature: it runs
-   * from `assert`, which only runs while the emoji is on and consented.
-   */
-  private async registerEmojiVariable(): Promise<void> {
-    if (this.registered) {
-      return;
-    }
-    await vscodeCommands.executeCommand(
-      "registerWindowTitleVariable",
-      EMOJI_VARIABLE_NAME,
-      EMOJI_CONTEXT,
-    );
-    this.registered = true;
   }
 
   private reassertSoon(): void {
@@ -240,6 +215,29 @@ export class SearchEmoji implements Disposable {
 
 function enabled(): boolean {
   return workspace.getConfiguration().get(configs.experimentalSearchEmoji.key, false);
+}
+
+/**
+ * The window title variable's ports. `registerWindowTitleVariable` registers
+ * `${toucanRepoEmoji}`, backed by Toucan's own context key. It's an internal
+ * command, not public API, so under ADR-0003 it may only serve this opt-in
+ * experimental feature: `EmojiLabel` only runs from `assert`, which only runs
+ * while the emoji is on and consented.
+ */
+function labelPorts(log: Log): EmojiLabelPorts {
+  return {
+    register: async () => {
+      await vscodeCommands.executeCommand(
+        "registerWindowTitleVariable",
+        EMOJI_VARIABLE_NAME,
+        EMOJI_CONTEXT,
+      );
+    },
+    setContext: async (key, value) => {
+      await vscodeCommands.executeCommand("setContext", key, value);
+    },
+    warn: (message) => log.warn(message),
+  };
 }
 
 interface TitlePortsArgs {
