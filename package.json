@@ -20,7 +20,7 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "docs:index": "node scripts/qmd/docs-index.mts",
-    "mutate": "node scripts/mutate.mts",
+    "mutate": "node scripts/mutate-cli.mts",
     "prepare": "husky"
   },
   "devDependencies": {

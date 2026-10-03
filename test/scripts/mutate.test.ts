@@ -1,8 +1,9 @@
 // import libraries
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 // import utils
-import { mutateRefusal } from "../../scripts/mutate.mts";
+import { EXCLUSIONS, mutateRefusal } from "../../scripts/mutate.mts";
 
 const ROOT = "/repo";
 const EXTENSION = "/repo/apps/extension";
@@ -67,7 +68,41 @@ describe("mutateRefusal", () => {
     );
   });
 
+  it.each([
+    ["scripts/mutate-cli.mts"],
+    ["./scripts/mutate-cli.mts"],
+    ["/repo/scripts/mutate-cli.mts"],
+    ["Scripts/Mutate-CLI.mts"],
+  ])("refuses the mutate command %s itself, and says why", (file) => {
+    expect(mutateRefusal({ files: ["scripts/mutate.mts", file], cwd: ROOT })).toBe(
+      `Not mutating ${file}: the mutate command itself is never mutated, because a mutant there could start Stryker inside a test.`,
+    );
+  });
+
+  it("lets the root mutate the checks next to the command", () => {
+    expect(
+      mutateRefusal({ files: ["scripts/mutate.mts", "scripts/mutate-cli.mts.bak"], cwd: ROOT }),
+    ).toBeUndefined();
+  });
+
   it("lets a run without files start: the config's list, exclusion included, applies", () => {
     expect(mutateRefusal({ files: [], cwd: ROOT })).toBeUndefined();
+  });
+});
+
+describe("what a mutate run leaves out", () => {
+  it("adds the qmd scripts and the command to every explicit file list", () => {
+    expect(EXCLUSIONS).toEqual(["!scripts/qmd/**", "!scripts/mutate-cli.mts"]);
+  });
+
+  it("leaves both out of the root config's own list", () => {
+    const config = JSON.parse(
+      readFileSync(new URL("../../stryker.config.json", import.meta.url), "utf8"),
+    );
+    expect(config.mutate).toEqual([
+      "scripts/**/*.mts",
+      "!scripts/qmd/**",
+      "!scripts/mutate-cli.mts",
+    ]);
   });
 });
