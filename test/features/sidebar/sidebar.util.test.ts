@@ -341,9 +341,9 @@ describe("SidebarController, settings changes", () => {
     expect(state.reveals).toBe(1);
   });
 
-  it("closes the bar when a visible block goes off, and reveals it again when it comes back", async () => {
-    const { controller, settings, state } = setup();
-    controller.start(true);
+  it("closes the bar Toucan opened when the block goes off, and reveals it again with a color", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused" });
+    controller.start(false);
     await settle();
     settings.enabled = false;
     controller.settingsChanged();
@@ -357,28 +357,44 @@ describe("SidebarController, settings changes", () => {
     expect(state.reveals).toBe(2);
   });
 
-  it("never remembers its close, even when the block is back on before the close's event", async () => {
-    const { controller, settings, state } = setup({ silentClose: true });
-    controller.start(true);
-    await settle();
-    settings.enabled = false;
-    controller.settingsChanged();
-    await settle();
-    settings.enabled = true;
-    // The close's visibility event, arriving after the color came back.
-    controller.visibilityChanged(false);
-    await vi.advanceTimersByTimeAsync(REMEMBER_CLOSE_DELAY_MS * 2);
-    expect([state.closes, state.closed]).toEqual([1, false]);
-  });
+  // The user's bar may hold Chat or other views: it stays, even if it ends up empty.
+  it.each([
+    {
+      opened: "with Toggle Sidebar Block",
+      options: { closed: true },
+      open: async ({ controller }: Setup) => {
+        controller.start(true);
+        await controller.toggle();
+      },
+    },
+    {
+      opened: "by the startup reveal in always mode",
+      options: {},
+      open: async ({ controller }: Setup) => {
+        controller.start(true);
+      },
+    },
+  ])(
+    "leaves the bar open when the block goes off after it was opened $opened",
+    async ({ options, open }) => {
+      const given = setup(options);
+      await open(given);
+      await settle();
+      given.settings.enabled = false;
+      given.controller.settingsChanged();
+      await settle();
+      expect([given.state.reveals, given.state.closes]).toEqual([1, 0]);
+    },
+  );
 
-  it("doesn't close the bar for a block that isn't visible", async () => {
-    const { controller, settings, state } = setup({ closed: true });
-    controller.start(true);
+  it("doesn't close for a block Toucan revealed that never became visible", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused", silentReveal: true });
+    controller.start(false);
     await settle();
     settings.enabled = false;
     controller.settingsChanged();
     await settle();
-    expect([state.reveals, state.closes]).toEqual([0, 0]);
+    expect([state.reveals, state.closes]).toEqual([1, 0]);
   });
 
   it("doesn't start a second reveal while one is still running", async () => {
@@ -469,9 +485,9 @@ describe("SidebarController, failures", () => {
     },
     {
       site: "the close when the block goes off",
-      options: { failCloses: true },
+      options: { visibility: "unfocused", failCloses: true },
       act: async ({ controller, settings }: Setup) => {
-        controller.start(true);
+        controller.start(false);
         await settle();
         settings.enabled = false;
         controller.settingsChanged();
