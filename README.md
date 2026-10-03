@@ -8,6 +8,7 @@ For what Toucan does and how to install it, see the [extension's README](apps/ex
 
 ```
 apps/extension/     toucan: the VS Code extension (src/, test/, scripts/, media/, its manifest and README)
+packages/brand/     @toucan/brand: the presets, color tokens, glyph names, icon, logo and glyph SVGs
 config/ts-config/   @toucan/ts-config: the shared TypeScript settings
 config/vite/        @toucan/vite-config: the shared Vite and Vitest settings
 docs/adr/           the architecture decisions: the system's rules and direction
@@ -15,7 +16,7 @@ docs/plans/         one folder per piece of work: its plan, decisions and progre
 scripts/, test/     the repo's own tooling and its tests: qmd docs search, the docs-sync helper and mutate
 ```
 
-The root is the workspace: `pnpm-workspace.yaml`, `turbo.json`, the shared `.oxlintrc.json` and oxfmt config, the husky hook and CI. The website plan ([docs/plans/website](docs/plans/website/plan.md)) adds `apps/site/` and `packages/brand/`.
+The root is the workspace: `pnpm-workspace.yaml`, `turbo.json`, the shared `.oxlintrc.json` and oxfmt config, the husky hook and CI. The website plan ([docs/plans/website](docs/plans/website/plan.md)) adds `apps/site/`.
 
 Start with the [architecture decisions](docs/adr/README.md): they're the most important docs. `GROUNDING.md` lists the repo's facts and conventions, and `.claude/CLAUDE.md` the rules agents work by.
 
@@ -46,10 +47,10 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 | Script            | What it does                                                                                                                                                                                      |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `gen`             | Regenerate `src/generated/meta.ts` and the settings table in the extension's README from its `package.json`                                                                                       |
-| `font`            | Bake the glyph designs into paths and rebuild the glyph font in `media/`                                                                                                                          |
-| `icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`                                                                                                                           |
+| `font`            | Bake the glyph designs into paths, rebuild the glyph font in `media/` and write the glyph SVGs into the repo's `packages/brand/assets/glyphs/`                                                    |
+| `icon`            | Render the extension icon `media/icon.png` from the repo's `packages/brand/assets/icon.svg`                                                                                                       |
 | `screenshots`     | Regenerate the README images in `media/readme/` from the packaged extension. macOS only; VS Code in `/Applications`, or pass `--app <VS Code.app>`; `--frames <dir>` also keeps the hero's frames |
-| `check:generated` | Run `gen`, `font` and `icon` (the generated meta and settings table, the glyph font, the extension icon) and fail if anything changed (CI runs this)                                              |
+| `check:generated` | Run `gen`, `font` and `icon` (the generated meta and settings table, the glyph font and SVGs, the extension icon) and fail if anything changed (CI runs this)                                     |
 | `check:bundle`    | Load the built bundle in plain Node with a stub for `vscode`, so a dependency the bundler left unresolved fails CI instead of activation                                                          |
 | `check:vsix`      | Fail when the VSIX would ship anything other than its expected files                                                                                                                              |
 | `package`         | Build and package a VSIX                                                                                                                                                                          |
@@ -59,7 +60,7 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 
 ### Generated files
 
-`src/generated/`, `media/icons/`, the glyph font and the extension icon in `apps/extension` are written only by the `gen`, `font` and `icon` scripts, never by hand. `check:generated` regenerates them and fails if the result differs from what's committed, and CI runs it.
+`src/generated/`, the glyph font and the extension icon in `apps/extension`, and the glyph SVGs in `packages/brand/assets/glyphs/`, are written only by the extension's `gen`, `font` and `icon` scripts, never by hand. `check:generated` regenerates them and fails if the result differs from what's committed, and CI runs it.
 
 ### Mutation testing
 
