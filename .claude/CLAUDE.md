@@ -17,20 +17,20 @@ The ADRs in [docs/adr/](../docs/adr/README.md) are the most important docs: the 
 
 Always look things up in the docs through qmd (ADR-0011), wherever you work in this repo. This applies to subagents too: tell them in the task.
 
-- Search the `toucan` index through the `qmd` MCP server: `toucan-docs` for `docs/` (narrow to `adr/` for rules, `plans/` for why), `toucan-guides` for README.md and GROUNDING.md.
+- Search the `toucan` index through the `qmd` MCP server: `toucan-docs` for `docs/` (narrow to `adr/` for rules, `plans/` for why), `toucan-guides` for the READMEs and GROUNDING.md.
 - Use `query` with a `lex` line for exact terms and a `vec` line for the question, then `get` the hits you need instead of reading whole folders.
 - Hooks keep the keyword index fresh; run `pnpm docs:index` after bigger doc changes, to refresh the embeddings.
 - If qmd isn't available, say so once with the install line (`npm i -g @tobilu/qmd`, then `pnpm docs:index`; see README, Development) and read the files instead.
 
 ## Code rules
 
-- **Layout** (ADR-0010): `src/core/`, `src/shared/<topic>/`, `src/features/<feature>/`, role suffixes (`.adapter`, `.util`, `.consts`, `.types`, `.view`, `.messages`), no barrels or re-exports. Only adapters and `src/core/extension.ts` import `vscode` (ADR-0006). `test/` mirrors `src/`; shared test helpers go in `test/helpers/<topic>.ts`.
+- **Layout** (ADR-0010): the extension lives in `apps/extension/`, with `src/core/`, `src/shared/<topic>/`, `src/features/<feature>/` under it, role suffixes (`.adapter`, `.util`, `.consts`, `.types`, `.view`, `.messages`), no barrels or re-exports. Only adapters and `apps/extension/src/core/extension.ts` import `vscode` (ADR-0006). A package's `test/` mirrors its `src/`; shared test helpers go in its `test/helpers/<topic>.ts`. The repo's own tooling (qmd docs search, docs-sync) lives in the root `scripts/` and `test/`.
 - **Names:** functions are verbs, booleans read as `is`/`has` questions, constants `UPPER_SNAKE`, types PascalCase, files camelCase with their role suffix.
 - **Imports:** grouped under comment headers in this order, only the ones needed: `// import vscode`, `// import libraries` (including `node:*`), `// import adapters`, `// import utils`, `// import views`, `// import consts`, `// import messages`, `// import types`. Generated tables go under `// import consts`; test helpers and suffix-less scripts under `// import utils`. Types come in through their own `import type`; importing a path twice is fine.
 - **Shared from the start:** code another feature could use unchanged goes to `shared/<topic>/` at once, even with one caller; feature code stays in its feature. No speculative options, generics nobody needs, single-call wrappers, feature rules dressed as generic code, or merged look-alikes that change for different reasons.
 - **Object arguments:** two or more parameters take one object, `fn({ a, b })`, typed by a named `<Function>Args` interface (`<Class>Args` for a constructor) next to it, or an existing domain type. Positional stays for callbacks whose shape someone else fixes, type guards, and single-value functions and port methods. The geometry helpers in `glyphDesign.consts.ts` are the one documented exception; new ones need the same agreement and a comment.
-- **Errors** (ADR-0009), in `src/` and `scripts/` alike: catch with `tryCatch(() => work())` or `tryCatchSync` (`src/shared/async/tryCatch.util.ts`), handle `error !== null`, show it with `errorText(error)`; cleanup then rethrow is tryCatch, cleanup, `throw error`. `try/finally` only for cleanup that must run; `.catch()` only on a chain nobody awaits, with a comment.
-- **Promises:** await every one; no `void`. A non-modal notification goes through `notify()` (`src/core/notify.adapter.ts`). A sync event handler or timer with no caller to await hands its work off with a lint disable stating why.
+- **Errors** (ADR-0009), in source and scripts alike: catch with `tryCatch(() => work())` or `tryCatchSync` (`apps/extension/src/shared/async/tryCatch.util.ts`), handle `error !== null`, show it with `errorText(error)`; cleanup then rethrow is tryCatch, cleanup, `throw error`. `try/finally` only for cleanup that must run; `.catch()` only on a chain nobody awaits, with a comment.
+- **Promises:** await every one; no `void`. A non-modal notification goes through `notify()` (`apps/extension/src/core/notify.adapter.ts`). A sync event handler or timer with no caller to await hands its work off with a lint disable stating why.
 - **Lint** (ADR-0007, ADR-0008): every finding is an error. Fix it; disable a rule only where a fix makes the code worse, and state the reason after `--` in the `oxlint-disable` comment.
 - **Exports:** remove one nothing uses; one only tests use may stay.
 
@@ -46,7 +46,7 @@ Every test has to survive one question: **would it still pass if the code it cov
 - Fakes must be able to disagree: seed them with state that differs from the desired result, and assert what the code wrote.
 - Don't restate the implementation (that a method called its one dependency once), and don't duplicate a test across files.
 - Prove it can fail: break the line it protects, see it go red, restore.
-- Mutation testing, on demand (not in CI or the pre-push hook): `pnpm mutate <files you changed>`. Read every survived mutant; kill it with a test or say why it's equivalent. Never chase the percentage. `scripts/qmd/` is excluded (ADR-0012); delete `reports/stryker` after changing what's excluded.
+- Mutation testing, on demand (not in CI or the pre-push hook): `pnpm -C apps/extension mutate <files you changed>`, with paths relative to `apps/extension`. Read every survived mutant; kill it with a test or say why it's equivalent. Never chase the percentage. The root `scripts/qmd/` is never mutated (ADR-0012); delete `apps/extension/reports/stryker` after changing what's excluded.
 
 ## Keep docs in sync
 

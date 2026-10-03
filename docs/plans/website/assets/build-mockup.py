@@ -3,8 +3,8 @@ import re, sys, pathlib
 
 root = pathlib.Path(sys.argv[1])
 here = pathlib.Path(__file__).parent
-icon = (root / "media/toucan-icon.svg").read_text()
-logo = (root / "media/toucan-logo.svg").read_text()
+icon = (root / "apps/extension/media/toucan-icon.svg").read_text()
+logo = (root / "apps/extension/media/toucan-logo.svg").read_text()
 logo = re.sub(r'width="512" height="512"', 'class="logo"', logo)
 # The hero is the icon's own sunset scene without its green tile: the sun sinking behind
 # the horizon line, the bird in front, all on the page's jungle green.
@@ -16,7 +16,7 @@ icon = re.sub(r'width="512" height="512"', 'class="hero-icon" viewBox="0 0 128 1
 icon = icon.replace('viewBox="0 0 128 128" class="hero-icon" viewBox="0 0 128 128"', 'viewBox="0 0 128 128" class="hero-icon"')
 
 def glyph(name, color):
-    svg = (root / f"media/icons/{name}.svg").read_text()
+    svg = (root / f"apps/extension/media/icons/{name}.svg").read_text()
     svg = svg.replace('fill="#000000"', f'fill="{color}"')
     return re.sub(r'width="(\d+)" height="16"', r'class="g"', svg)
 
