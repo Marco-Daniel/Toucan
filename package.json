@@ -1,7 +1,7 @@
 {
   "name": "toucan",
   "displayName": "Toucan",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "See at a glance which repository a VS Code window has open, without writing anything into the repo.",
   "categories": [
