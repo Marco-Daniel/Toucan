@@ -10,7 +10,7 @@
 // process, so the one it spawned isn't the one to stop. It asks Chrome to
 // close first and kills what's left after that.
 // import libraries
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import {
   lstatSync,
   mkdirSync,
@@ -34,7 +34,8 @@ import {
   tryCatchSync,
 } from "../../extension/src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../extension/src/shared/records/records.util.ts";
-import { chromePids, parsePs, planSweep, PROFILE_PREFIX, runSweep } from "./chrome.mts";
+import { chromePids, killIfStillOurs, planSweep, PROFILE_PREFIX, runSweep } from "./chrome.mts";
+import { KILL_PORTS, processes } from "./ps.mts";
 
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
@@ -110,16 +111,6 @@ const origin = `http://127.0.0.1:${isRecord(address) ? String(address["port"]) :
 
 /** The temp folder by its real path, so the profile path matches Chrome's command line exactly. */
 const TMP = realpathSync(tmpdir());
-
-/** One `ps -axo` listing, every process with the given columns. */
-function ps(columns: string): string {
-  return spawnSync("ps", ["-axo", columns], { encoding: "utf8" }).stdout ?? "";
-}
-
-/** The running processes from ps: each one's argv and the executable it runs. */
-function processes() {
-  return parsePs({ commands: ps("pid=,command="), programs: ps("pid=,comm=") });
-}
 
 /** lstat of a temp folder entry, or undefined when it can't be read. */
 function entryFacts(path: string): EntryFacts | undefined {
@@ -199,7 +190,7 @@ async function cleanUp(port: string | undefined): Promise<void> {
     await sleep(POLL_MS);
   }
   for (const pid of chromeProcesses()) {
-    tryCatchSync(() => process.kill(pid, "SIGKILL"));
+    killIfStillOurs({ pid, profile, chrome: values.chrome, ports: KILL_PORTS });
   }
   const killed = Date.now() + STARTUP_MS;
   while (chromeProcesses().length > 0 && Date.now() < killed) {
