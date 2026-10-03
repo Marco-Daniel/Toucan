@@ -462,6 +462,20 @@ describe("planEdit, clearing every key", () => {
     });
   });
 
+  it("falls back when the setting appears twice, since removing one leaves the other", () => {
+    const text = `{\n  "${KEY}": {\n    "commandCenter.background": "#111111"\n  },\n  "${KEY}": {\n    "commandCenter.background": "#aa0000"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { "commandCenter.background": "#aa0000" },
+      desired: undefined,
+    });
+    expect(plan).toEqual({
+      kind: "fallback",
+      reason: "the in-place edit didn't produce the expected value",
+    });
+  });
+
   it("keeps CRLF line endings", () => {
     const text = `{\r\n  "editor.fontSize": 13,\r\n  "${KEY}": {\r\n    "a": "#000000",\r\n    "b": "#111111"\r\n  }\r\n}\r\n`;
     const plan = planEdit({
