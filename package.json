@@ -20,9 +20,11 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "docs:index": "node scripts/qmd/docs-index.mts",
+    "mutate": "node scripts/mutate.mts",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "10.0.0",
     "@toucan/ts-config": "workspace:*",
     "@toucan/vite-config": "workspace:*",
     "@types/node": "catalog:",

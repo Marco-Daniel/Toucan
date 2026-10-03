@@ -64,7 +64,7 @@ Group by doc, then by class (contradicts, stale, missed). One block per item, wi
   Fix: `apps/extension/src/core/glyphs.ts` → `apps/extension/src/features/glyphs/glyphs.util.ts`
 - [R2] missed · README.md:101 · the new `pnpm foo` script has no row in the development table
   Evidence: apps/extension/package.json "scripts.foo"
-  Fix: add `| \`pnpm foo\` | <what it does> |` after the `pnpm mutate` row
+  Fix: add `| \`pnpm foo\` | <what it does> |` after the `mutate` row
 ```
 - Keep each item to its evidence and its fix; one or two lines of evidence are enough.
 - End with a count per class and per doc, the start commit, and whether this was a diff run (from which tag) or a full sweep (and why).

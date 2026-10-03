@@ -35,7 +35,7 @@
     "check:generated": "\"$npm_execpath\" gen && \"$npm_execpath\" font && \"$npm_execpath\" icon && git diff --exit-code src/generated README.md media && test -z \"$(git status --porcelain src/generated README.md media)\"",
     "check:bundle": "node scripts/check-bundle.mts",
     "check:vsix": "node scripts/check-vsix.mts",
-    "mutate": "node scripts/mutate.mts",
+    "mutate": "node ../../scripts/mutate.mts",
     "screenshots": "\"$npm_execpath\" package && node scripts/screenshots/capture.mts --vsix toucan-$npm_package_version.vsix"
   },
   "dependencies": {
@@ -44,7 +44,6 @@
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
-    "@stryker-mutator/core": "10.0.0",
     "@toucan/ts-config": "workspace:*",
     "@toucan/vite-config": "workspace:*",
     "@types/culori": "^4.0.1",

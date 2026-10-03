@@ -1,6 +1,8 @@
 {
   "$schema": "./node_modules/turbo/schema.json",
   "ui": "stream",
+  // No AGENTS.md: the repo's agent rules live in .claude/CLAUDE.md.
+  "agentGuidance": false,
   // Each checkout's own cache: by default git worktrees share the main
   // checkout's, so one worktree would write into another.
   "cacheDir": ".turbo/cache",
@@ -26,6 +28,12 @@
       "dependsOn": ["^test"],
       "outputs": []
     },
+    // The extension's tests also compare its LICENSE with the root's.
+    "toucan#test": {
+      "dependsOn": ["^test"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/LICENSE"],
+      "outputs": []
+    },
     // Regenerates files and compares them with git: never cached.
     "check:generated": {
       "cache": false
@@ -38,14 +46,19 @@
       "dependsOn": ["build"],
       "outputs": []
     },
-    // The root's own tooling: docs search, docs-sync and the ADR log test.
+    // The root's own tooling: docs search, docs-sync, mutate and the ADR log
+    // test. It imports from the extension, uses the Vitest base and checks the
+    // ADRs cited in every package, so those files count as its inputs too.
     "//#lint:repo": {
+      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
       "outputs": []
     },
     "//#typecheck:repo": {
+      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
       "outputs": []
     },
     "//#test:repo": {
+      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
       "outputs": []
     }
   }

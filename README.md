@@ -12,7 +12,7 @@ config/ts-config/   @toucan/ts-config: the shared TypeScript settings
 config/vite/        @toucan/vite-config: the shared Vite and Vitest settings
 docs/adr/           the architecture decisions: the system's rules and direction
 docs/plans/         one folder per piece of work: its plan, decisions and progress
-scripts/, test/     the repo's own tooling and its tests: qmd docs search and the docs-sync helper
+scripts/, test/     the repo's own tooling and its tests: qmd docs search, the docs-sync helper and mutate
 ```
 
 The root is the workspace: `pnpm-workspace.yaml`, `turbo.json`, the shared `.oxlintrc.json` and oxfmt config, the husky hook and CI. The website plan ([docs/plans/website](docs/plans/website/plan.md)) adds `apps/site/` and `packages/brand/`.
@@ -21,7 +21,7 @@ Start with the [architecture decisions](docs/adr/README.md): they're the most im
 
 ## Development
 
-Requires Node 24 (see `.nvmrc`) and pnpm through corepack. Run `corepack pnpm install` at the root.
+Requires Node 24 (see `.nvmrc`) and pnpm through corepack. Run `corepack enable pnpm` once, so `pnpm` is on your PATH: Turborepo starts each package's tasks with it. Then run `pnpm install` at the root.
 
 From the root, Turborepo runs these in every package, in dependency order:
 
@@ -34,11 +34,12 @@ From the root, Turborepo runs these in every package, in dependency order:
 
 From the root, for the whole repo:
 
-| Command             | What it does                                                                |
-| ------------------- | --------------------------------------------------------------------------- |
-| `pnpm format:check` | Check formatting with oxfmt (`pnpm format` to fix)                          |
-| `pnpm docs:index`   | Register the docs with qmd and refresh its index and embeddings (see below) |
-| `/docs-sync`        | Claude Code skill: report doc drift since the last run, with a fix per item |
+| Command               | What it does                                                                |
+| --------------------- | --------------------------------------------------------------------------- |
+| `pnpm format:check`   | Check formatting with oxfmt (`pnpm format` to fix)                          |
+| `pnpm docs:index`     | Register the docs with qmd and refresh its index and embeddings (see below) |
+| `pnpm mutate [file…]` | StrykerJS mutation testing of the root's own tooling (see below); on demand |
+| `/docs-sync`          | Claude Code skill: report doc drift since the last run, with a fix per item |
 
 The extension's own scripts run with `pnpm -C apps/extension <script>` from the root (`pnpm -C apps/extension package`, say), or `pnpm <script>` inside `apps/extension`. Its package keeps the name `toucan`, part of the extension ID `marco-daniel.toucan`. Paths below are relative to `apps/extension`.
 
@@ -62,7 +63,7 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 
 ### Mutation testing
 
-`mutate` runs StrykerJS on demand, not in CI or the pre-push hook. Pass the files you changed, relative to `apps/extension`. Read every survived mutant: kill it with a test, or say why it's equivalent. The repo's qmd tooling in `scripts/qmd/` is never mutated ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Reports land in `apps/extension/reports/stryker/`; delete that folder after changing what's excluded.
+`mutate` runs StrykerJS on demand, not in CI or the pre-push hook: `pnpm mutate` at the root for the repo's own tooling, `pnpm -C apps/extension mutate` for the extension, each with its package's `stryker.config.json`. Pass the files you changed, relative to that package; it refuses files outside it. Read every survived mutant: kill it with a test, or say why it's equivalent. The qmd tooling in `scripts/qmd/` is never mutated: the root's config leaves it out and `mutate` refuses its files ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Reports land in the package's `reports/stryker/`; delete that folder after changing what's excluded.
 
 ### Docs search with qmd
 

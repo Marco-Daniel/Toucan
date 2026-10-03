@@ -1,17 +1,30 @@
 // import libraries
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const ROOT = join(import.meta.dirname, "..");
 const ADR_DIR = join(ROOT, "docs", "adr");
+/** The parts of a workspace package that instruct or run: an ADR cited there must be in force. */
+const PACKAGE_LIVE = ["src", "scripts", "test", "README.md"];
+
+/** Each workspace package's folder, from pnpm-workspace.yaml's `<group>/*` globs. */
+function packageFolders(): string[] {
+  const workspace = readFileSync(join(ROOT, "pnpm-workspace.yaml"), "utf8");
+  const globs = /^packages:\n((?:[ \t]+- .*\n)+)/m.exec(workspace)?.[1] ?? "";
+  return [...globs.matchAll(/- ([\w-]+)\/\*$/gm)].flatMap(([, group = ""]) =>
+    readdirSync(join(ROOT, group), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `${group}/${entry.name}`)
+      .toSorted(),
+  );
+}
+
 /** Live instructions: an ADR cited here must still be in force. */
 const LIVE = [
-  "apps/extension/src",
-  "apps/extension/scripts",
-  "apps/extension/test",
-  "apps/extension/README.md",
-  "config/vite/src",
+  ...packageFolders().flatMap((folder) =>
+    PACKAGE_LIVE.map((part) => `${folder}/${part}`).filter((path) => existsSync(join(ROOT, path))),
+  ),
   "scripts",
   "test",
   ".claude/CLAUDE.md",
@@ -135,6 +148,22 @@ describe("the ADR log", () => {
     const numbers = new Set(log.map(({ number }) => number));
     const missing = citations([...LIVE, ...HISTORY]).filter(({ number }) => !numbers.has(number));
     expect(missing).toEqual([]);
+  });
+
+  it("reads the live instructions of every workspace package and of the root", () => {
+    expect(LIVE).toEqual([
+      "apps/extension/src",
+      "apps/extension/scripts",
+      "apps/extension/test",
+      "apps/extension/README.md",
+      "config/vite/src",
+      "config/vite/test",
+      "scripts",
+      "test",
+      ".claude/CLAUDE.md",
+      "README.md",
+      "docs/adr/README.md",
+    ]);
   });
 
   it("points live instructions only at accepted ADRs", () => {
