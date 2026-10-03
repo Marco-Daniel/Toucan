@@ -32,3 +32,7 @@ Packages are named under `@toucan/`, are `private`, and each runs its own `lint`
 
 - Good: each app owns its dependencies and gates; shared code and configs have one home; room to grow (e.g. publishing scripts).
 - Bad: a large move: CI, packaging, qmd paths, GROUNDING, CLAUDE.md, ADRs and docs all change paths (0008 keeps that move behaviour-free).
+
+## Amendment (2026-10-03)
+
+The extension keeps the package name `toucan` instead of `@toucan/extension`: the name is part of its ID, `marco-daniel.toucan`. See ADR-0014.
