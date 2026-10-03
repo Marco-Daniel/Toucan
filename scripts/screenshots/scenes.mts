@@ -8,7 +8,7 @@ import { join } from "node:path";
 // import utils
 import { REPOS } from "./fixture.mts";
 import { around, rgb } from "./geometry.mts";
-import { encodeGif, encodePng, sideBySide } from "./images.mts";
+import { encodeGif, encodePng, hasColor, stacked } from "./images.mts";
 import { baseSettings, writeSettings } from "./session.mts";
 import {
   MODIFIERS,
@@ -26,9 +26,13 @@ import type { Image, Rgba } from "./images.mts";
 import type { Paths, Session } from "./session.mts";
 import type { Window } from "./vscode.mts";
 
-/** The hero GIF shows each window at this fraction of its size. */
-const HERO_SCALE = 0.42;
-const HERO_GAP = 12;
+/** The hero shows each window's bars at this scale: 880 pixels wide, the README's column. */
+const HERO_SCALE = 0.8;
+/** Between two windows' strips, and between a window's title bar and status bar. */
+const HERO_GAP = 14;
+const BAR_GAP = 3;
+/** Checks for settled or colored pixels look at a small capture. */
+const SAMPLE_SCALE = 0.4;
 const HERO_GREY = 24;
 const OPAQUE = 255;
 const HERO_BACKGROUND: Rgba = [HERO_GREY, HERO_GREY, HERO_GREY, OPAQUE];
@@ -53,11 +57,28 @@ function half(size: number): number {
   return size / HALF;
 }
 
+/** How far a captured channel may be from the reference (scaling blends edges). */
+const COLOR_TOLERANCE = 6;
+/** A point inside the Command Center, left of its centered label: plain background. */
+const BACKGROUND_INSET = 12;
+
+/**
+ * The repository color as this screen's captures render it, read from the
+ * Command Center's background. Captures are color-managed, so the CSS value
+ * itself would be a few steps off on most displays.
+ */
+async function commandCenterPixel(window: Window): Promise<Rgba> {
+  const box = await window.box(".command-center");
+  const image = await window.capture({
+    clip: { x: box.x + BACKGROUND_INSET, y: box.y + half(box.height), width: 1, height: 1 },
+    scale: 1,
+  });
+  const [red = 0, green = 0, blue = 0, alpha = 0] = image.data;
+  return [red, green, blue, alpha];
+}
+
 /** The window the stills show. */
 const STILL_REPO = "webshop";
-
-/** Where the README's images go. */
-export const OUT = join(import.meta.dirname, "..", "..", "media", "readme");
 
 interface FocusArgs {
   session: Session;
@@ -87,12 +108,21 @@ async function focusUntilColored({ session, name, color }: FocusArgs): Promise<v
   }
 }
 
-/** The three windows side by side, scaled down, as one GIF frame. */
+/**
+ * One GIF frame: each window as a strip of its title bar above its status
+ * bar, the three strips stacked. Small enough for the README's column, and
+ * it shows where the colors are without the editors in between.
+ */
 async function heroFrame(session: Session): Promise<Image> {
-  const images = await Promise.all(
-    session.all().map(async (window) => window.capture({ scale: HERO_SCALE })),
-  );
-  return sideBySide({ images, gap: HERO_GAP, background: HERO_BACKGROUND });
+  const strips = [];
+  for (const window of session.all()) {
+    const bars = [];
+    for (const part of [".part.titlebar", ".part.statusbar"]) {
+      bars.push(await window.capture({ clip: await window.box(part), scale: HERO_SCALE }));
+    }
+    strips.push(stacked({ images: bars, gap: BAR_GAP, background: HERO_BACKGROUND }));
+  }
+  return stacked({ images: strips, gap: HERO_GAP, background: HERO_BACKGROUND });
 }
 
 interface PreviewArgs {
@@ -113,11 +143,13 @@ async function preview({ window, color }: PreviewArgs): Promise<void> {
 
 interface RecordHeroArgs {
   session: Session;
+  /** Where the GIF goes. */
+  out: string;
   /** Where to also write each frame as a PNG, for reviewing the GIF. */
   framesDir: string | undefined;
 }
 
-export async function recordHero({ session, framesDir }: RecordHeroArgs): Promise<void> {
+export async function recordHero({ session, out, framesDir }: RecordHeroArgs): Promise<void> {
   for (const { name, open } of REPOS) {
     await session.window(name).open(open);
   }
@@ -141,7 +173,7 @@ export async function recordHero({ session, framesDir }: RecordHeroArgs): Promis
   await window.key({ key: "Enter" });
   await focusUntilColored({ session, name, color: HERO_PREVIEWS.at(-1) ?? "" });
   frames.push({ image: await heroFrame(session), delayMs: FINAL_HOLD_MS });
-  writeFileSync(join(OUT, "hero.gif"), encodeGif(frames));
+  writeFileSync(join(out, "hero.gif"), encodeGif(frames));
   console.log(`  media/readme/hero.gif ${frames.length} frames`);
   if (framesDir !== undefined) {
     mkdirSync(framesDir, { recursive: true });
@@ -151,8 +183,8 @@ export async function recordHero({ session, framesDir }: RecordHeroArgs): Promis
   }
 }
 
-function save({ name, image }: { name: string; image: Image }): void {
-  writeFileSync(join(OUT, `${name}.png`), encodePng(image));
+function save({ out, name, image }: { out: string; name: string; image: Image }): void {
+  writeFileSync(join(out, `${name}.png`), encodePng(image));
   console.log(`  media/readme/${name}.png ${image.width}×${image.height}`);
 }
 
@@ -167,7 +199,7 @@ async function settledPixels({ window, clip }: SettledPixelsArgs): Promise<void>
   await waitFor({
     what: `${window.name} to stop changing`,
     check: async () => {
-      const image = await window.capture({ ...(clip ? { clip } : {}), scale: HERO_SCALE });
+      const image = await window.capture({ ...(clip ? { clip } : {}), scale: SAMPLE_SCALE });
       const now = Buffer.from(image.data).toString("base64");
       const same = now === last;
       last = now;
@@ -203,19 +235,28 @@ interface PickerStillArgs {
   command: string;
   /** The picker's title word: "Preset" for "Toucan: Preset for webshop". */
   title: string;
-  /** How many rows up from the current one to preview. */
-  stepsUp: number;
+  /** The row to preview, e.g. "Lilac"; the picker moves up to it from the current one. */
+  row: string;
 }
 
-async function pickerStill({ window, command, title, stepsUp }: PickerStillArgs): Promise<Image> {
+/** The highlighted row's label in an open picker. */
+const FOCUSED_ROW = `document.querySelector(".quick-input-widget .monaco-list-row.focused")?.getAttribute("aria-label") ?? ""`;
+/** More rows than any Toucan picker has. */
+const MAX_ROWS = 40;
+
+async function pickerStill({ window, command, title, row }: PickerStillArgs): Promise<Image> {
   await window.run(command);
   await window.waitFor({
     what: command,
     expression: pickerTitle(`Toucan: ${title} for ${window.name}`),
   });
   const label = await window.evaluate(TOUCAN_LABEL);
-  for (let step = 0; step < stepsUp; step++) {
+  const isRow = async () => String(await window.evaluate(FOCUSED_ROW)).startsWith(row);
+  for (let step = 0; step < MAX_ROWS && !(await isRow()); step++) {
     await window.key({ key: "ArrowUp" });
+  }
+  if (!(await isRow())) {
+    throw new Error(`No "${row}" row in ${command}`);
   }
   await window.waitFor({
     what: `${command}'s preview`,
@@ -234,8 +275,8 @@ interface CaptureStillsArgs {
 export async function captureStills({ session, paths }: CaptureStillsArgs): Promise<void> {
   const window = session.window(STILL_REPO);
   await focusUntilColored({ session, name: STILL_REPO });
-  save({ name: "command-center", image: await titleBar(window) });
-  save({ name: "status-bar", image: await statusBarHover(window) });
+  save({ out: paths.staging, name: "command-center", image: await titleBar(window) });
+  save({ out: paths.staging, name: "status-bar", image: await statusBarHover(window) });
 
   await window.run("Toucan: Set Color for This Repo");
   await window.waitFor({
@@ -243,34 +284,41 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
     expression: pickerTitle(`Toucan: Color for ${STILL_REPO}`),
   });
   await preview({ window, color: STILL_PREVIEW });
-  save({ name: "set-color", image: await window.capture({ scale: STILL_SCALE }) });
+  save({
+    out: paths.staging,
+    name: "set-color",
+    image: await window.capture({ scale: STILL_SCALE }),
+  });
   await window.key({ key: "Escape" });
 
-  // From the current Tropical Pink up to Lilac, and from the current heart up to the toucan.
-  const LILAC = 2;
-  const TOUCAN = 10;
   save({
+    out: paths.staging,
     name: "preset-color",
     image: await pickerStill({
       window,
       command: "Toucan: Pick Preset Color",
       title: "Preset",
-      stepsUp: LILAC,
+      row: "Lilac",
     }),
   });
   save({
+    out: paths.staging,
     name: "set-glyph",
     image: await pickerStill({
       window,
       command: "Toucan: Set Glyph",
       title: "Glyph",
-      stepsUp: TOUCAN,
+      row: "toucan",
     }),
   });
 
   await window.run("Toucan: Clear Color");
   await window.box(".monaco-dialog-box");
-  save({ name: "clear-color", image: await window.capture({ scale: STILL_SCALE }) });
+  save({
+    out: paths.staging,
+    name: "clear-color",
+    image: await window.capture({ scale: STILL_SCALE }),
+  });
   await window.key({ key: "Escape" });
 
   for (const style of ["full", "muted"] as const) {
@@ -284,10 +332,23 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
     });
     await focusUntilColored({ session, name: STILL_REPO });
     // The block is a webview, drawn in an overlay above the bar rather than
-    // inside it: wait for the bar, then until the pixels stop changing.
-    await window.box(".part.auxiliarybar");
-    await settledPixels({ window });
+    // inside it: wait until the bar's area shows the repository color (the
+    // glyph, in either style), then until the pixels stop changing.
+    const bar = await window.box(".part.auxiliarybar");
+    const color = await commandCenterPixel(window);
+    await waitFor({
+      what: `the ${style} sidebar block's content`,
+      check: async () =>
+        hasColor({
+          image: await window.capture({ clip: bar, scale: SAMPLE_SCALE }),
+          color,
+          tolerance: COLOR_TOLERANCE,
+        }) || undefined,
+      timeoutMs: STEP_TIMEOUT_MS,
+    });
+    await settledPixels({ window, clip: bar });
     save({
+      out: paths.staging,
       name: style === "full" ? "sidebar-block" : "sidebar-muted",
       image: await window.capture({ scale: STILL_SCALE }),
     });
@@ -316,7 +377,9 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
     what: "the emoji in the Command Center",
     expression: `/^\\p{Extended_Pictographic}/u.test(document.querySelector(".command-center")?.innerText ?? "") || undefined`,
   });
-  save({ name: "search-emoji", image: await titleBar(window) });
+  // The title settles a moment after the emoji appears (the file name follows).
+  await settledPixels({ window, clip: await window.box(".part.titlebar") });
+  save({ out: paths.staging, name: "search-emoji", image: await titleBar(window) });
 }
 
 /** What every window showed when the run failed, to see why. */

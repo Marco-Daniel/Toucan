@@ -2,7 +2,11 @@
 // one WebSocket session per target (a VS Code window, or Electron's main
 // process through --inspect), request and response by id.
 // import utils
+import { tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../src/shared/records/records.util.ts";
+
+/** How long one DevTools request or connection attempt may take. */
+const REQUEST_TIMEOUT_MS = 5000;
 
 /** A DevTools target as `/json/list` describes it. */
 export interface Target {
@@ -14,7 +18,9 @@ export interface Target {
 
 /** The targets a DevTools port serves. */
 export async function listTargets(port: number): Promise<Target[]> {
-  const response = await fetch(`http://127.0.0.1:${port}/json/list`);
+  const response = await fetch(`http://127.0.0.1:${port}/json/list`, {
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
   const body: unknown = await response.json();
   return Array.isArray(body) ? body.filter(isTarget) : [];
 }
@@ -42,12 +48,25 @@ export class DevToolsSession {
   private constructor(socket: WebSocket) {
     this.socket = socket;
     socket.addEventListener("message", (event) => this.receive(event));
+    // VS Code went away: nothing will answer the calls still waiting.
+    socket.addEventListener("close", () => this.close());
   }
 
   static async connect(url: string): Promise<DevToolsSession> {
     const socket = new WebSocket(url);
     await new Promise<void>((resolve, reject) => {
-      socket.addEventListener("open", () => resolve(), { once: true });
+      const timer = setTimeout(() => {
+        socket.close();
+        reject(new Error(`Timed out connecting to ${url}`));
+      }, REQUEST_TIMEOUT_MS);
+      socket.addEventListener(
+        "open",
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        { once: true },
+      );
       socket.addEventListener("error", () => reject(new Error(`Can't connect to ${url}`)), {
         once: true,
       });
@@ -59,7 +78,20 @@ export class DevToolsSession {
   async send(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
     const id = this.nextId++;
     const result = new Promise<unknown>((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`${method} got no answer within ${REQUEST_TIMEOUT_MS} ms`));
+      }, REQUEST_TIMEOUT_MS);
+      this.pending.set(id, {
+        resolve: (value) => {
+          clearTimeout(timer);
+          resolve(value);
+        },
+        reject: (error) => {
+          clearTimeout(timer);
+          reject(error);
+        },
+      });
     });
     this.socket.send(JSON.stringify({ id, method, params }));
     return result;
@@ -79,12 +111,18 @@ export class DevToolsSession {
     return isRecord(reply) && isRecord(reply["result"]) ? reply["result"]["value"] : undefined;
   }
 
+  /** Closes the connection; calls still waiting for an answer reject. */
   close(): void {
     this.socket.close();
+    for (const { reject } of this.pending.values()) {
+      reject(new Error("The DevTools connection closed"));
+    }
+    this.pending.clear();
   }
 
   private receive(event: MessageEvent): void {
-    const message: unknown = JSON.parse(String(event.data));
+    // A message that isn't JSON answers no request; ignore it rather than throw in the listener.
+    const [message] = tryCatchSync((): unknown => JSON.parse(String(event.data)));
     if (!isRecord(message) || typeof message["id"] !== "number") {
       return;
     }

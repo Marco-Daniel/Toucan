@@ -7,7 +7,9 @@ import {
   decodePng,
   encodeGif,
   encodePng,
+  hasColor,
   sideBySide,
+  stacked,
 } from "../../../scripts/screenshots/images.mts";
 
 const RED = [255, 0, 0, 255] as const;
@@ -32,9 +34,49 @@ describe("sideBySide", () => {
     });
   });
 
+  it("copies exactly each image's rows when the heights are equal", () => {
+    const left = { width: 1, height: 1, data: new Uint8Array(RED) };
+    const right = { width: 1, height: 1, data: new Uint8Array(BLUE) };
+    expect(sideBySide({ images: [left, right], gap: 0, background: GREY })).toEqual({
+      width: 2,
+      height: 1,
+      data: new Uint8Array([...RED, ...BLUE]),
+    });
+  });
+
   it("adds no gap after a single image", () => {
     const one = { width: 1, height: 1, data: new Uint8Array(RED) };
     expect(sideBySide({ images: [one], gap: 5, background: GREY })).toEqual(one);
+  });
+});
+
+describe("stacked", () => {
+  it("puts the images in a column with the gap between, filling right of a narrower one", () => {
+    const wide = { width: 2, height: 1, data: new Uint8Array([...RED, ...GREEN]) };
+    const narrow = { width: 1, height: 2, data: new Uint8Array([...BLUE, ...RED]) };
+    expect(stacked({ images: [wide, narrow], gap: 1, background: GREY })).toEqual({
+      width: 2,
+      height: 4,
+      data: new Uint8Array([...RED, ...GREEN, ...GREY, ...GREY, ...BLUE, ...GREY, ...RED, ...GREY]),
+    });
+  });
+
+  it("adds no gap after a single image", () => {
+    const one = { width: 1, height: 1, data: new Uint8Array(RED) };
+    expect(stacked({ images: [one], gap: 5, background: GREY })).toEqual(one);
+  });
+});
+
+describe("hasColor", () => {
+  const image = { width: 2, height: 1, data: new Uint8Array([...GREY, 250, 4, 6, 255]) };
+
+  it("finds a pixel within the tolerance on every channel", () => {
+    expect(hasColor({ image, color: RED, tolerance: 6 })).toBe(true);
+  });
+
+  it("misses when any channel is further off", () => {
+    expect(hasColor({ image, color: RED, tolerance: 5 })).toBe(false);
+    expect(hasColor({ image, color: BLUE, tolerance: 6 })).toBe(false);
   });
 });
 
@@ -56,49 +98,110 @@ describe("encodePng", () => {
 });
 
 describe("encodeGif", () => {
+  const frames = [
+    { image: { width: 1, height: 1, data: new Uint8Array(RED) }, delayMs: 500 },
+    { image: { width: 1, height: 1, data: new Uint8Array(BLUE) }, delayMs: 1200 },
+  ];
+
   it("writes a GIF89a whose only extensions are frame timing and looping, no comments", () => {
-    const frame = { width: 1, height: 1, data: new Uint8Array(RED) };
-    const bytes = encodeGif([
-      { image: frame, delayMs: 500 },
-      { image: { ...frame, data: new Uint8Array(BLUE) }, delayMs: 500 },
-    ]);
+    const bytes = encodeGif(frames);
     expect(new TextDecoder().decode(bytes.subarray(0, 6))).toBe("GIF89a");
     // 0xff application (the loop), then 0xf9 graphic control before each frame;
     // 0xfe would be a comment, which could carry text.
-    expect(gifBlocks(bytes)).toEqual(["ext ff", "ext f9", "image", "ext f9", "image"]);
+    expect(gifBlocks(bytes).map(({ kind }) => kind)).toEqual([
+      "ext ff",
+      "ext f9",
+      "image",
+      "ext f9",
+      "image",
+    ]);
+  });
+
+  it("keeps each frame's delay and color", () => {
+    const blocks = gifBlocks(encodeGif(frames));
+    // Graphic control: delay in hundredths of a second.
+    expect(blocks.filter(({ kind }) => kind === "ext f9").map(({ delay }) => delay)).toEqual([
+      50, 120,
+    ]);
+    expect(blocks.filter(({ kind }) => kind === "image").map(({ color }) => color)).toEqual([
+      [255, 0, 0],
+      [0, 0, 255],
+    ]);
   });
 });
 
-/** A GIF's blocks after the header, in order: "ext <label>" or "image". */
-function gifBlocks(bytes: Uint8Array): string[] {
+interface GifBlock {
+  kind: string;
+  /** A graphic control's delay, in hundredths of a second. */
+  delay?: number;
+  /** A 1×1 image's pixel, from its color table and LZW data. */
+  color?: number[];
+}
+
+/** A GIF's blocks after the header, in order. */
+function gifBlocks(bytes: Uint8Array): GifBlock[] {
   const COLOR_TABLE = 0x80;
   const TABLE_SIZE = 0x07;
   const tableBytes = (flags: number) =>
     flags & COLOR_TABLE ? 3 * 2 ** ((flags & TABLE_SIZE) + 1) : 0;
-  /** Past a run of sub-blocks, each prefixed with its length, ending with a zero. */
-  const skipSubBlocks = (from: number) => {
+  /** The data of a run of sub-blocks, each prefixed with its length, and where it ends. */
+  const subBlocks = (from: number) => {
+    const data: number[] = [];
     let at = from;
     while (bytes[at] !== 0) {
-      at += (bytes[at] ?? 0) + 1;
+      const length = bytes[at] ?? 0;
+      data.push(...bytes.subarray(at + 1, at + 1 + length));
+      at += length + 1;
     }
-    return at + 1;
+    return { data, end: at + 1 };
   };
-  const blocks: string[] = [];
-  // Header (6), then the screen descriptor (7) with its global color table.
-  let at = 13 + tableBytes(bytes[10] ?? 0);
+  const globalTable = 13;
+  let table = bytes.subarray(globalTable, globalTable + tableBytes(bytes[10] ?? 0));
+  const blocks: GifBlock[] = [];
+  let at = globalTable + table.length;
   while (bytes[at] !== 0x3b) {
     if (bytes[at] === 0x21) {
-      blocks.push(`ext ${(bytes[at + 1] ?? 0).toString(16)}`);
-      at = skipSubBlocks(at + 2);
+      const label = bytes[at + 1] ?? 0;
+      blocks.push({
+        kind: `ext ${label.toString(16)}`,
+        ...(label === 0xf9 ? { delay: (bytes[at + 4] ?? 0) | ((bytes[at + 5] ?? 0) << 8) } : {}),
+      });
+      at = subBlocks(at + 2).end;
     } else if (bytes[at] === 0x2c) {
-      blocks.push("image");
-      // Descriptor (10) and local color table, then the LZW code size (1) and the data.
-      at = skipSubBlocks(at + 10 + tableBytes(bytes[at + 9] ?? 0) + 1);
+      const flags = bytes[at + 9] ?? 0;
+      if (flags & COLOR_TABLE) {
+        table = bytes.subarray(at + 10, at + 10 + tableBytes(flags));
+      }
+      const codeSize = bytes[at + 10 + tableBytes(flags)] ?? 0;
+      const { data, end } = subBlocks(at + 11 + tableBytes(flags));
+      const index = firstLzwIndex({ data, codeSize });
+      blocks.push({ kind: "image", color: [...table.subarray(index * 3, index * 3 + 3)] });
+      at = end;
     } else {
       throw new Error(`Unexpected GIF block ${bytes[at]} at ${at}`);
     }
   }
   return blocks;
+}
+
+/** The first pixel's color index in GIF LZW data: the first code after the clear code. */
+function firstLzwIndex({ data, codeSize }: { data: number[]; codeSize: number }): number {
+  const width = codeSize + 1;
+  const clear = 1 << codeSize;
+  let bits = 0;
+  let count = 0;
+  const codes: number[] = [];
+  for (const byte of data) {
+    bits |= byte << count;
+    count += 8;
+    while (count >= width && codes.length < 2) {
+      codes.push(bits & ((1 << width) - 1));
+      bits >>= width;
+      count -= width;
+    }
+  }
+  const [first = 0, second = 0] = codes;
+  return first === clear ? second : first;
 }
 
 const SIGNATURE = 8;

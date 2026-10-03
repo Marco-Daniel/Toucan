@@ -71,6 +71,58 @@ export function sideBySide({ images, gap, background }: SideBySideArgs): Image {
   return { width, height, data };
 }
 
+interface StackedArgs {
+  images: readonly Image[];
+  /** Pixels between two images. */
+  gap: number;
+  /** Fills the gaps and right of narrower images. */
+  background: Rgba;
+}
+
+/** The images in a column, top to bottom, left-aligned. */
+export function stacked({ images, gap, background }: StackedArgs): Image {
+  const width = Math.max(0, ...images.map((image) => image.width));
+  const height =
+    images.reduce((sum, image) => sum + image.height, 0) + gap * Math.max(0, images.length - 1);
+  const data = new Uint8Array(width * height * CHANNELS);
+  for (let pixel = 0; pixel < width * height; pixel++) {
+    data.set(background, pixel * CHANNELS);
+  }
+  let top = 0;
+  for (const image of images) {
+    for (let row = 0; row < image.height; row++) {
+      const from = row * image.width * CHANNELS;
+      data.set(
+        image.data.subarray(from, from + image.width * CHANNELS),
+        (top + row) * width * CHANNELS,
+      );
+    }
+    top += image.height + gap;
+  }
+  return { width, height, data };
+}
+
+interface HasColorArgs {
+  image: Image;
+  color: Rgba;
+  /** How far each channel may be off. */
+  tolerance: number;
+}
+
+/** Whether any pixel is the color, give or take the tolerance per channel. */
+export function hasColor({ image, color, tolerance }: HasColorArgs): boolean {
+  for (let at = 0; at < image.data.length; at += CHANNELS) {
+    if (
+      color.every(
+        (channel, index) => Math.abs((image.data[at + index] ?? 0) - channel) <= tolerance,
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** A GIF frame and how long it shows. */
 export interface GifFrame {
   image: Image;

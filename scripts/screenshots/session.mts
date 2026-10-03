@@ -12,7 +12,7 @@ import { DevToolsSession, listTargets } from "./cdp.mts";
 import { REPOS } from "./fixture.mts";
 import { Main, STEP_TIMEOUT_MS, titleNames, Window } from "./vscode.mts";
 import { waitFor } from "./wait.mts";
-import { errorText, tryCatch, tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
+import { tryCatch } from "../../src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../src/shared/records/records.util.ts";
 
 // import types
@@ -24,7 +24,8 @@ import type { ChildProcess } from "node:child_process";
  */
 const TEMP_PARENT = "/tmp";
 const JSON_INDENT = 2;
-const KILL_GRACE_MS = 3000;
+/** The VS Code CLI installs the VSIX or opens a window; it never needs longer. */
+const CLI_TIMEOUT_MS = 60_000;
 
 /** The settings every demo window starts with. */
 export function baseSettings(): Record<string, unknown> {
@@ -61,6 +62,11 @@ export function baseSettings(): Record<string, unknown> {
 
 export interface Paths {
   temp: string;
+  /** HOME and TMPDIR for VS Code, inside the temp folder. */
+  home: string;
+  tmp: string;
+  /** The images, until the whole run has succeeded. */
+  staging: string;
   userData: string;
   extensions: string;
   settings: string;
@@ -74,6 +80,9 @@ export function makePaths(app: string): Paths {
   const userData = join(temp, "data");
   return {
     temp,
+    home: join(temp, "home"),
+    tmp: join(temp, "tmp"),
+    staging: join(temp, "out"),
     userData,
     extensions: join(temp, "ext"),
     settings: join(userData, "User", "settings.json"),
@@ -82,11 +91,13 @@ export function makePaths(app: string): Paths {
   };
 }
 
-/** The environment without the variables of a VS Code this may run inside. */
-function cleanEnv(): NodeJS.ProcessEnv {
-  return Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !/^(VSCODE|ELECTRON)_/.test(key)),
-  );
+/**
+ * The only environment VS Code gets: PATH, and a HOME and TMPDIR inside the
+ * temp folder, so nothing of the developer's own setup (or of a VS Code this
+ * may run inside) reaches the demo.
+ */
+function demoEnv(paths: Paths): NodeJS.ProcessEnv {
+  return { PATH: process.env["PATH"] ?? "", HOME: paths.home, TMPDIR: paths.tmp };
 }
 
 export async function freePort(): Promise<number> {
@@ -123,19 +134,36 @@ export function setUp({ paths, vsix }: SetUpArgs): void {
     }
   }
   mkdirSync(join(paths.userData, "User"), { recursive: true });
+  mkdirSync(paths.home, { recursive: true });
+  mkdirSync(paths.tmp, { recursive: true });
+  mkdirSync(paths.staging, { recursive: true });
   writeSettings({ paths, settings: baseSettings() });
   const install = spawnSync(paths.cli, [...profile(paths), "--install-extension", vsix], {
-    env: cleanEnv(),
+    env: demoEnv(paths),
+    timeout: CLI_TIMEOUT_MS,
     encoding: "utf8",
   });
   if (install.status !== 0) {
-    throw new Error(`Installing the VSIX failed: ${install.stderr}`);
+    throw new Error(
+      `Installing the VSIX failed: ${install.error?.message ?? install.stderr ?? `exit ${install.status}`}`,
+    );
   }
 }
 
 /** The arguments that keep VS Code on the throwaway profile. */
 function profile(paths: Paths): string[] {
-  return ["--user-data-dir", paths.userData, "--extensions-dir", paths.extensions];
+  return [
+    "--user-data-dir",
+    paths.userData,
+    "--extensions-dir",
+    paths.extensions,
+    // With HOME in the temp folder there's no login keychain; macOS would block VS Code
+    // with a keychain dialog. Secrets stay in memory instead (there are none to keep).
+    "--use-inmemory-secretstorage",
+    // Its "Analyzing" status would show in the shots, and the demo files have no types to find.
+    "--disable-extension",
+    "vscode.typescript-language-features",
+  ];
 }
 
 export interface LaunchArgs {
@@ -146,7 +174,7 @@ export interface LaunchArgs {
   mainPort: number;
 }
 
-/** Starts VS Code with the first repository, in its own process group. */
+/** Starts VS Code with the first demo repository, in its own process group. */
 export function launch({ paths, pagePort, mainPort }: LaunchArgs): ChildProcess {
   const [first] = REPOS;
   return spawn(
@@ -158,7 +186,7 @@ export function launch({ paths, pagePort, mainPort }: LaunchArgs): ChildProcess 
       "--new-window",
       join(paths.temp, first.name),
     ],
-    { env: cleanEnv(), detached: true, stdio: "ignore" },
+    { env: demoEnv(paths), detached: true, stdio: "ignore" },
   );
 }
 
@@ -184,7 +212,11 @@ export class Session {
   }
 }
 
-/** Opens the other repositories in the running instance and connects to every window. */
+/**
+ * Opens the other demo repositories in the running instance, each in its own
+ * window (one launch with several folders would make a single multi-root
+ * window), and connects to every window and to the main process.
+ */
 export async function connect({ paths, pagePort, mainPort }: LaunchArgs): Promise<Session> {
   await waitFor({
     what: "the first window",
@@ -196,7 +228,8 @@ export async function connect({ paths, pagePort, mainPort }: LaunchArgs): Promis
   });
   for (const { name } of REPOS.slice(1)) {
     spawnSync(paths.cli, [...profile(paths), "--new-window", join(paths.temp, name)], {
-      env: cleanEnv(),
+      env: demoEnv(paths),
+      timeout: CLI_TIMEOUT_MS,
     });
   }
   const windows = new Map<string, Window>();
@@ -225,25 +258,4 @@ export async function connect({ paths, pagePort, mainPort }: LaunchArgs): Promis
   }
   const main = new Main(await DevToolsSession.connect(mainTarget.webSocketDebuggerUrl));
   return new Session({ main, windows });
-}
-
-/** Ends VS Code and every process it started. */
-export async function stop(child: ChildProcess): Promise<void> {
-  const { pid } = child;
-  if (pid === undefined || child.exitCode !== null) {
-    return;
-  }
-  const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()));
-  killGroup({ pid, signal: "SIGTERM" });
-  const timer = setTimeout(() => killGroup({ pid, signal: "SIGKILL" }), KILL_GRACE_MS);
-  await exited;
-  clearTimeout(timer);
-}
-
-/** Signals the whole process group; a group that's already gone is fine. */
-export function killGroup({ pid, signal }: { pid: number; signal: NodeJS.Signals }): void {
-  const [, error] = tryCatchSync(() => process.kill(-pid, signal));
-  if (error !== null && !errorText(error).includes("ESRCH")) {
-    console.error(`Couldn't stop VS Code: ${errorText(error)}`);
-  }
 }
