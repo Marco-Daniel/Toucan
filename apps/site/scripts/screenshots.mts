@@ -208,9 +208,12 @@ async function connect(url: string): Promise<Cdp> {
   const pending = new Map<number, (message: Record<string, unknown>) => void>();
   socket.addEventListener("message", (event) => {
     const message: unknown = JSON.parse(String(event.data));
-    if (isRecord(message) && typeof message["id"] === "number") {
-      pending.get(message["id"])?.(message);
-      pending.delete(message["id"]);
+    // Only answers to our own requests: an id this script issued, with its own callback.
+    const id = isRecord(message) ? message["id"] : undefined;
+    const settle = typeof id === "number" ? pending.get(id) : undefined;
+    if (isRecord(message) && typeof id === "number" && typeof settle === "function") {
+      pending.delete(id);
+      settle(message);
     }
   });
   return {

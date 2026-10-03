@@ -12,11 +12,10 @@ import type { Tokens } from "marked";
 /** Links that stay on the web or on this site; `//host` would leave it under the page's scheme. */
 const SAFE_HREF = /^(?:https?:|mailto:|\/(?!\/)|#)/i;
 
-/** The id GitHub gives a heading: lower case, punctuation dropped, spaces as dashes. */
+/** The id GitHub gives a heading, from its plain text: lower case, punctuation dropped, spaces as dashes. */
 export function headingId(text: string): string {
   return text
     .toLowerCase()
-    .replaceAll(/<[^>]*>/g, "")
     .replaceAll(/[^\p{L}\p{N}\s_-]/gu, "")
     .trim()
     .replaceAll(/\s/g, "-");
@@ -70,8 +69,10 @@ export function renderMarkdown({
       },
       heading({ tokens, depth }: Tokens.Heading): string {
         const inner = this.parser.parseInline(tokens);
+        // The id comes from the heading's text, not its HTML.
+        const text = this.parser.parseInline(tokens, this.parser.textRenderer);
         const level = Math.min(depth + headingShift, DEEPEST_HEADING);
-        return `<h${level} id="${idPrefix}${headingId(inner)}">${inner}</h${level}>\n`;
+        return `<h${level} id="${idPrefix}${headingId(text)}">${inner}</h${level}>\n`;
       },
       link({ href, tokens }: Tokens.Link): string {
         const inner = this.parser.parseInline(tokens);

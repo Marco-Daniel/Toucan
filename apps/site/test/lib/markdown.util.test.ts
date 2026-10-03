@@ -8,9 +8,9 @@ describe("headingId", () => {
   it.each([
     ["toucan.repos", "toucanrepos"],
     ["Search emoji (experimental)", "search-emoji-experimental"],
-    ["Set <code>Color</code>", "set-color"],
+    ["Set `Color`", "set-color"],
     ["Toucan's world", "toucans-world"],
-    [" <code>Spaced</code> out ", "spaced-out"],
+    [" Spaced out ", "spaced-out"],
   ])("gives %j the GitHub id %j", (text, id) => {
     expect(headingId(text)).toBe(id);
   });
@@ -25,6 +25,12 @@ describe("escapeHtml", () => {
 });
 
 describe("renderMarkdown", () => {
+  it("takes a heading's id from its text, not its markup", () => {
+    expect(renderMarkdown({ markdown: "## Set `Color` *now*" })).toBe(
+      '<h2 id="set-color-now">Set <code>Color</code> <em>now</em></h2>\n',
+    );
+  });
+
   it("renders headings with ids, lists and code", () => {
     expect(renderMarkdown({ markdown: "## Set Color\n\n- one `two`\n" })).toBe(
       '<h2 id="set-color">Set Color</h2>\n<ul>\n<li>one <code>two</code></li>\n</ul>\n',
