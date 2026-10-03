@@ -180,56 +180,18 @@ If a window crashes while focused and you uninstall Toucan before opening VS Cod
 
 ## Install
 
+Build the VSIX from a clone of the repository, then install it:
+
 ```sh
 corepack pnpm install
-corepack pnpm package
-code --install-extension toucan-*.vsix
+corepack pnpm -C apps/extension package
+code --install-extension apps/extension/toucan-*.vsix
 ```
 
-## Development
-
-Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
-
-| Command                | What it does                                                                                                                                                                                      |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm lint`            | Lint with oxlint, with type information; any finding fails                                                                                                                                        |
-| `pnpm format:check`    | Check formatting with oxfmt (`pnpm format` to fix)                                                                                                                                                |
-| `pnpm typecheck`       | Typecheck with TypeScript 7                                                                                                                                                                       |
-| `pnpm test`            | Run the unit tests with vitest                                                                                                                                                                    |
-| `pnpm build`           | Bundle `dist/extension.cjs` with tsdown                                                                                                                                                           |
-| `pnpm gen`             | Regenerate `src/generated/meta.ts` and the settings table above from `package.json`                                                                                                               |
-| `pnpm font`            | Bake the glyph designs into paths and rebuild the glyph font in `media/`                                                                                                                          |
-| `pnpm icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`                                                                                                                           |
-| `pnpm screenshots`     | Regenerate the README images in `media/readme/` from the packaged extension. macOS only; VS Code in `/Applications`, or pass `--app <VS Code.app>`; `--frames <dir>` also keeps the hero's frames |
-| `pnpm check:generated` | Run `gen`, `font` and `icon` (the generated meta and settings table, the glyph font, the extension icon) and fail if anything changed (CI runs this)                                              |
-| `pnpm package`         | Build and package a VSIX                                                                                                                                                                          |
-| `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (see below)                                                                                                                       |
-| `pnpm mutate [file…]`  | StrykerJS mutation testing of the given files, or all but `scripts/qmd`; on demand                                                                                                                |
-| `/docs-sync`           | Claude Code skill: report doc drift since the last run, with a fix per item                                                                                                                       |
-
-`pnpm install` also sets up a pre-push hook (husky) that runs `typecheck`, `lint`, `format:check` and `test`. It's set up per checkout, so run `pnpm install` in a new worktree before pushing from it. `HUSKY=0` skips it; CI skips it and runs the full set itself.
-
-### Docs search with qmd
-
-[qmd](https://github.com/tobi/qmd) gives local keyword and semantic search over the docs, and it's part of the setup for working on Toucan: agents search the docs with it instead of reading whole folders, which finds things far better. Claude Code sessions in this repo use it through `.mcp.json`. The extension itself doesn't need it, and CI never installs it.
-
-Toucan keeps its docs in its own qmd index, `toucan`, so it never touches your other qmd collections. Search it yourself with `qmd --index toucan query "…"`.
-
-One-time setup:
-
-1. Install qmd 2.8 or newer: `npm i -g @tobilu/qmd`. Do this under the Node version your editor and Claude Code use (with nvm, run it while that version is active), so `qmd` is on their `PATH`.
-2. If npm says it skipped install scripts, try qmd anyway: the prebuilt binaries usually work. If they don't, reinstall with `--allow-scripts=` followed by the packages npm lists in its warning, comma-separated. The list depends on the qmd version; e.g., for qmd 2.8.3: `npm i -g @tobilu/qmd --allow-scripts=node-llama-cpp,tree-sitter-go,tree-sitter-python,tree-sitter-rust,tree-sitter-typescript,tree-sitter-javascript`.
-3. Check it: `qmd --version` prints 2.8 or newer, and `command -v qmd` prints its path.
-4. Start a Claude Code session here. A session-start hook registers Toucan's two collections, `toucan-docs` (`docs/`) and `toucan-guides` (README.md and GROUNDING.md), and builds the keyword index in the background.
-5. The first search or `pnpm docs:index` downloads qmd's models (about 2 GB, one-time); that's expected and well worth it.
-6. Run `pnpm docs:index` once for full embeddings (semantic search). It's safe to rerun. If the collections already point at another checkout that still exists, it leaves them alone unless you pass `--force`.
-
-After that, a hook keeps keyword search fresh whenever a doc is edited. Run `pnpm docs:index` again after bigger doc changes, to refresh the embeddings.
-
-The index points at the checkout that registered it, so a search from another worktree sees that checkout's docs.
+To build or work on Toucan, see the [repository README](https://github.com/Marco-Daniel/Toucan#readme).
 
 ## License
 
-[MIT](LICENSE)
+[MIT](https://github.com/Marco-Daniel/Toucan/blob/main/LICENSE)
 
 Bundled third-party code and its licenses are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
