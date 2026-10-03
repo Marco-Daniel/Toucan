@@ -5,10 +5,23 @@
     "command": "node node_modules/vitest/vitest.mjs run"
   },
   "coverageAnalysis": "off",
-  "mutate": ["app/lib/**/*.ts", "scripts/netlify.mts", "!app/lib/releases.server.ts"],
+  "mutate": [
+    "app/lib/**/*.ts",
+    "scripts/netlify.mts",
+    "scripts/og-card.mts",
+    "scripts/chrome.mts",
+    "!app/lib/releases.server.ts",
+    "!app/lib/screenshots.server.ts",
+    "!app/lib/brand.assets.ts",
+    "!app/lib/docs.content.ts"
+  ],
   "incremental": true,
   "incrementalFile": "reports/stryker/incremental.json",
-  "reporters": ["clear-text", "html", "progress"],
+  "reporters": [
+    "clear-text",
+    "html",
+    "progress"
+  ],
   "htmlReporter": {
     "fileName": "reports/stryker/mutation.html"
   },

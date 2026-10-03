@@ -1,8 +1,9 @@
 // `pnpm -C apps/site screenshots [--out <dir>] [--chrome <path>]`: after a
 // build, serves build/client on localhost, opens every page in headless Chrome
 // at 390, 768 and 1280 px wide (website/0012), saves a full-page screenshot of
-// each, and fails when a page scrolls sideways or has a tap target smaller
-// than 44 px outside running text. Local only: it needs Chrome.
+// each, and fails when a page scrolls sideways, has anything running past the
+// right edge, has a tap target smaller than 44 px outside running text, or
+// gets the not-found page or the phone menu wrong. Local only: it needs Chrome.
 //
 // It starts one Chrome with its own temporary profile and stops only the
 // processes that name that profile: Chrome on macOS hands itself over to a new
@@ -10,7 +11,15 @@
 // close first and kills what's left after that.
 // import libraries
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
@@ -24,6 +33,7 @@ import {
   tryCatchSync,
 } from "../../extension/src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../extension/src/shared/records/records.util.ts";
+import { chromePids, parsePs, PROFILE_PREFIX, staleProfiles } from "./chrome.mts";
 
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
@@ -43,6 +53,11 @@ const MOBILE_MAX_WIDTH = 500;
 const STARTUP_MS = 15_000;
 const POLL_MS = 100;
 const SETTLE_MS = 300;
+/** A whole run takes about a minute; past this it has hung. */
+const RUN_TIMEOUT_MS = 300_000;
+const MS_PER_SECOND = 1000;
+/** The shell's exit status for a run ended by a signal: 128 + SIGINT. */
+const EXIT_INTERRUPTED = 130;
 const DEFAULT_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 const TYPES: Record<string, string> = {
@@ -55,7 +70,9 @@ const TYPES: Record<string, string> = {
   ".json": "application/json",
 };
 
-const PAGES = PAGE_PATHS;
+/** Paths the site doesn't have: each must show the not-found page once, in one page frame. */
+const MISSING = ["/docs/nope", "/nope"];
+const PAGES = [...PAGE_PATHS, ...MISSING];
 
 const { values } = parseArgs({
   options: {
@@ -66,7 +83,7 @@ const { values } = parseArgs({
 const { out } = values;
 mkdirSync(out, { recursive: true });
 
-/** build/client served as Netlify serves it: /path → path/index.html, unknown paths → 404.html. */
+/** build/client served as Netlify serves it: /path → path/index.html, any other path → the SPA fallback with a 404 (public/_redirects). */
 const server = createServer((request, response) => {
   const path = normalize(decodeURIComponent(new URL(request.url ?? "/", "http://x").pathname));
   const candidates = [path, join(path, "index.html")].map((file) => join(CLIENT, file));
@@ -81,13 +98,26 @@ const server = createServer((request, response) => {
     }
   }
   response.writeHead(NOT_FOUND, { "content-type": "text/html" });
-  response.end(readFileSync(join(CLIENT, "404.html")));
+  response.end(readFileSync(join(CLIENT, "__spa-fallback.html")));
 });
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();
 const origin = `http://127.0.0.1:${isRecord(address) ? String(address["port"]) : ""}`;
 
-const profile = mkdtempSync(join(tmpdir(), "toucan-site-shots-"));
+/** The temp folder by its real path, so the profile path matches Chrome's command line exactly. */
+const TMP = realpathSync(tmpdir());
+
+/** The running processes, from ps. */
+function processes() {
+  return parsePs(spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout ?? "");
+}
+
+// Profiles a killed run left behind, which no process uses any more.
+for (const stale of staleProfiles({ names: readdirSync(TMP), tmp: TMP, processes: processes() })) {
+  rmSync(stale, { recursive: true, force: true });
+}
+
+const profile = mkdtempSync(join(TMP, PROFILE_PREFIX));
 // Stopped by cleanUp through its profile, not through this child (see the header).
 spawn(
   values.chrome,
@@ -98,6 +128,8 @@ spawn(
     "--no-first-run",
     "--no-default-browser-check",
     "--hide-scrollbars",
+    // No keychain prompt: macOS would otherwise ask for the profile's keys and stall the run.
+    "--use-mock-keychain",
     "about:blank",
   ],
   { stdio: "ignore" },
@@ -105,16 +137,17 @@ spawn(
 
 /** The pids of the processes whose command line names this run's profile: its Chrome and Chrome's helpers. */
 function chromeProcesses(): number[] {
-  const listing = spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout ?? "";
-  return listing.split("\n").flatMap((line) => {
-    const [, pid = "", command = ""] = /^\s*(\d+)\s+(.*)$/.exec(line) ?? [];
-    const number = Number(pid);
-    return number > 1 && number !== process.pid && command.includes(profile) ? [number] : [];
-  });
+  return chromePids({ processes: processes(), profile, self: process.pid });
 }
 
 /** Closes this run's Chrome (never anything else), waits for it to go, kills what's left, removes its profile. */
+let isCleaned = false;
+
 async function cleanUp(port: string | undefined): Promise<void> {
+  if (isCleaned) {
+    return;
+  }
+  isCleaned = true;
   if (port !== undefined) {
     await tryCatch(async () => {
       const version: unknown = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
@@ -217,10 +250,26 @@ const PROBLEMS = `(() => {
   const problems = [];
   const width = document.documentElement.scrollWidth;
   if (width > innerWidth) problems.push("scrolls sideways: " + width + " px wide in " + innerWidth);
+  // html and body clip sideways overflow, which hides it from scrollWidth: look for
+  // elements past the right edge that no scrolling or clipping box inside the page holds.
+  const held = (element) => {
+    for (let box = element.parentElement; box && box !== document.body; box = box.parentElement) {
+      if (getComputedStyle(box).overflowX !== "visible") return box.getBoundingClientRect().right <= innerWidth + 1;
+    }
+    return false;
+  };
+  for (const element of document.body.querySelectorAll("*")) {
+    const box = element.getBoundingClientRect();
+    const parent = element.parentElement.getBoundingClientRect();
+    if (box.width > 0 && box.right > innerWidth + 1 && parent.right <= innerWidth + 1 && !held(element)) {
+      problems.push("runs past the edge: <" + element.tagName.toLowerCase() + "> " + (element.textContent || "").trim().slice(0, 40));
+    }
+  }
   for (const element of document.querySelectorAll("a, button, summary")) {
     if (element.closest("p, li, td, .prose, h2")) continue;
     const box = element.getBoundingClientRect();
-    if (box.width === 0 || getComputedStyle(element).visibility === "hidden") continue;
+    // Not shown: hidden, or visually hidden until focused (the skip link).
+    if (box.width <= 1 || getComputedStyle(element).visibility === "hidden") continue;
     if (box.height < ${MIN_TAP}) problems.push("tap target " + Math.round(box.height) + " px high: " + element.textContent.trim().slice(0, 40));
   }
   return problems;
@@ -228,7 +277,71 @@ const PROBLEMS = `(() => {
 
 const failures: string[] = [];
 
+/** The site menu's state: whether it's open, and the page's path. */
+const MENU_STATE = `[document.querySelector('nav[aria-label="Site"] details').open, location.pathname]`;
+const OPEN_MENU = `document.querySelector('nav[aria-label="Site"] summary').click()`;
+
+/**
+ * At phone width, the menu closes on Escape, on a press outside it, and when
+ * a link in it navigates. Returns what didn't happen.
+ */
+async function menuProblems(cdp: Cdp): Promise<string[]> {
+  await cdp.send("Emulation.setDeviceMetricsOverride", {
+    width: PHONE,
+    height: VIEWPORT_HEIGHT,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  await cdp.send("Page.navigate", { url: `${origin}/docs` });
+  await evaluate(cdp, SETTLE);
+  await sleep(SETTLE_MS);
+  const steps = [
+    ["Escape", `document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))`, "/docs"],
+    [
+      "a press outside",
+      `document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))`,
+      "/docs",
+    ],
+    [
+      "a link",
+      `document.querySelector('nav[aria-label="Site"] details a[href="/changelog"]').click()`,
+      "/changelog",
+    ],
+  ] as const;
+  const problems: string[] = [];
+  for (const [what, action, path] of steps) {
+    await evaluate(cdp, OPEN_MENU);
+    const opened = await evaluate(cdp, MENU_STATE);
+    await evaluate(cdp, action);
+    await sleep(SETTLE_MS);
+    const after = await evaluate(cdp, MENU_STATE);
+    if (
+      JSON.stringify(opened) !== JSON.stringify([true, path === "/changelog" ? "/docs" : path]) ||
+      JSON.stringify(after) !== JSON.stringify([false, path])
+    ) {
+      problems.push(
+        `The phone menu doesn't close on ${what}: open ${JSON.stringify(opened)}, then ${JSON.stringify(after)}`,
+      );
+    }
+  }
+  return problems;
+}
+
 let port: string | undefined;
+
+/** Ends the run on Ctrl-C, a signal or a hang, after the same cleanup as a normal end. */
+function stop(reason: string): void {
+  console.error(reason);
+  // oxlint-disable-next-line typescript/no-floating-promises -- a signal handler or timer has no caller to await; it exits once cleanup is done
+  cleanUp(port).finally(() => process.exit(EXIT_INTERRUPTED));
+}
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+  process.once(signal, () => stop(`Stopped by ${signal}.`));
+}
+const hung = setTimeout(
+  () => stop(`Gave up after ${RUN_TIMEOUT_MS / MS_PER_SECOND} s.`),
+  RUN_TIMEOUT_MS,
+);
 const [, error] = await tryCatch(async () => {
   port = await devToolsPort();
   const targets: unknown = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
@@ -256,6 +369,17 @@ const [, error] = await tryCatch(async () => {
       await evaluate(cdp, SETTLE);
       await sleep(SETTLE_MS);
       const problems = await evaluate(cdp, PROBLEMS);
+      if (MISSING.includes(path)) {
+        const shown = await evaluate(
+          cdp,
+          `[document.querySelectorAll('nav[aria-label="Site"]').length, (document.body.innerText.match(/This page flew off\\./g) ?? []).length, document.body.innerText.includes("Something went wrong")]`,
+        );
+        if (JSON.stringify(shown) !== "[1,1,false]") {
+          failures.push(
+            `${path} at ${width} px: expected one site nav and one not-found heading, got ${JSON.stringify(shown)}`,
+          );
+        }
+      }
       for (const problem of Array.isArray(problems) ? problems : []) {
         failures.push(`${path} at ${width} px: ${String(problem)}`);
       }
@@ -270,8 +394,10 @@ const [, error] = await tryCatch(async () => {
       writeFileSync(join(out, `${name}-${width}.png`), Buffer.from(String(data), "base64"));
     }
   }
+  failures.push(...(await menuProblems(cdp)));
   cdp.close();
 });
+clearTimeout(hung);
 await cleanUp(port);
 if (error !== null) {
   console.error(errorText(error));

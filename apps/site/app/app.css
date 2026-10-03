@@ -26,6 +26,11 @@
   body {
     @apply bg-paper font-sans text-base/relaxed text-ink;
   }
+  /* A keyboard user always sees where they are. */
+  :focus-visible {
+    outline: 3px solid var(--color-orange);
+    outline-offset: 2px;
+  }
 }
 
 /* The beak's bands (cream, amber, orange, black) at a slant, as on the icon. */
@@ -86,14 +91,15 @@
   & a {
     @apply font-semibold underline decoration-amber decoration-2 underline-offset-2;
   }
+  /* Long hashes and paths wrap anywhere rather than run off a phone's screen. */
   & code {
-    @apply rounded bg-cream px-1.5 py-0.5 font-mono text-[0.9em];
+    @apply rounded bg-cream px-1.5 py-0.5 font-mono text-[0.9em] [overflow-wrap:anywhere];
   }
   & pre {
     @apply overflow-x-auto rounded-xl bg-ink p-4 text-sm text-cream;
   }
   & pre code {
-    @apply bg-transparent p-0 text-inherit;
+    @apply bg-transparent p-0 text-inherit [overflow-wrap:normal];
   }
   & img {
     @apply my-6 w-full rounded-xl border-2 border-ink;

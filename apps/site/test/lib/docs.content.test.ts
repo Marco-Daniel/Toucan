@@ -9,6 +9,7 @@ import { renderMarkdown } from "../../app/lib/markdown.util.ts";
 
 // import consts
 import { SCREENSHOT_URLS } from "../../app/lib/brand.assets.ts";
+import { DOCS_IMAGES } from "../../app/lib/screenshots.server.ts";
 import { DOCS_PAGES } from "../../app/lib/docs.consts.ts";
 
 const CONTENT = new URL("../../content/docs/", import.meta.url);
@@ -19,9 +20,7 @@ const rendered = new Map(
     const found = docsPage(slug);
     return [
       docsPath(slug),
-      found === undefined
-        ? ""
-        : renderMarkdown({ markdown: found.markdown, images: SCREENSHOT_URLS }),
+      found === undefined ? "" : renderMarkdown({ markdown: found.markdown, images: DOCS_IMAGES }),
     ];
   }),
 );
@@ -63,7 +62,7 @@ describe("the docs content", () => {
 
   it("shows each README screenshot it uses at the build's URL", () => {
     expect(rendered.get("/docs/sidebar")).toContain(
-      `<img src="${SCREENSHOT_URLS["sidebar-muted.png"]}"`,
+      `<img src="${SCREENSHOT_URLS["sidebar-muted.png"]}" alt="The sidebar block in muted style: a faint tint, the glyph in the repository color and the name in the theme&#39;s text color" width="825" height="495"`,
     );
   });
 });

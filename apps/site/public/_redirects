@@ -1,0 +1,3 @@
+# Any path the site doesn't have: the SPA fallback, with a 404 status. Real
+# files always win, since the rule isn't forced.
+/*  /__spa-fallback.html  404

@@ -37,7 +37,7 @@ export function meta() {
 
 export default function Changelog({ loaderData }: Route.ComponentProps) {
   return (
-    <main className="mx-auto max-w-[820px] px-4 py-12 sm:px-6 md:py-16">
+    <div className="mx-auto max-w-[820px] px-4 py-12 sm:px-6 md:py-16">
       <h1 className="beak-marker text-4xl font-extrabold tracking-tight sm:text-5xl">Changelog</h1>
       <p className="mt-3 text-lg text-muted">
         Every release, from its notes on{" "}
@@ -57,6 +57,6 @@ export default function Changelog({ loaderData }: Route.ComponentProps) {
           <BuildMarkup className="prose" html={html} />
         </section>
       ))}
-    </main>
+    </div>
   );
 }

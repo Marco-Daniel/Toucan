@@ -17,3 +17,8 @@ interface IsCurrentPathArgs {
 export function isCurrentPath({ pathname, path }: IsCurrentPathArgs): boolean {
   return pathname.replace(/(?<=.)\/$/, "") === path;
 }
+
+/** Whether a slug names a docs page under /docs; the first page is /docs itself, not /docs/<its slug>. */
+export function isDocsSlug(slug: string): boolean {
+  return DOCS_PAGES.slice(1).some((page) => page.slug === slug);
+}

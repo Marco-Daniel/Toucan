@@ -1,7 +1,7 @@
 // import consts
 import { BRAND_PRESETS } from "@toucan/brand/presets.consts.ts";
 
-/** The 16 presets, each as a swatch with its name and hex. */
+/** The presets, each as a swatch with its name and hex. */
 export function Palette() {
   return (
     <ul className="grid grid-cols-2 gap-3 min-[420px]:grid-cols-4 lg:grid-cols-8">

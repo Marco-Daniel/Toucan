@@ -16,10 +16,14 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { errorText, tryCatch } from "../../extension/src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../extension/src/shared/records/records.util.ts";
 
-export const NETLIFY_API = "https://api.netlify.com/api/v1";
+const NETLIFY_API = "https://api.netlify.com/api/v1";
 const POLL_MS = 2000;
 const TIMEOUT_MS = 300_000;
 const MS_PER_SECOND = 1000;
+/** One request's limit, so a stalled connection fails the step instead of holding it. */
+const REQUEST_TIMEOUT_MS = 60_000;
+/** Files the site can't go live without (the home page, and the fallback every unknown path gets): a deploy missing one is a broken build. */
+const REQUIRED_PAGES = ["/index.html", "/__spa-fallback.html", "/_redirects"];
 
 /** A file to deploy: its site path ("/docs/index.html"), its bytes' SHA-1 and where to read it. */
 export interface DeployFile {
@@ -118,6 +122,10 @@ export async function deploy({
   timeoutMs = TIMEOUT_MS,
   log = console.log,
 }: DeployArgs): Promise<DeployStatus> {
+  const missing = REQUIRED_PAGES.filter((page) => !files.some(({ path }) => path === page));
+  if (missing.length > 0) {
+    throw new Error(`Refusing to deploy a build without ${missing.join(" and ")}`);
+  }
   const created = await netlify.createDeploy(
     Object.fromEntries(files.map(({ path, sha1 }) => [path, sha1])),
   );
@@ -128,16 +136,18 @@ export async function deploy({
   }
   const deadline = now() + timeoutMs;
   for (;;) {
-    const status = await netlify.getDeploy(created.id);
-    if (status.state === "ready") {
+    // A failed poll is retried until the deadline: the deploy may be fine.
+    const [status, error] = await tryCatch(() => netlify.getDeploy(created.id));
+    if (status?.state === "ready") {
       return status;
     }
-    if (status.state === "error") {
+    if (status?.state === "error") {
       throw new Error(`Deploy ${created.id} failed: ${status.errorMessage ?? "no reason given"}`);
     }
     if (now() >= deadline) {
+      const last = error === null ? `still ${status.state}` : `status unknown: ${errorText(error)}`;
       throw new Error(
-        `Deploy ${created.id} wasn't ready after ${timeoutMs / MS_PER_SECOND} s (still ${status.state})`,
+        `Deploy ${created.id} wasn't ready after ${timeoutMs / MS_PER_SECOND} s (${last})`,
       );
     }
     await wait(pollMs);
@@ -171,6 +181,21 @@ export function redact({ text, token }: RedactArgs): string {
   return token === "" ? text : text.replaceAll(token, "[redacted]");
 }
 
+interface AnswerJsonArgs {
+  response: Response;
+  /** The method and endpoint, for the error. */
+  call: string;
+}
+
+/** An answer's JSON; a body that isn't JSON fails without being quoted. */
+async function answerJson({ response, call }: AnswerJsonArgs): Promise<unknown> {
+  const [data, error] = await tryCatch((): Promise<unknown> => response.json());
+  if (error !== null) {
+    throw new Error(`Netlify ${call} answered with something that isn't JSON`);
+  }
+  return data;
+}
+
 interface NetlifyApiArgs {
   token: string;
   siteId: string;
@@ -187,6 +212,7 @@ export function netlifyApi({ token, siteId, fetchFn = fetch }: NetlifyApiArgs): 
       fetchFn(`${NETLIFY_API}${endpoint}`, {
         method,
         headers: { authorization: `Bearer ${token}`, "content-type": contentType },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         ...(method === "GET" ? {} : { body }),
       }),
     );
@@ -208,7 +234,7 @@ export function netlifyApi({ token, siteId, fetchFn = fetch }: NetlifyApiArgs): 
         JSON.stringify({ files: digests }),
         "application/json",
       );
-      return deployStatus(await response.json());
+      return deployStatus(await answerJson({ response, call: `POST /sites/${siteId}/deploys` }));
     },
     uploadFile: async ({ deployId, path, bytes }) => {
       const encoded = path.split("/").map(encodeURIComponent).join("/");
@@ -227,7 +253,9 @@ export function netlifyApi({ token, siteId, fetchFn = fetch }: NetlifyApiArgs): 
         "",
         "application/json",
       );
-      return deployStatus(await response.json());
+      return deployStatus(
+        await answerJson({ response, call: `GET /deploys/${encodeURIComponent(deployId)}` }),
+      );
     },
   };
 }

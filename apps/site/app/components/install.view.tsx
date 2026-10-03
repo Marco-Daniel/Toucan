@@ -9,7 +9,8 @@ interface InstallProps {
 }
 
 const cardClass = "flex min-w-0 flex-col rounded-2xl border-2 border-ink bg-white p-6";
-const codeClass = "mt-3 block overflow-x-auto rounded-lg bg-ink px-3 py-2.5 text-[13px] text-cream";
+const codeClass =
+  "mt-3 block overflow-x-auto rounded-lg bg-ink px-3 py-2.5 text-[13px] whitespace-nowrap text-cream";
 
 /** Where to get Toucan: the stores are coming (website/0013), the GitHub release is here now. */
 export function Install({ version, releaseUrl }: InstallProps) {

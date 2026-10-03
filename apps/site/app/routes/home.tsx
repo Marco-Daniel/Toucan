@@ -12,6 +12,8 @@ import { Section } from "../components/section.view.tsx";
 
 // import consts
 import { screenshotUrl } from "../lib/brand.assets.ts";
+import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
+import { BRAND_PRESETS } from "@toucan/brand/presets.consts.ts";
 import { RELEASES_URL } from "../lib/site.consts.ts";
 
 // import types
@@ -36,7 +38,7 @@ export function meta() {
 export default function Home({ loaderData }: Route.ComponentProps) {
   const { version, releaseUrl } = loaderData;
   return (
-    <main>
+    <div>
       <Hero />
       <Section
         title="Three windows, three colors."
@@ -59,14 +61,14 @@ export default function Home({ loaderData }: Route.ComponentProps) {
       <Section
         id="glyphs"
         tone="dark"
-        title="17 glyphs, drawn for 16 pixels."
+        title={`${GLYPHS.length} glyphs, drawn for 16 pixels.`}
         lead="Every glyph is drawn in Toucan's own font, sized for the status bar and readable on dark and light themes."
       >
         <GlyphShowcase />
       </Section>
       <Section
         title="A palette from the toucan."
-        lead="Sixteen presets taken from the bird's beak, plumage and jungle. Or type any CSS color."
+        lead={`${BRAND_PRESETS.length} presets taken from the bird's beak, plumage and jungle. Or type any CSS color.`}
       >
         <Palette />
       </Section>
@@ -74,7 +76,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         id="install"
         tone="cream"
         title="Install"
-        lead="Toucan isn't in the extension stores yet: install it from a GitHub release. Then run Toucan: Set Color from the Command Palette."
+        lead="Toucan isn't in the extension stores yet: install it from a GitHub release. Then run Toucan: Set Color for This Repo from the Command Palette."
       >
         {version === undefined ? (
           <p>
@@ -84,6 +86,6 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <Install version={version} releaseUrl={releaseUrl} />
         )}
       </Section>
-    </main>
+    </div>
   );
 }

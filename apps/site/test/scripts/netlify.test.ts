@@ -26,8 +26,8 @@ import type {
 const FILES: DeployFile[] = [
   { path: "/index.html", sha1: "a1", file: "/b/index.html" },
   { path: "/docs/index.html", sha1: "b2", file: "/b/docs/index.html" },
-  { path: "/404.html", sha1: "c3", file: "/b/404.html" },
-  { path: "/404/index.html", sha1: "c3", file: "/b/404/index.html" },
+  { path: "/__spa-fallback.html", sha1: "c3", file: "/b/__spa-fallback.html" },
+  { path: "/_redirects", sha1: "c3", file: "/b/_redirects" },
 ];
 
 let dir: string;
@@ -87,7 +87,7 @@ describe("isInsideBuild", () => {
 describe("uploadPlan", () => {
   it("uploads each requested digest once, from a file that has it", () => {
     expect(uploadPlan({ files: FILES, required: ["c3", "a1"] }).map(({ path }) => path)).toEqual([
-      "/404.html",
+      "/__spa-fallback.html",
       "/index.html",
     ]);
   });
@@ -105,6 +105,8 @@ describe("uploadPlan", () => {
 
 interface FakeArgs {
   required: string[];
+  /** How many polls fail before getDeploy answers. */
+  failedPolls?: number;
   /** The states getDeploy reports, in turn; the last one repeats. */
   states: string[];
   failUpload?: string;
@@ -112,7 +114,7 @@ interface FakeArgs {
 }
 
 /** A Netlify that records what it was sent and answers as seeded. */
-function fakeNetlify({ required, states, failUpload, errorMessage }: FakeArgs) {
+function fakeNetlify({ required, states, failUpload, errorMessage, failedPolls = 0 }: FakeArgs) {
   const calls: string[] = [];
   let polls = 0;
   const netlify: NetlifyPort = {
@@ -127,6 +129,11 @@ function fakeNetlify({ required, states, failUpload, errorMessage }: FakeArgs) {
         : Promise.resolve();
     },
     getDeploy: (deployId) => {
+      if (polls < failedPolls) {
+        polls++;
+        calls.push(`poll ${deployId} failed`);
+        return Promise.reject(new Error("Netlify GET /deploys/d1 answered 502"));
+      }
       const state = states[Math.min(polls, states.length - 1)] ?? "ready";
       polls++;
       calls.push(`poll ${deployId} ${state}`);
@@ -174,9 +181,11 @@ describe("deploy", () => {
 
   it("reads the files from disk by default, and says how much it uploads", async () => {
     writeFileSync(join(dir, "index.html"), "home");
-    const [file] = listFiles(dir);
+    writeFileSync(join(dir, "__spa-fallback.html"), "gone");
+    writeFileSync(join(dir, "_redirects"), "rules");
+    // SHA-1 of "home".
     const { netlify, calls } = fakeNetlify({
-      required: file === undefined ? [] : [file.sha1],
+      required: ["e83249bd3ba79932e16fb1fb5100dafade9954c2"],
       states: ["ready"],
     });
     const logged: string[] = [];
@@ -186,8 +195,51 @@ describe("deploy", () => {
       ...fakeClock(),
       log: (message) => logged.push(message),
     });
-    expect(calls).toEqual(["create 1", "upload d1 /index.html home", "poll d1 ready"]);
-    expect(logged).toEqual(["Deploy d1: 1 files, 1 to upload"]);
+    expect(calls).toEqual(["create 3", "upload d1 /index.html home", "poll d1 ready"]);
+    expect(logged).toEqual(["Deploy d1: 3 files, 1 to upload"]);
+  });
+
+  it("refuses a build without its home page or 404 page, before creating a deploy", async () => {
+    const { netlify, calls } = fakeNetlify({ required: [], states: ["ready"] });
+    const files = FILES.filter(({ path }) => path !== "/_redirects");
+    await expect(deploy({ files, netlify, read, ...fakeClock(), log: quiet })).rejects.toThrow(
+      "Refusing to deploy a build without /_redirects",
+    );
+    await expect(
+      deploy({ files: files.slice(1), netlify, read, ...fakeClock(), log: quiet }),
+    ).rejects.toThrow("Refusing to deploy a build without /index.html and /_redirects");
+    expect(calls).toEqual([]);
+  });
+
+  it("retries a poll that fails, since the deploy itself may be fine", async () => {
+    const { netlify, calls } = fakeNetlify({ required: [], states: ["ready"], failedPolls: 2 });
+    const status = await deploy({
+      files: FILES,
+      netlify,
+      read,
+      ...fakeClock(),
+      pollMs: 1000,
+      log: quiet,
+    });
+    expect(status.state).toBe("ready");
+    expect(calls).toEqual(["create 4", "poll d1 failed", "poll d1 failed", "poll d1 ready"]);
+  });
+
+  it("says the status is unknown when every poll until the deadline failed", async () => {
+    const { netlify } = fakeNetlify({ required: [], states: ["ready"], failedPolls: 99 });
+    await expect(
+      deploy({
+        files: FILES,
+        netlify,
+        read,
+        ...fakeClock(),
+        pollMs: 1000,
+        timeoutMs: 3000,
+        log: quiet,
+      }),
+    ).rejects.toThrow(
+      "Deploy d1 wasn't ready after 3 s (status unknown: Error: Netlify GET /deploys/d1 answered 502)",
+    );
   });
 
   it("stops before polling when an upload fails, so a partial deploy never goes live", async () => {
@@ -380,6 +432,25 @@ describe("netlifyApi", () => {
     await expect(
       netlifyApi({ token: TOKEN, siteId: "site-1", fetchFn }).getDeploy("d1"),
     ).rejects.toThrow(/^Netlify GET \/deploys\/d1 answered 401$/);
+  });
+
+  it("fails on an answer that isn't JSON without quoting it", async () => {
+    const { fetchFn } = fakeFetch([new Response(`<html>${TOKEN}</html>`, { status: 200 })]);
+    const failure = netlifyApi({ token: TOKEN, siteId: "site-1", fetchFn }).getDeploy("d1");
+    await expect(failure).rejects.toThrow(
+      /^Netlify GET \/deploys\/d1 answered with something that isn't JSON$/,
+    );
+  });
+
+  it("gives every request a timeout", async () => {
+    const signals: unknown[] = [];
+    const fetchFn = ((_url: string, init: RequestInit) => {
+      signals.push(init.signal);
+      return Promise.resolve(Response.json({ id: "d1", state: "ready" }));
+    }) as typeof fetch;
+    await netlifyApi({ token: TOKEN, siteId: "site-1", fetchFn }).getDeploy("d1");
+    expect(signals).toHaveLength(1);
+    expect(signals[0]).toBeInstanceOf(AbortSignal);
   });
 
   it("redacts the token from a network error that echoes it", async () => {

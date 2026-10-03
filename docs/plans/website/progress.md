@@ -6,7 +6,7 @@
 
 ## 2026-10-03: PR 3, the site and its deploy (implementer)
 
-- `apps/site`: React Router framework mode, pre-rendered with `ssr: false`: the landing page to the approved mockup, eight docs pages from `content/docs/*.md`, the changelog from the GitHub releases with `content/releases.json` as its fallback, and a 404 page copied to `404.html`. Tailwind takes the brand's colors as CSS variables rendered from `@toucan/brand`.
+- `apps/site`: React Router framework mode, pre-rendered with `ssr: false`: the landing page to the approved mockup, eight docs pages from `content/docs/*.md`, the changelog from the GitHub releases with `content/releases.json` as its fallback, and a not-found page: Netlify serves the SPA fallback for any unknown path (`public/_redirects`), which renders it. Tailwind takes the brand's colors as CSS variables rendered from `@toucan/brand`.
 - Checks: `check:pages` (in CI) checks every built page's meta, links, anchors and ids. `screenshots` captures every page at 390, 768 and 1280 px and fails on sideways scroll or tap targets under 44 px.
 - The social card is `public/og-image.png`, generated from `assets/og-card.svg` and the brand icon, with a staleness check in `check:generated`.
 - Deploy: `.github/workflows/deploy.yml` with our own `scripts/deploy.mts` (0010, amendment).

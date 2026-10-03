@@ -12,7 +12,12 @@ import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
 import { SITE_URL } from "../app/lib/site.consts.ts";
 
 const CLIENT = new URL("../build/client/", import.meta.url).pathname;
-const OG_IMAGE = `${SITE_URL}/og-image.png`.replaceAll(".", "\\.");
+/** Text as a regular expression that matches exactly it. */
+function literal(text: string): string {
+  return text.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+}
+const SITE = literal(SITE_URL);
+const OG_IMAGE = `${SITE}/og-image\\.png`;
 
 /** A page's built file: /path → path/index.html. */
 function pageFile(path: string): string {
@@ -36,7 +41,7 @@ function pageProblems({ path, html, pages }: PageProblemsArgs): string[] {
   };
   need("title", /<title>[^<]+<\/title>/g);
   need("description", /<meta name="description" content="[^"]+"/g);
-  need("canonical URL", new RegExp(`<link rel="canonical" href="${SITE_URL}${path}"`, "g"));
+  need("canonical URL", new RegExp(`<link rel="canonical" href="${SITE}${literal(path)}"`, "g"));
   need("Open Graph image", new RegExp(`<meta property="og:image" content="${OG_IMAGE}"`, "g"));
   need(
     "Open Graph image size",
@@ -84,8 +89,20 @@ for (const [path, html] of pages) {
 if (!existsSync(join(CLIENT, "og-image.png"))) {
   problems.push("og-image.png, every page's card, isn't in the build");
 }
-if (readFileSync(join(CLIENT, "404.html"), "utf8") !== pages.get("/404")) {
-  problems.push("404.html isn't the /404 page");
+// Netlify serves the SPA fallback, with a 404 status, for any path the site doesn't have.
+if (
+  readFileSync(join(CLIENT, "_redirects"), "utf8").match(
+    /^\/\*\s+\/__spa-fallback\.html\s+404$/m,
+  ) === null
+) {
+  problems.push("_redirects doesn't send unknown paths to the SPA fallback with a 404");
+}
+const fallback = readFileSync(join(CLIENT, "__spa-fallback.html"), "utf8");
+if (
+  !fallback.includes("This page flew off.") ||
+  !fallback.includes('<meta name="robots" content="noindex"/>')
+) {
+  problems.push("The SPA fallback doesn't show the not-found page, unindexed");
 }
 
 if (problems.length > 0) {

@@ -11,6 +11,6 @@ export default [
     route(":slug", "routes/docsPage.tsx", { id: "docs-page" }),
   ]),
   route("changelog", "routes/changelog.tsx"),
-  // Pre-rendered once; the build copies it to 404.html, which Netlify serves for any unknown path.
-  route("404", "routes/notFound.tsx"),
+  // Any other path: Netlify serves the SPA fallback for it (public/_redirects), which renders this.
+  route("*", "routes/notFound.tsx"),
 ] satisfies RouteConfig;

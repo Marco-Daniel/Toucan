@@ -4,6 +4,9 @@ import { Link, Outlet, useLocation } from "react-router";
 // import utils
 import { docsPath, isCurrentPath } from "../lib/docs.util.ts";
 
+// import views
+import { Disclosure } from "../components/disclosure.view.tsx";
+
 // import consts
 import { DOCS_PAGES } from "../lib/docs.consts.ts";
 
@@ -32,14 +35,15 @@ export default function Docs() {
   return (
     <div className="mx-auto grid max-w-[1120px] gap-8 px-4 py-12 sm:px-6 md:grid-cols-[220px_minmax(0,1fr)] md:gap-12 md:py-16">
       <aside className="md:sticky md:top-24 md:self-start">
-        <details className="rounded-xl border-2 border-ink md:hidden">
-          <summary className="flex min-h-11 cursor-pointer items-center px-4 font-bold">
-            Docs pages
-          </summary>
+        <Disclosure
+          className="rounded-xl border-2 border-ink md:hidden"
+          summaryClassName="flex min-h-11 cursor-pointer items-center px-4 font-bold"
+          summary="Docs pages"
+        >
           <nav className="px-2 pb-2" aria-label="Docs">
             <DocsLinks />
           </nav>
-        </details>
+        </Disclosure>
         <nav className="hidden md:block" aria-label="Docs">
           <DocsLinks />
         </nav>

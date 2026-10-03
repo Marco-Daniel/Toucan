@@ -1,14 +1,16 @@
 // Markdown to HTML for the docs pages and the changelog, at build time. Raw
 // HTML in the source is shown as text, links only go to http(s), mailto or
-// within the site, and images must be README screenshots the build knows, so
-// neither the docs nor a release note can put markup or scripts on a page.
+// within the site, and an image is either a README screenshot the build knows
+// (the docs) or a link to the image (a release note), so neither can put
+// markup or scripts on a page.
 // import libraries
 import { Marked } from "marked";
 
 // import types
 import type { Tokens } from "marked";
 
-const SAFE_HREF = /^(?:https?:|mailto:|\/|#)/i;
+/** Links that stay on the web or on this site; `//host` would leave it under the page's scheme. */
+const SAFE_HREF = /^(?:https?:|mailto:|\/(?!\/)|#)/i;
 
 /** The id GitHub gives a heading: lower case, punctuation dropped, spaces as dashes. */
 export function headingId(text: string): string {
@@ -30,10 +32,20 @@ export function escapeHtml(text: string): string {
     .replaceAll("'", "&#39;");
 }
 
+/** An image the markdown may show: its URL in the built site, and its size. */
+export interface MarkdownImage {
+  src: string;
+  width: number;
+  height: number;
+}
+
 interface RenderMarkdownArgs {
   markdown: string;
-  /** The URL of each image the markdown may show, by file name. */
-  images?: Readonly<Record<string, string>>;
+  /**
+   * The URL of each image the markdown may show, by file name; any other
+   * image fails the build. Without it, an image becomes a link to it.
+   */
+  images?: Readonly<Record<string, MarkdownImage>>;
   /** Put before every heading id, for several documents on one page. */
   idPrefix?: string;
   /** Levels every heading moves down, for a document under a page's own headings. */
@@ -46,7 +58,7 @@ const DEEPEST_HEADING = 6;
 /** The markdown as HTML. Throws on an image it doesn't know, so a broken image fails the build. */
 export function renderMarkdown({
   markdown,
-  images = {},
+  images,
   idPrefix = "",
   headingShift = 0,
 }: RenderMarkdownArgs): string {
@@ -66,11 +78,16 @@ export function renderMarkdown({
         return SAFE_HREF.test(href) ? `<a href="${escapeHtml(href)}">${inner}</a>` : inner;
       },
       image({ href, text }: Tokens.Image): string {
-        const url = images[href];
-        if (url === undefined) {
+        if (images === undefined) {
+          return SAFE_HREF.test(href)
+            ? `<a href="${escapeHtml(href)}">${escapeHtml(text)}</a>`
+            : escapeHtml(text);
+        }
+        const image = images[href];
+        if (image === undefined) {
           throw new Error(`Unknown image in markdown: ${href}`);
         }
-        return `<img src="${escapeHtml(url)}" alt="${escapeHtml(text)}" loading="lazy">`;
+        return `<img src="${escapeHtml(image.src)}" alt="${escapeHtml(text)}" width="${image.width}" height="${image.height}" loading="lazy">`;
       },
     },
   });

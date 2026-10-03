@@ -65,7 +65,7 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 
 ### Generated files
 
-`src/generated/`, the glyph font and the extension icon in `apps/extension`, and the glyph SVGs in `packages/brand/assets/glyphs/`, are written only by the extension's `gen`, `font` and `icon` scripts, never by hand. `check:generated` regenerates them and fails if the result differs from what's committed, and CI runs it.
+`src/generated/`, the glyph font and the extension icon in `apps/extension`, and the glyph SVGs in `packages/brand/assets/glyphs/`, are written only by the extension's `gen`, `font` and `icon` scripts, never by hand. The site's social media card, `apps/site/public/og-image.png`, is written only by its `og-image` script. Each package's `check:generated` regenerates its files and fails if the result differs from what's committed; CI runs `pnpm turbo run check:generated` for all of them.
 
 ### Mutation testing
 

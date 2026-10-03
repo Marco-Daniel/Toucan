@@ -19,6 +19,9 @@ export interface Release {
 export const RELEASES_API =
   "https://api.github.com/repos/Marco-Daniel/Toucan/releases?per_page=100";
 
+/** One request's limit, so a stalled GitHub falls back to the snapshot instead of holding the build. */
+const REQUEST_TIMEOUT_MS = 20_000;
+
 /** One release from the GitHub API, or the snapshot's form; undefined for a draft, a pre-release or a malformed entry. */
 function releaseFrom(entry: unknown): Release | undefined {
   if (!isRecord(entry) || entry["draft"] === true || entry["prerelease"] === true) {
@@ -83,6 +86,7 @@ export async function fetchGitHubReleases({
   fetchFn = fetch,
 }: FetchGitHubReleasesArgs = {}): Promise<unknown> {
   const response = await fetchFn(RELEASES_API, {
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     headers: {
       accept: "application/vnd.github+json",
       ...(token === undefined || token === "" ? {} : { authorization: `Bearer ${token}` }),
@@ -91,5 +95,10 @@ export async function fetchGitHubReleases({
   if (!response.ok) {
     throw new Error(`GitHub answered ${response.status}`);
   }
-  return response.json();
+  // A body that isn't JSON fails without being quoted.
+  const [data, error] = await tryCatch((): Promise<unknown> => response.json());
+  if (error !== null) {
+    throw new Error("GitHub answered with something that isn't JSON");
+  }
+  return data;
 }

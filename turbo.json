@@ -34,6 +34,45 @@
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/LICENSE"],
       "outputs": []
     },
+    // The site also reads the extension's media and imports its shared helpers by path.
+    // Its build is never cached: the changelog comes from GitHub at build time.
+    "@toucan/site#build": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    // React Router's generated route types, which lint and typecheck both read:
+    // written once, before either, so they never race over the folder.
+    "@toucan/site#typegen": {
+      "inputs": ["$TURBO_DEFAULT$"],
+      "outputs": [".react-router/**"]
+    },
+    "@toucan/site#lint": {
+      "dependsOn": ["^lint", "typegen"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/extension/media/**",
+        "$TURBO_ROOT$/apps/extension/src/shared/**"
+      ],
+      "outputs": []
+    },
+    "@toucan/site#typecheck": {
+      "dependsOn": ["^typecheck", "typegen"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/extension/media/**",
+        "$TURBO_ROOT$/apps/extension/src/shared/**"
+      ],
+      "outputs": []
+    },
+    "@toucan/site#test": {
+      "dependsOn": ["^test"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/extension/media/**",
+        "$TURBO_ROOT$/apps/extension/src/shared/**"
+      ],
+      "outputs": []
+    },
     // Regenerates files and compares them with git: never cached.
     "check:generated": {
       "cache": false

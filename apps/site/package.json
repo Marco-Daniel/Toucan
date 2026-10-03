@@ -7,9 +7,9 @@
   "type": "module",
   "scripts": {
     "dev": "react-router dev",
-    "build": "react-router build && node scripts/not-found-page.mts",
-    "typecheck": "react-router typegen && tsc --noEmit",
-    "lint": "react-router typegen && oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",
+    "build": "react-router build",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",
     "test": "vitest run",
     "releases:snapshot": "node scripts/snapshot-releases.mts",
     "screenshots": "node scripts/screenshots.mts",
@@ -17,7 +17,8 @@
     "deploy:netlify": "node scripts/deploy.mts",
     "mutate": "node ../../scripts/mutate-cli.mts",
     "og-image": "node scripts/og-image.mts",
-    "check:generated": "node scripts/og-image.mts --check"
+    "check:generated": "node scripts/og-image.mts --check",
+    "typegen": "react-router typegen"
   },
   "dependencies": {
     "@react-router/node": "^8.4.0",

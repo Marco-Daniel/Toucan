@@ -3,7 +3,7 @@ import { Link } from "react-router";
 
 export function NotFound() {
   return (
-    <main className="mx-auto max-w-[1120px] px-4 py-24 sm:px-6">
+    <div className="mx-auto max-w-[1120px] px-4 py-24 sm:px-6">
       <h1 className="beak-marker text-4xl font-extrabold tracking-tight sm:text-5xl">
         This page flew off.
       </h1>
@@ -24,6 +24,6 @@ export function NotFound() {
           Docs
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

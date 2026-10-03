@@ -2,6 +2,7 @@
 import { Link } from "react-router";
 
 // import views
+import { Disclosure } from "./disclosure.view.tsx";
 import { Logo } from "./logo.view.tsx";
 
 // import consts
@@ -43,10 +44,11 @@ export function SiteNav() {
             GitHub
           </a>
         </div>
-        <details className="relative ml-auto md:hidden">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center rounded-lg border-2 border-ink px-3 font-bold">
-            Menu
-          </summary>
+        <Disclosure
+          className="relative ml-auto md:hidden"
+          summaryClassName="flex min-h-11 cursor-pointer list-none items-center rounded-lg border-2 border-ink px-3 font-bold"
+          summary="Menu"
+        >
           <div className="absolute right-0 mt-2 flex w-48 flex-col rounded-xl border-2 border-ink bg-paper py-1 shadow-[4px_4px_0_var(--color-amber)]">
             {LINKS.map(({ label, to }) => (
               <Link key={to} to={to} className="min-h-11 px-4 py-2.5 font-semibold">
@@ -57,7 +59,7 @@ export function SiteNav() {
               GitHub
             </a>
           </div>
-        </details>
+        </Disclosure>
         <Link
           to="/#install"
           className="inline-flex min-h-11 items-center rounded-[10px] border-2 border-ink bg-ink px-3.5 text-sm font-bold text-cream md:ml-0"

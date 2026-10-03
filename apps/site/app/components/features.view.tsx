@@ -6,31 +6,40 @@ import { presetHex } from "../lib/presets.util.ts";
 
 // import consts
 import { screenshotUrl } from "../lib/brand.assets.ts";
+import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
+import { BRAND_PRESETS } from "@toucan/brand/presets.consts.ts";
 
 interface Feature {
   title: string;
   text: string;
   screenshot: string;
-  /** A thin strip: zoomed onto its Command Center instead of shown whole (website/0011). */
-  isStrip: boolean;
+  /**
+   * A wide screenshot shown zoomed onto its point instead of whole: the image's
+   * width and left offset, as percentages of the card (website/0011).
+   */
+  zoom?: { width: string; left: string };
   tag: string;
   docs: string;
 }
+
+/** The Command Center sits in the middle of its thin title-bar strip. */
+const COMMAND_CENTER_ZOOM = { width: "270%", left: "-82%" };
 
 const FEATURES: readonly Feature[] = [
   {
     title: "Command Center",
     text: "The search bar at the top takes the repo's color, with a readable text color worked out for you.",
     screenshot: "command-center.png",
-    isStrip: true,
+    zoom: COMMAND_CENTER_ZOOM,
     tag: presetHex("Tropical Pink"),
     docs: "/docs/colors",
   },
   {
     title: "Status bar glyph",
-    text: "A small glyph in the repo's color, from 17 hand-drawn shapes, sits next to the repo name.",
+    text: `A small glyph in the repo's color, from ${GLYPHS.length} hand-drawn shapes, sits next to the repo name.`,
     screenshot: "status-bar.png",
-    isStrip: false,
+    // The status bar item's hover card, with its links, fills the left of the shot.
+    zoom: { width: "340%", left: "0%" },
     tag: presetHex("Canopy Teal"),
     docs: "/docs/glyphs",
   },
@@ -38,15 +47,13 @@ const FEATURES: readonly Feature[] = [
     title: "Sidebar block",
     text: "Optionally fill the secondary sidebar with the color, full or muted. Toucan only closes a bar it opened.",
     screenshot: "sidebar-block.png",
-    isStrip: false,
     tag: presetHex("Bill Amber"),
     docs: "/docs/sidebar",
   },
   {
-    title: "16 presets",
+    title: `${BRAND_PRESETS.length} presets`,
     text: "A toucan-themed palette with a live preview, and a warning when a color is hard to see on the status bar.",
     screenshot: "preset-color.png",
-    isStrip: false,
     tag: presetHex("Jungle Green"),
     docs: "/docs/presets",
   },
@@ -54,7 +61,6 @@ const FEATURES: readonly Feature[] = [
     title: "Glyph picker",
     text: "Shapes, Toucan's world, characters and fun & dev glyphs, previewed as you move through them.",
     screenshot: "set-glyph.png",
-    isStrip: false,
     tag: presetHex("Orchid Purple"),
     docs: "/docs/glyphs",
   },
@@ -62,7 +68,7 @@ const FEATURES: readonly Feature[] = [
     title: "Search emoji",
     text: "Experimental: an emoji in the window title, so the repo shows in the Command Center even when it's not focused.",
     screenshot: "search-emoji.png",
-    isStrip: true,
+    zoom: COMMAND_CENTER_ZOOM,
     tag: presetHex("Beak Orange"),
     docs: "/docs/search-emoji",
   },
@@ -71,18 +77,19 @@ const FEATURES: readonly Feature[] = [
 export function Features() {
   return (
     <div className="grid gap-[22px] md:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-      {FEATURES.map(({ title, text, screenshot, isStrip, tag, docs }) => (
+      {FEATURES.map(({ title, text, screenshot, zoom, tag, docs }) => (
         <Link
           key={title}
           to={docs}
           className="flex flex-col overflow-hidden rounded-2xl border-2 border-ink bg-white transition-shadow hover:shadow-[6px_6px_0_var(--color-amber)]"
         >
-          {isStrip ? (
+          {zoom ? (
             <div className="flex aspect-[16/10] items-center overflow-hidden border-b-2 border-ink bg-code">
               <img
                 src={screenshotUrl(screenshot)}
                 alt=""
-                className="-ml-[82%] w-[270%] max-w-none"
+                className="max-w-none"
+                style={{ width: zoom.width, marginLeft: zoom.left }}
                 loading="lazy"
               />
             </div>

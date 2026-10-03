@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 
 // import utils
-import { docsPath, isCurrentPath } from "../../app/lib/docs.util.ts";
+import { docsPath, isCurrentPath, isDocsSlug } from "../../app/lib/docs.util.ts";
 
 describe("docsPath", () => {
   it("puts the first page at /docs and the others under it", () => {
@@ -21,5 +21,17 @@ describe("isCurrentPath", () => {
     ["/", "/", true],
   ])("%s is %s: %s", (pathname, path, expected) => {
     expect(isCurrentPath({ pathname, path })).toBe(expected);
+  });
+});
+
+describe("isDocsSlug", () => {
+  it.each([
+    ["settings", true],
+    ["commands", true],
+    ["getting-started", false],
+    ["nope", false],
+    ["", false],
+  ])("%j: %s", (slug, expected) => {
+    expect(isDocsSlug(slug)).toBe(expected);
   });
 });

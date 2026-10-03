@@ -1,5 +1,5 @@
 // import libraries
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // import utils
 import {
@@ -117,15 +117,19 @@ describe("loadReleases", () => {
 });
 
 function fakeFetch(response: Response) {
-  const requests: { url: string; headers: Headers }[] = [];
+  const requests: { url: string; headers: Headers; signal: unknown }[] = [];
   const fetchFn = ((url: string, init: RequestInit) => {
-    requests.push({ url, headers: new Headers(init.headers) });
+    requests.push({ url, headers: new Headers(init.headers), signal: init.signal });
     return Promise.resolve(response);
   }) as typeof fetch;
   return { fetchFn, requests };
 }
 
 describe("fetchGitHubReleases", () => {
+  // The runner's own GITHUB_TOKEN (CI sets one) must not reach these tests.
+  beforeEach(() => {
+    vi.stubEnv("GITHUB_TOKEN", "");
+  });
   afterEach(() => {
     vi.unstubAllEnvs();
   });
@@ -158,6 +162,14 @@ describe("fetchGitHubReleases", () => {
       await fetchGitHubReleases({ token, fetchFn });
       expect(requests[0]?.headers.has("authorization")).toBe(false);
     }
+  });
+
+  it("fails on an answer that isn't JSON without quoting it, and gives the request a timeout", async () => {
+    const { fetchFn, requests } = fakeFetch(new Response("<html>secret</html>", { status: 200 }));
+    await expect(fetchGitHubReleases({ token: "", fetchFn })).rejects.toThrow(
+      /^GitHub answered with something that isn't JSON$/,
+    );
+    expect(requests[0]?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("throws with the status when GitHub refuses", async () => {

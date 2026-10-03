@@ -10,6 +10,7 @@ describe("headingId", () => {
     ["Search emoji (experimental)", "search-emoji-experimental"],
     ["Set <code>Color</code>", "set-color"],
     ["Toucan's world", "toucans-world"],
+    [" <code>Spaced</code> out ", "spaced-out"],
   ])("gives %j the GitHub id %j", (text, id) => {
     expect(headingId(text)).toBe(id);
   });
@@ -54,11 +55,25 @@ describe("renderMarkdown", () => {
     expect(
       renderMarkdown({
         markdown: "![A shot](hero.gif)",
-        images: { "hero.gif": "/assets/hero-1a.gif" },
+        images: { "hero.gif": { src: "/assets/hero-1a.gif", width: 1200, height: 400 } },
       }),
-    ).toBe('<p><img src="/assets/hero-1a.gif" alt="A shot" loading="lazy"></p>\n');
-    expect(() => renderMarkdown({ markdown: "![x](gone.png)" })).toThrow(
+    ).toBe(
+      '<p><img src="/assets/hero-1a.gif" alt="A shot" width="1200" height="400" loading="lazy"></p>\n',
+    );
+    expect(() => renderMarkdown({ markdown: "![x](gone.png)", images: {} })).toThrow(
       "Unknown image in markdown: gone.png",
+    );
+  });
+
+  it("turns an image into a link to it when there's no image list, as in release notes", () => {
+    expect(
+      renderMarkdown({ markdown: "![The <new> look](https://x.dev/a.png) ![t](javascript:x)" }),
+    ).toBe('<p><a href="https://x.dev/a.png">The &lt;new&gt; look</a> t</p>\n');
+  });
+
+  it("doesn't take a protocol-relative link for a site link", () => {
+    expect(renderMarkdown({ markdown: "[x](//evil.example/a) [y](/docs)" })).toBe(
+      '<p>x <a href="/docs">y</a></p>\n',
     );
   });
 

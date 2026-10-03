@@ -8,6 +8,5 @@ import { DOCS_PAGES } from "./docs.consts.ts";
 export const PAGE_PATHS: readonly string[] = [
   "/",
   "/changelog",
-  "/404",
   ...DOCS_PAGES.map(({ slug }) => docsPath(slug)),
 ];
