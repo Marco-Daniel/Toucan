@@ -6,7 +6,8 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    "./*": "./src/*"
+    "./*": "./src/*",
+    "./assets/*": "./assets/*"
   },
   "scripts": {
     "lint": "oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",

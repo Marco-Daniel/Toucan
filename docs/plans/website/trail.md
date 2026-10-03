@@ -39,6 +39,10 @@ We left out the parts that don't fit a small project: per-app root scripts, sepa
 
 **Previews dropped for security.** DevOps pointed out that a plain repository secret can be read by a workflow on any branch of the repo. Preview deploys need the token on pull-request branches. Marco dropped the previews: in a public repo, security of the secrets and actions comes first, and DevOps carries extra responsibility for it. → 0010
 
+**Our own deploy script instead of the CLI.** While building PR 3, pinning the Netlify CLI turned out to add about 9,000 lockfile lines and three install scripts, all of which would run with the deploy token in their environment. A small script against Netlify's file-digest API does the same job with no dependencies, so Marco approved it over the CLI. → 0010 (amendment)
+
+**The social card in PR 3.** Marco wanted the Open Graph image in the first site version rather than later: the icon's sunset scene, the name and the tagline on jungle green with the beak band, rendered like the extension's icon and checked for staleness like its generated files.
+
 ## Rejected without a decision file
 
 - A hand-written root script per app: generic `turbo run <task> --filter` covers it.

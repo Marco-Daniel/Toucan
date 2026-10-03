@@ -17,7 +17,7 @@ Run from the root; Turborepo runs lint, typecheck, test and build in every packa
 
 ## Conventions
 
-- Monorepo (pnpm workspace with Turborepo): `apps/extension` is the extension, `packages/brand` (`@toucan/brand`) the shared brand (presets, color tokens, glyph names and SVGs, icon and logo), `config/ts-config` and `config/vite` hold the shared TypeScript and Vite/Vitest settings, and `docs/` the ADRs and plans. The root holds the workspace configs and the repo's own tooling in `scripts/` and `test/` (qmd docs search, docs-sync).
+- Monorepo (pnpm workspace with Turborepo): `apps/extension` is the extension, `apps/site` (`@toucan/site`) the website, `packages/brand` (`@toucan/brand`) the shared brand (presets, color tokens, glyph names and SVGs, icon and logo), `config/ts-config` and `config/vite` hold the shared TypeScript and Vite/Vitest settings, and `docs/` the ADRs and plans. The root holds the workspace configs and the repo's own tooling in `scripts/` and `test/` (qmd docs search, docs-sync).
 - Extension layout: `apps/extension/src/core` holds the entry point and the adapters every part uses, `apps/extension/src/shared/<topic>` the code features share, and `apps/extension/src/features/<feature>` one folder per feature. `apps/extension/test/` mirrors `apps/extension/src/`. No barrel files: imports name the file.
 - File names carry their role: `.adapter.ts`, `.util.ts`, `.consts.ts`, `.types.ts`, `.view.ts` and `.messages.ts`.
 - Only adapters touch VS Code: `vscode` is imported only by `*.adapter.ts` files and `apps/extension/src/core/extension.ts`. Everything else (color derivation, config parsing, the colorCustomizations merge and so on) is plain TypeScript, unit tested with vitest.
