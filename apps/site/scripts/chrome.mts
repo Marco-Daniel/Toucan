@@ -62,3 +62,31 @@ export function staleProfiles({ names, tmp, processes }: StaleProfilesArgs): str
     .map((name) => join(tmp, name))
     .filter((profile) => !processes.some(({ command }) => command.includes(profile)));
 }
+
+interface OrphanPidsArgs {
+  processes: readonly RunningProcess[];
+  /** Whether a folder still exists. */
+  exists: (path: string) => boolean;
+  /** This process, never a target. */
+  self: number;
+}
+
+/**
+ * The pids of a Chrome some earlier run left behind: processes whose
+ * --user-data-dir is one of the script's profiles that no longer exists, so
+ * no run owns them any more. Never pid 0 or 1, never this process.
+ */
+export function orphanPids({ processes, exists, self }: OrphanPidsArgs): number[] {
+  return processes
+    .filter(({ pid, command }) => {
+      const profile = /--user-data-dir=(\S+)/.exec(command)?.[1];
+      return (
+        pid > 1 &&
+        pid !== self &&
+        profile !== undefined &&
+        isProfileName(basename(profile)) &&
+        !exists(profile)
+      );
+    })
+    .map(({ pid }) => pid);
+}

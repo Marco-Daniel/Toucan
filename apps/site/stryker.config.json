@@ -17,11 +17,7 @@
   ],
   "incremental": true,
   "incrementalFile": "reports/stryker/incremental.json",
-  "reporters": [
-    "clear-text",
-    "html",
-    "progress"
-  ],
+  "reporters": ["clear-text", "html", "progress"],
   "htmlReporter": {
     "fileName": "reports/stryker/mutation.html"
   },

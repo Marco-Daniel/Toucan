@@ -3,7 +3,13 @@
 import { describe, expect, it } from "vitest";
 
 // import utils
-import { chromePids, isProfileName, parsePs, staleProfiles } from "../../scripts/chrome.mts";
+import {
+  chromePids,
+  isProfileName,
+  orphanPids,
+  parsePs,
+  staleProfiles,
+} from "../../scripts/chrome.mts";
 
 const PROFILE = "/var/tmp-real/toucan-site-shots-AbC123";
 const PS = [
@@ -84,5 +90,33 @@ describe("staleProfiles", () => {
         processes: parsePs(PS),
       }),
     ).toEqual(["/var/tmp-real/toucan-site-shots-Gone11"]);
+  });
+});
+
+describe("orphanPids", () => {
+  const processes = [
+    { pid: 1, command: "x --user-data-dir=/var/tmp-real/toucan-site-shots-Gone11" },
+    { pid: 4242, command: "node --user-data-dir=/var/tmp-real/toucan-site-shots-Gone11" },
+    {
+      pid: 5000,
+      command: "Chrome --headless=new --user-data-dir=/var/tmp-real/toucan-site-shots-Gone11",
+    },
+    {
+      pid: 5001,
+      command: "Chrome Helper --user-data-dir=/var/tmp-real/toucan-site-shots-Gone11 --type=gpu",
+    },
+    { pid: 5100, command: "Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-Live22" },
+    { pid: 5200, command: "Chrome --user-data-dir=/opt/browser/gone-profile" },
+    { pid: 5300, command: "Chrome --no-profile-flag" },
+  ];
+
+  it("picks the Chromes whose script profile is gone, never pid 1, this process, a live run or another profile", () => {
+    expect(
+      orphanPids({
+        processes,
+        exists: (path) => path === "/var/tmp-real/toucan-site-shots-Live22",
+        self: 4242,
+      }),
+    ).toEqual([5000, 5001]);
   });
 });

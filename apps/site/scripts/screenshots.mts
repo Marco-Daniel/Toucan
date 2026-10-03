@@ -12,6 +12,7 @@
 // import libraries
 import { spawn, spawnSync } from "node:child_process";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -33,7 +34,7 @@ import {
   tryCatchSync,
 } from "../../extension/src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../extension/src/shared/records/records.util.ts";
-import { chromePids, parsePs, PROFILE_PREFIX, staleProfiles } from "./chrome.mts";
+import { chromePids, orphanPids, parsePs, PROFILE_PREFIX, staleProfiles } from "./chrome.mts";
 
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
@@ -112,7 +113,10 @@ function processes() {
   return parsePs(spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout ?? "");
 }
 
-// Profiles a killed run left behind, which no process uses any more.
+// What earlier runs left behind: a Chrome whose profile is gone, and profiles no process uses.
+for (const pid of orphanPids({ processes: processes(), exists: existsSync, self: process.pid })) {
+  tryCatchSync(() => process.kill(pid, "SIGKILL"));
+}
 for (const stale of staleProfiles({ names: readdirSync(TMP), tmp: TMP, processes: processes() })) {
   rmSync(stale, { recursive: true, force: true });
 }
