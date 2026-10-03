@@ -3,64 +3,115 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 // import utils
-import { chromePids, isProfileName, parsePs, planSweep, runSweep } from "../../scripts/chrome.mts";
+import {
+  chromePids,
+  isProfileName,
+  isRunBinary,
+  parsePs,
+  planSweep,
+  runSweep,
+} from "../../scripts/chrome.mts";
 
 // import types
 import type { EntryFacts, SweepPlan } from "../../scripts/chrome.mts";
 
+const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const HELPER =
+  "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/154.0/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper";
 const PROFILE = "/var/tmp-real/toucan-site-shots-AbC123";
-const PS = [
-  "    1 /sbin/launchd",
-  "  4242 node scripts/screenshots.mts",
-  "  4300 /Applications/Chrome --headless=new --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123",
-  "  4301 Chrome Helper --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123 --type=renderer",
-  "  4400 /Applications/Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-Other9",
-  "  4500 /Applications/Chrome --user-data-dir=/opt/browser/profile",
-  "garbage line",
-  "  4600  Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123 --type=gpu",
-  "x 4700 Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123",
-  "  4800 grep -- --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123",
-].join("\n");
 
 describe("parsePs", () => {
-  it("reads each pid and command, skipping lines that don't parse", () => {
-    expect(parsePs(PS).map(({ pid }) => pid)).toEqual([
-      1, 4242, 4300, 4301, 4400, 4500, 4600, 4800,
+  it("joins each process's argv and executable on pid, skipping lines that don't parse", () => {
+    expect(
+      parsePs({
+        commands: [
+          "    1 /sbin/launchd",
+          `  4300  ${CHROME} --headless=new --user-data-dir=${PROFILE}`,
+          "  4400 tail -f log",
+          "garbage line",
+          "x 4700 not a line",
+        ].join("\n"),
+        programs: ["    1 /sbin/launchd", `  4300 ${CHROME}`, "garbage"].join("\n"),
+      }),
+    ).toEqual([
+      { pid: 1, command: "/sbin/launchd", program: "/sbin/launchd" },
+      {
+        pid: 4300,
+        command: `${CHROME} --headless=new --user-data-dir=${PROFILE}`,
+        program: CHROME,
+      },
+      { pid: 4400, command: "tail -f log", program: "" },
     ]);
-    expect(parsePs(PS).find(({ pid }) => pid === 4600)?.command).toBe(
-      "Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123 --type=gpu",
-    );
-    expect(parsePs(PS)[2]?.command).toBe(
-      "/Applications/Chrome --headless=new --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123",
-    );
+  });
+});
+
+describe("isRunBinary", () => {
+  it.each([
+    [CHROME, true],
+    [HELPER, true],
+    ["/Applications/Google Chrome.app/Contents/Frameworks/x/Helpers/chrome_crashpad_handler", true],
+    ["/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary", false],
+    ["/Applications/Google Chrome.appx/evil", false],
+    ["/usr/bin/tail", false],
+    ["Google Chrome", false],
+    ["", false],
+  ])("on macOS, %j: %s", (program, expected) => {
+    expect(isRunBinary({ program, chrome: CHROME })).toBe(expected);
+  });
+
+  it.each([
+    ["chromium-browse", true],
+    ["chromium-browser", false],
+    ["chromium", false],
+    ["tail", false],
+    ["", false],
+  ])("on Linux, where ps cuts names to 15 characters, %j: %s", (program, expected) => {
+    expect(isRunBinary({ program, chrome: "/usr/bin/chromium-browser" })).toBe(expected);
+  });
+
+  it("on Linux, takes a short name whole, or the exact path when ps shows one", () => {
+    expect(isRunBinary({ program: "google-chrome", chrome: "/usr/bin/google-chrome" })).toBe(true);
+    expect(
+      isRunBinary({ program: "/usr/bin/google-chrome", chrome: "/usr/bin/google-chrome" }),
+    ).toBe(true);
+    expect(
+      isRunBinary({ program: "/usr/local/bin/google-chrome", chrome: "/usr/bin/google-chrome" }),
+    ).toBe(false);
   });
 });
 
 describe("chromePids", () => {
-  it("picks only the processes naming this run's profile", () => {
-    expect(chromePids({ processes: parsePs(PS), profile: PROFILE, self: 4242 })).toEqual([
-      4300, 4301, 4600,
+  it("picks this run's Chrome and its helpers, never a program that only names the profile", () => {
+    const processes = [
+      {
+        pid: 4300,
+        command: `${CHROME} --headless=new --user-data-dir=${PROFILE}`,
+        program: CHROME,
+      },
+      {
+        pid: 4301,
+        command: `${HELPER} --type=renderer --user-data-dir=${PROFILE}`,
+        program: HELPER,
+      },
+      { pid: 4400, command: `tail -f ${PROFILE}/chrome_debug.log`, program: "/usr/bin/tail" },
+      { pid: 4401, command: `vim ${PROFILE}/Default/Preferences`, program: "/usr/bin/vim" },
+      { pid: 4402, command: `grep -- --user-data-dir=${PROFILE}`, program: "/usr/bin/grep" },
+      { pid: 4403, command: `grep chrome --color ${PROFILE}`, program: "/usr/bin/grep" },
+      { pid: 4404, command: `pgrep -f ${PROFILE}`, program: "/usr/bin/pgrep" },
+      { pid: 4500, command: `${CHROME} --user-data-dir=/opt/browser/profile`, program: CHROME },
+    ];
+    expect(chromePids({ processes, profile: PROFILE, chrome: CHROME, self: 4242 })).toEqual([
+      4300, 4301,
     ]);
   });
 
-  it("never picks pid 0 or 1, or this process, even when they name the profile", () => {
-    const processes = [
-      { pid: 0, command: `Chrome --user-data-dir=${PROFILE}` },
-      { pid: 1, command: `Chrome --user-data-dir=${PROFILE}` },
-      { pid: 4242, command: `/usr/bin/google-chrome --user-data-dir=${PROFILE}` },
-      { pid: 4300, command: `/usr/bin/chromium --user-data-dir=${PROFILE}` },
-    ];
-    expect(chromePids({ processes, profile: PROFILE, self: 4242 })).toEqual([4300]);
-  });
-
-  it("never picks a program that only quotes the profile, such as pgrep or grep", () => {
-    const processes = [
-      { pid: 4800, command: `pgrep -f ${PROFILE}` },
-      { pid: 4801, command: `grep -- --user-data-dir=${PROFILE}` },
-      { pid: 4802, command: `/bin/zsh -c ps | grep ${PROFILE}` },
-      { pid: 4300, command: `Google Chrome --user-data-dir=${PROFILE}` },
-    ];
-    expect(chromePids({ processes, profile: PROFILE, self: 4242 })).toEqual([4300]);
+  it("never picks pid 0 or 1, or this process, even running Chrome with the profile", () => {
+    const processes = [0, 1, 4242, 4300].map((pid) => ({
+      pid,
+      command: `${CHROME} --user-data-dir=${PROFILE}`,
+      program: CHROME,
+    }));
+    expect(chromePids({ processes, profile: PROFILE, chrome: CHROME, self: 4242 })).toEqual([4300]);
   });
 
   it.each([
@@ -68,7 +119,7 @@ describe("chromePids", () => {
     ["/var/tmp-real/toucan-site-shots-"],
     ["/var/tmp-real/other-AbC123"],
   ])("refuses a profile that isn't one of the script's: %s", (profile) => {
-    expect(() => chromePids({ processes: parsePs(PS), profile, self: 4242 })).toThrow(
+    expect(() => chromePids({ processes: [], profile, chrome: CHROME, self: 4242 })).toThrow(
       `Refusing to stop processes for ${JSON.stringify(profile)}`,
     );
   });
@@ -112,9 +163,14 @@ describe("planSweep", () => {
       ],
       tmp: TMP,
       processes: [
-        { pid: 6900, command: "node --version" },
-        { pid: 7000, command: `Chrome --user-data-dir=${TMP}/toucan-site-shots-InUse4` },
+        { pid: 6900, command: "node --version", program: "node" },
+        {
+          pid: 7000,
+          command: `tail -f ${TMP}/toucan-site-shots-InUse4/log`,
+          program: "/usr/bin/tail",
+        },
       ],
+      chrome: CHROME,
       facts: factsFrom({
         [`${TMP}/toucan-site-shots-Old111`]: OLD_MINE,
         [`${TMP}/toucan-site-shots-Young2`]: { isFolder: true, uid: ME, ageMs: MAX_AGE },
@@ -136,23 +192,30 @@ describe("planSweep", () => {
     expect(plan.suspects).toEqual([]);
   });
 
-  it("suspects a Chrome program whose profile of ours can't be found, and nothing else", () => {
+  it("suspects only this binary running with a profile of ours that can't be found", () => {
+    const gone = `${TMP}/toucan-site-shots-Gone11`;
     const processes = [
-      { pid: 1, command: `Chrome --user-data-dir=${TMP}/toucan-site-shots-Gone11` },
+      { pid: 1, command: `${CHROME} --user-data-dir=${gone}`, program: CHROME },
+      { pid: 8000, command: `${CHROME} --headless=new --user-data-dir=${gone}`, program: CHROME },
       {
-        pid: 8000,
-        command: `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new --user-data-dir=${TMP}/toucan-site-shots-Gone11`,
+        pid: 8001,
+        command: `${HELPER} --user-data-dir=${TMP}/toucan-site-shots-Old111 --type=gpu`,
+        program: HELPER,
       },
-      { pid: 8001, command: `Chromium --user-data-dir=${TMP}/toucan-site-shots-Old111 --type=gpu` },
-      { pid: 8002, command: `grep -- --user-data-dir=${TMP}/toucan-site-shots-Gone11` },
-      { pid: 8003, command: `Chrome --user-data-dir=/opt/browser/profile` },
-      { pid: 8004, command: "Google Chrome --headless=new" },
-      { pid: 8005, command: "node --version" },
+      {
+        pid: 8002,
+        command: `grep chrome --color --user-data-dir=${gone}`,
+        program: "/usr/bin/grep",
+      },
+      { pid: 8003, command: `${CHROME} --user-data-dir=/opt/browser/profile`, program: CHROME },
+      { pid: 8004, command: `${CHROME} --headless=new`, program: CHROME },
+      { pid: 8005, command: "node --version", program: "node" },
     ];
     const plan = planSweep({
       names: [],
       tmp: TMP,
       processes,
+      chrome: CHROME,
       facts: factsFrom({ [`${TMP}/toucan-site-shots-Old111`]: OLD_MINE }),
       uid: ME,
       maxAgeMs: MAX_AGE,
@@ -169,7 +232,7 @@ describe("runSweep", () => {
   const plan: SweepPlan = {
     remove: [`${TMP}/toucan-site-shots-Old111`],
     keep: [`${TMP}/toucan-site-shots-Young2 (may belong to a run that's still going)`],
-    suspects: [{ pid: 8000, command: "Google Chrome --headless=new" }],
+    suspects: [{ pid: 8000, command: "Google Chrome --headless=new", program: CHROME }],
   };
 
   it("removes what the plan says, lists the rest and the suspects, stops the run, and never signals a process", () => {

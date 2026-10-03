@@ -12,45 +12,92 @@ export function isProfileName(name: string): boolean {
   return name.startsWith(PROFILE_PREFIX) && name.length > PROFILE_PREFIX.length;
 }
 
-/** Whether a command line runs Chrome or Chromium: its program (the argv before the first ` --`), not just any argv that quotes a flag. */
-export function isChromeProgram(command: string): boolean {
-  return /chrom(e|ium)/i.test(basename(command.split(" --")[0] ?? ""));
-}
+/** Linux's `ps -o comm` shows the executable's name cut to this many characters. */
+const LINUX_COMM_LENGTH = 15;
 
-interface RunningProcess {
+/** A running process: its argv, and the executable it runs (`ps -o comm`). */
+export interface RunningProcess {
   pid: number;
   command: string;
+  /** The full path on macOS; the name, cut to 15 characters, on Linux. */
+  program: string;
 }
 
-/** `ps -axo pid=,command=` output as processes; lines that don't parse are left out. */
-export function parsePs(text: string): RunningProcess[] {
-  return text.split("\n").flatMap((line) => {
-    const [, pid = "", command = ""] = /^\s*(\d+)\s+(.*)$/.exec(line) ?? [];
-    return pid === "" ? [] : [{ pid: Number(pid), command }];
-  });
+/** The `pid=, rest` lines of a ps listing, by pid; lines that don't parse are left out. */
+function psColumn(text: string): Map<number, string> {
+  return new Map(
+    text.split("\n").flatMap((line) => {
+      const [, pid = "", rest = ""] = /^\s*(\d+)\s+(.*)$/.exec(line) ?? [];
+      return pid === "" ? [] : [[Number(pid), rest] as const];
+    }),
+  );
+}
+
+interface ParsePsArgs {
+  /** `ps -axo pid=,command=` output. */
+  commands: string;
+  /** `ps -axo pid=,comm=` output. */
+  programs: string;
+}
+
+/** The processes in two ps listings, joined on pid; one missing from the second has an empty program. */
+export function parsePs({ commands, programs }: ParsePsArgs): RunningProcess[] {
+  const byPid = psColumn(programs);
+  return [...psColumn(commands)].map(([pid, command]) => ({
+    pid,
+    command,
+    program: byPid.get(pid) ?? "",
+  }));
+}
+
+interface IsRunBinaryArgs {
+  /** The process's executable, from `ps -o comm`. */
+  program: string;
+  /** The Chrome executable the run started. */
+  chrome: string;
+}
+
+/**
+ * Whether a process runs the Chrome this run started, judged by its
+ * executable, never by its argv (a `tail`, `vim` or `grep` can name the
+ * profile too). On macOS: that exact path, or one inside the same `.app`
+ * bundle (its helpers). On Linux, where ps cuts the name: the same cut name.
+ */
+export function isRunBinary({ program, chrome }: IsRunBinaryArgs): boolean {
+  const bundle = /^(.*?\.app)\//.exec(chrome)?.[1];
+  if (bundle !== undefined) {
+    return program === chrome || program.startsWith(`${bundle}/`);
+  }
+  if (program.includes("/")) {
+    return program === chrome;
+  }
+  return program !== "" && program === basename(chrome).slice(0, LINUX_COMM_LENGTH);
 }
 
 interface ChromePidsArgs {
   processes: readonly RunningProcess[];
   /** The run's profile folder, absolute. */
   profile: string;
+  /** The Chrome executable the run started. */
+  chrome: string;
   /** This process, never a target. */
   self: number;
 }
 
 /**
- * The pids to stop: Chrome processes whose command line names the run's profile.
- * Never pid 0 or 1 (process.kill would reach every process), never this
- * process, and nothing at all for a folder that isn't one of the script's.
+ * The pids to stop: processes running this run's Chrome binary whose argv
+ * names its profile. Never pid 0 or 1 (process.kill would reach every
+ * process), never this process, and nothing at all for a folder that isn't
+ * one of the script's.
  */
-export function chromePids({ processes, profile, self }: ChromePidsArgs): number[] {
+export function chromePids({ processes, profile, chrome, self }: ChromePidsArgs): number[] {
   if (!isProfileName(basename(profile))) {
     throw new Error(`Refusing to stop processes for ${JSON.stringify(profile)}`);
   }
   return processes
     .filter(
-      ({ pid, command }) =>
-        pid > 1 && pid !== self && isChromeProgram(command) && command.includes(profile),
+      ({ pid, command, program }) =>
+        pid > 1 && pid !== self && isRunBinary({ program, chrome }) && command.includes(profile),
     )
     .map(({ pid }) => pid);
 }
@@ -71,6 +118,8 @@ interface SweepArgs {
   /** The temp folder, absolute and resolved. */
   tmp: string;
   processes: readonly RunningProcess[];
+  /** The Chrome executable runs start. */
+  chrome: string;
   /** lstat of an entry, or undefined when it can't be read. */
   facts: (path: string) => EntryFacts | undefined;
   /** This user's id. */
@@ -95,7 +144,15 @@ export interface SweepPlan {
  * folder and ours; any other is kept and listed. Leftover Chromes are only
  * reported: a missing profile doesn't prove nobody owns the process.
  */
-export function planSweep({ names, tmp, processes, facts, uid, maxAgeMs }: SweepArgs): SweepPlan {
+export function planSweep({
+  names,
+  tmp,
+  processes,
+  chrome,
+  facts,
+  uid,
+  maxAgeMs,
+}: SweepArgs): SweepPlan {
   const remove: string[] = [];
   const keep: string[] = [];
   for (const name of names.filter(isProfileName)) {
@@ -119,11 +176,11 @@ export function planSweep({ names, tmp, processes, facts, uid, maxAgeMs }: Sweep
       keep.push(`${profile} (${reason})`);
     }
   }
-  const suspects = processes.filter(({ pid, command }) => {
+  const suspects = processes.filter(({ pid, command, program }) => {
     const profile = / --user-data-dir=(.+?)(?= --|$)/.exec(command)?.[1];
     return (
       pid > 1 &&
-      isChromeProgram(command) &&
+      isRunBinary({ program, chrome }) &&
       profile !== undefined &&
       isProfileName(basename(profile)) &&
       facts(profile) === undefined

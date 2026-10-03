@@ -111,9 +111,14 @@ const origin = `http://127.0.0.1:${isRecord(address) ? String(address["port"]) :
 /** The temp folder by its real path, so the profile path matches Chrome's command line exactly. */
 const TMP = realpathSync(tmpdir());
 
-/** The running processes, from ps. */
+/** One `ps -axo` listing, every process with the given columns. */
+function ps(columns: string): string {
+  return spawnSync("ps", ["-axo", columns], { encoding: "utf8" }).stdout ?? "";
+}
+
+/** The running processes from ps: each one's argv and the executable it runs. */
 function processes() {
-  return parsePs(spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout ?? "");
+  return parsePs({ commands: ps("pid=,command="), programs: ps("pid=,comm=") });
 }
 
 /** lstat of a temp folder entry, or undefined when it can't be read. */
@@ -135,6 +140,7 @@ const isClear = runSweep({
     names: readdirSync(TMP),
     tmp: TMP,
     processes: processes(),
+    chrome: values.chrome,
     facts: entryFacts,
     uid: process.getuid?.() ?? -1,
     maxAgeMs: RUN_TIMEOUT_MS,
@@ -166,7 +172,7 @@ spawn(
 
 /** The pids of the processes whose command line names this run's profile: its Chrome and Chrome's helpers. */
 function chromeProcesses(): number[] {
-  return chromePids({ processes: processes(), profile, self: process.pid });
+  return chromePids({ processes: processes(), profile, chrome: values.chrome, self: process.pid });
 }
 
 /** Closes this run's Chrome (never anything else), waits for it to go, kills what's left, removes its profile. */
