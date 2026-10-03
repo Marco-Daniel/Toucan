@@ -75,3 +75,12 @@ describe("package.json sidebar block", () => {
     ]);
   });
 });
+
+// vsce packages the extension folder's LICENSE; the repo's own sits at the root.
+describe("the packaged LICENSE", () => {
+  it("is the repo's LICENSE, word for word", () => {
+    const packaged = readFileSync(new URL("../LICENSE", import.meta.url), "utf8");
+    expect(packaged.startsWith("MIT License")).toBe(true);
+    expect(packaged).toBe(readFileSync(new URL("../../../LICENSE", import.meta.url), "utf8"));
+  });
+});

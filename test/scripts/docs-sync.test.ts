@@ -575,6 +575,9 @@ describe("the docs-sync command", () => {
         ...JSON.parse(manifest(extension)),
         name: "@toucan/extension",
       }),
+      // Only a file named package.json is a manifest.
+      "apps/extension/package.json.orig": JSON.stringify({ scripts: { stale: "x" } }),
+      "docs/scripts.json": JSON.stringify({ scripts: { sample: "y" } }),
     });
     const result = run();
     expect({ status: result.status, stderr: result.stderr }).toEqual({ status: 0, stderr: "" });

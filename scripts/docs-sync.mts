@@ -319,10 +319,7 @@ function manifestAt(ref: string): unknown {
   const paths = listing.split("\n").filter((path) => /(?:^|\/)package\.json$/.test(path));
   return mergeManifests(
     paths.map((path) => {
-      const text = show({ ref, path });
-      const [manifest] = tryCatchSync((): unknown =>
-        text === undefined ? undefined : JSON.parse(text),
-      );
+      const [manifest] = tryCatchSync((): unknown => JSON.parse(show({ ref, path }) ?? ""));
       const folder = posix.dirname(path);
       return { folder: folder === "." ? "" : folder, manifest };
     }),
