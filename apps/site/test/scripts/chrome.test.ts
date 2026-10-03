@@ -19,12 +19,15 @@ const PS = [
   "garbage line",
   "  4600  Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123 --type=gpu",
   "x 4700 Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123",
+  "  4800 grep -- --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123",
 ].join("\n");
 
 describe("parsePs", () => {
   it("reads each pid and command, skipping lines that don't parse", () => {
-    expect(parsePs(PS).map(({ pid }) => pid)).toEqual([1, 4242, 4300, 4301, 4400, 4500, 4600]);
-    expect(parsePs(PS).at(-1)?.command).toBe(
+    expect(parsePs(PS).map(({ pid }) => pid)).toEqual([
+      1, 4242, 4300, 4301, 4400, 4500, 4600, 4800,
+    ]);
+    expect(parsePs(PS).find(({ pid }) => pid === 4600)?.command).toBe(
       "Chrome --user-data-dir=/var/tmp-real/toucan-site-shots-AbC123 --type=gpu",
     );
     expect(parsePs(PS)[2]?.command).toBe(
@@ -42,10 +45,20 @@ describe("chromePids", () => {
 
   it("never picks pid 0 or 1, or this process, even when they name the profile", () => {
     const processes = [
-      { pid: 0, command: `x ${PROFILE}` },
-      { pid: 1, command: `x ${PROFILE}` },
-      { pid: 4242, command: `node screenshots.mts ${PROFILE}` },
-      { pid: 4300, command: `chrome ${PROFILE}` },
+      { pid: 0, command: `Chrome --user-data-dir=${PROFILE}` },
+      { pid: 1, command: `Chrome --user-data-dir=${PROFILE}` },
+      { pid: 4242, command: `/usr/bin/google-chrome --user-data-dir=${PROFILE}` },
+      { pid: 4300, command: `/usr/bin/chromium --user-data-dir=${PROFILE}` },
+    ];
+    expect(chromePids({ processes, profile: PROFILE, self: 4242 })).toEqual([4300]);
+  });
+
+  it("never picks a program that only quotes the profile, such as pgrep or grep", () => {
+    const processes = [
+      { pid: 4800, command: `pgrep -f ${PROFILE}` },
+      { pid: 4801, command: `grep -- --user-data-dir=${PROFILE}` },
+      { pid: 4802, command: `/bin/zsh -c ps | grep ${PROFILE}` },
+      { pid: 4300, command: `Google Chrome --user-data-dir=${PROFILE}` },
     ];
     expect(chromePids({ processes, profile: PROFILE, self: 4242 })).toEqual([4300]);
   });
@@ -98,7 +111,10 @@ describe("planSweep", () => {
         "other-folder",
       ],
       tmp: TMP,
-      processes: [{ pid: 7000, command: `Chrome --user-data-dir=${TMP}/toucan-site-shots-InUse4` }],
+      processes: [
+        { pid: 6900, command: "node --version" },
+        { pid: 7000, command: `Chrome --user-data-dir=${TMP}/toucan-site-shots-InUse4` },
+      ],
       facts: factsFrom({
         [`${TMP}/toucan-site-shots-Old111`]: OLD_MINE,
         [`${TMP}/toucan-site-shots-Young2`]: { isFolder: true, uid: ME, ageMs: MAX_AGE },
@@ -130,6 +146,8 @@ describe("planSweep", () => {
       { pid: 8001, command: `Chromium --user-data-dir=${TMP}/toucan-site-shots-Old111 --type=gpu` },
       { pid: 8002, command: `grep -- --user-data-dir=${TMP}/toucan-site-shots-Gone11` },
       { pid: 8003, command: `Chrome --user-data-dir=/opt/browser/profile` },
+      { pid: 8004, command: "Google Chrome --headless=new" },
+      { pid: 8005, command: "node --version" },
     ];
     const plan = planSweep({
       names: [],

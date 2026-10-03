@@ -12,6 +12,11 @@ export function isProfileName(name: string): boolean {
   return name.startsWith(PROFILE_PREFIX) && name.length > PROFILE_PREFIX.length;
 }
 
+/** Whether a command line runs Chrome or Chromium: its program (the argv before the first ` --`), not just any argv that quotes a flag. */
+export function isChromeProgram(command: string): boolean {
+  return /chrom(e|ium)/i.test(basename(command.split(" --")[0] ?? ""));
+}
+
 interface RunningProcess {
   pid: number;
   command: string;
@@ -34,7 +39,7 @@ interface ChromePidsArgs {
 }
 
 /**
- * The pids to stop: processes whose command line names the run's profile.
+ * The pids to stop: Chrome processes whose command line names the run's profile.
  * Never pid 0 or 1 (process.kill would reach every process), never this
  * process, and nothing at all for a folder that isn't one of the script's.
  */
@@ -43,7 +48,10 @@ export function chromePids({ processes, profile, self }: ChromePidsArgs): number
     throw new Error(`Refusing to stop processes for ${JSON.stringify(profile)}`);
   }
   return processes
-    .filter(({ pid, command }) => pid > 1 && pid !== self && command.includes(profile))
+    .filter(
+      ({ pid, command }) =>
+        pid > 1 && pid !== self && isChromeProgram(command) && command.includes(profile),
+    )
     .map(({ pid }) => pid);
 }
 
@@ -112,11 +120,10 @@ export function planSweep({ names, tmp, processes, facts, uid, maxAgeMs }: Sweep
     }
   }
   const suspects = processes.filter(({ pid, command }) => {
-    const program = command.split(" --")[0] ?? "";
     const profile = / --user-data-dir=(.+?)(?= --|$)/.exec(command)?.[1];
     return (
       pid > 1 &&
-      /Chrom(e|ium)/.test(basename(program)) &&
+      isChromeProgram(command) &&
       profile !== undefined &&
       isProfileName(basename(profile)) &&
       facts(profile) === undefined
