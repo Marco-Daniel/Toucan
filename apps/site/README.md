@@ -7,6 +7,7 @@ The site at [toucan-vscode.netlify.app](https://toucan-vscode.netlify.app): a la
 - `app/routes.ts` and `app/routes/`: the pages. `app/root.tsx` holds the layout, the nav and the footer.
 - `content/docs/<slug>.md`: one markdown file per docs page, listed in `app/lib/docs.consts.ts`. Images are README screenshots, by file name.
 - `content/releases.json`: the changelog's fallback when the build can't reach GitHub.
+- `public/_redirects` and `public/_headers`: Netlify's rules. Any path the site doesn't have gets the SPA fallback (the not-found page) with a 404, and every response carries the security headers. The deploy refuses a build without either file, and `check:pages` checks both.
 - `assets/og-card.svg` and `public/og-image.png`: the social media card every page names as its Open Graph and Twitter image. The card's text is outlined from Inter (see the repo's THIRD_PARTY_NOTICES.md), so it renders the same everywhere without fonts.
 - From `@toucan/brand`: the presets, the colors (as Tailwind theme tokens), the glyphs, the icon and the logo. From the extension: its icon and the README screenshots in `apps/extension/media/readme/`.
 

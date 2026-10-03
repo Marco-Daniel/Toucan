@@ -28,6 +28,7 @@ const FILES: DeployFile[] = [
   { path: "/docs/index.html", sha1: "b2", file: "/b/docs/index.html" },
   { path: "/__spa-fallback.html", sha1: "c3", file: "/b/__spa-fallback.html" },
   { path: "/_redirects", sha1: "c3", file: "/b/_redirects" },
+  { path: "/_headers", sha1: "d4", file: "/b/_headers" },
 ];
 
 let dir: string;
@@ -172,7 +173,7 @@ describe("deploy", () => {
     });
     expect(status.state).toBe("ready");
     expect(calls).toEqual([
-      "create 4",
+      "create 5",
       "upload d1 /docs/index.html bytes of /b/docs/index.html",
       "poll d1 processing",
       "poll d1 ready",
@@ -183,6 +184,7 @@ describe("deploy", () => {
     writeFileSync(join(dir, "index.html"), "home");
     writeFileSync(join(dir, "__spa-fallback.html"), "gone");
     writeFileSync(join(dir, "_redirects"), "rules");
+    writeFileSync(join(dir, "_headers"), "headers");
     // SHA-1 of "home".
     const { netlify, calls } = fakeNetlify({
       required: ["e83249bd3ba79932e16fb1fb5100dafade9954c2"],
@@ -195,8 +197,8 @@ describe("deploy", () => {
       ...fakeClock(),
       log: (message) => logged.push(message),
     });
-    expect(calls).toEqual(["create 3", "upload d1 /index.html home", "poll d1 ready"]);
-    expect(logged).toEqual(["Deploy d1: 3 files, 1 to upload"]);
+    expect(calls).toEqual(["create 4", "upload d1 /index.html home", "poll d1 ready"]);
+    expect(logged).toEqual(["Deploy d1: 4 files, 1 to upload"]);
   });
 
   it("refuses a build without its home page or 404 page, before creating a deploy", async () => {
@@ -208,6 +210,15 @@ describe("deploy", () => {
     await expect(
       deploy({ files: files.slice(1), netlify, read, ...fakeClock(), log: quiet }),
     ).rejects.toThrow("Refusing to deploy a build without /index.html and /_redirects");
+    await expect(
+      deploy({
+        files: FILES.filter(({ path }) => path !== "/_headers"),
+        netlify,
+        read,
+        ...fakeClock(),
+        log: quiet,
+      }),
+    ).rejects.toThrow("Refusing to deploy a build without /_headers");
     expect(calls).toEqual([]);
   });
 
@@ -222,7 +233,7 @@ describe("deploy", () => {
       log: quiet,
     });
     expect(status.state).toBe("ready");
-    expect(calls).toEqual(["create 4", "poll d1 failed", "poll d1 failed", "poll d1 ready"]);
+    expect(calls).toEqual(["create 5", "poll d1 failed", "poll d1 failed", "poll d1 ready"]);
   });
 
   it("says the status is unknown when every poll until the deadline failed", async () => {
@@ -251,7 +262,7 @@ describe("deploy", () => {
     await expect(
       deploy({ files: FILES, netlify, read, ...fakeClock(), log: quiet }),
     ).rejects.toThrow("upload of /index.html failed");
-    expect(calls).toEqual(["create 4", "upload d1 /index.html bytes of /b/index.html"]);
+    expect(calls).toEqual(["create 5", "upload d1 /index.html bytes of /b/index.html"]);
   });
 
   it("uploads nothing and fails when Netlify asks for a file the build doesn't have", async () => {
@@ -259,7 +270,7 @@ describe("deploy", () => {
     await expect(
       deploy({ files: FILES, netlify, read, ...fakeClock(), log: quiet }),
     ).rejects.toThrow("Netlify asked for 1 file(s) this build doesn't have");
-    expect(calls).toEqual(["create 4"]);
+    expect(calls).toEqual(["create 5"]);
   });
 
   it("fails with Netlify's reason when the deploy ends in the error state", async () => {

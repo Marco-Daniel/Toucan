@@ -7,6 +7,9 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+// import utils
+import { tryCatchSync } from "../../extension/src/shared/async/tryCatch.util.ts";
+
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
 import { SITE_URL } from "../app/lib/site.consts.ts";
@@ -100,6 +103,21 @@ if (
   ) === null
 ) {
   problems.push("_redirects doesn't send unknown paths to the SPA fallback with a 404");
+}
+// Every response carries the security headers (public/_headers).
+const HEADERS = [
+  "X-Content-Type-Options: nosniff",
+  "Referrer-Policy: strict-origin-when-cross-origin",
+  "X-Frame-Options: DENY",
+  "Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
+];
+const [headers] = tryCatchSync(() => readFileSync(join(CLIENT, "_headers"), "utf8"));
+const rule = headers?.split(/^\/\*$/m)[1] ?? "";
+const missingHeaders = HEADERS.filter(
+  (header) => !rule.split("\n").some((line) => line.trim() === header),
+);
+if (headers === null || missingHeaders.length > 0) {
+  problems.push(`_headers doesn't set ${missingHeaders.join(", ") || "anything"} for /*`);
 }
 const fallback = readFileSync(join(CLIENT, "__spa-fallback.html"), "utf8");
 if (

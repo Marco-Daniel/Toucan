@@ -22,8 +22,8 @@ const TIMEOUT_MS = 300_000;
 const MS_PER_SECOND = 1000;
 /** One request's limit, so a stalled connection fails the step instead of holding it. */
 const REQUEST_TIMEOUT_MS = 60_000;
-/** Files the site can't go live without (the home page, and the fallback every unknown path gets): a deploy missing one is a broken build. */
-const REQUIRED_PAGES = ["/index.html", "/__spa-fallback.html", "/_redirects"];
+/** Files the site can't go live without (the home page, the fallback every unknown path gets, the security headers): a deploy missing one is a broken build. */
+const REQUIRED_PAGES = ["/index.html", "/__spa-fallback.html", "/_redirects", "/_headers"];
 
 /** A file to deploy: its site path ("/docs/index.html"), its bytes' SHA-1 and where to read it. */
 export interface DeployFile {
