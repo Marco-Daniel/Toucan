@@ -48,17 +48,17 @@
     },
     // The root's own tooling: docs search, docs-sync, mutate and the ADR log
     // test. It imports from the extension, uses the Vitest base and checks the
-    // ADRs cited in every package, so those files count as its inputs too.
+    // ADRs cited in every package, so every package counts as its input too.
     "//#lint:repo": {
-      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
+      "inputs": ["$TURBO_DEFAULT$", "apps/**", "config/**", "packages/**", "docs/adr/**"],
       "outputs": []
     },
     "//#typecheck:repo": {
-      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
+      "inputs": ["$TURBO_DEFAULT$", "apps/**", "config/**", "packages/**", "docs/adr/**"],
       "outputs": []
     },
     "//#test:repo": {
-      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
+      "inputs": ["$TURBO_DEFAULT$", "apps/**", "config/**", "packages/**", "docs/adr/**"],
       "outputs": []
     }
   }

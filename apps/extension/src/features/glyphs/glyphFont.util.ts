@@ -2,7 +2,8 @@
 import { roundToHundredths } from "../../shared/math/round.util.ts";
 
 // import types
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { Hex } from "../../shared/model/model.types.ts";
 
 // What `pnpm font` needs from the glyph code. Kept apart from glyphs.ts, which
 // imports the generated paths that `pnpm font` rewrites, so a missing or broken

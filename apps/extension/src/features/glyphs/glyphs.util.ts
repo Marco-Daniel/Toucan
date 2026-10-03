@@ -2,11 +2,12 @@
 import { HEIGHT, shapeSvg } from "./glyphFont.util.ts";
 
 // import consts
+import { GLYPH_GROUPS } from "@toucan/brand/glyphs.consts.ts";
 import { GLYPH_PATHS } from "../../generated/glyphPaths.ts";
-import { GLYPH_GROUPS } from "../../shared/model/model.consts.ts";
 
 // import types
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { Hex } from "../../shared/model/model.types.ts";
 
 /**
  * Escapes `$(…)` in user text such as a folder name, so VS Code shows it

@@ -11,11 +11,12 @@ import { glyphSvg } from "../../src/features/glyphs/glyphs.util.ts";
 import { buildFont } from "../../scripts/font.mts";
 
 // import consts
+import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
 import { GLYPH_PATHS } from "../../src/generated/glyphPaths.ts";
-import { GLYPHS } from "../../src/shared/model/model.consts.ts";
 
 // import types
-import type { Glyph, Hex } from "../../src/shared/model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { Hex } from "../../src/shared/model/model.types.ts";
 
 const BLACK = "#000000" as Hex;
 /** Pixels per glyph unit: a glyph is 16 units, so 160 px high. */
@@ -30,7 +31,10 @@ beforeAll(async () => {
   const icons = GLYPHS.map((glyph) => ({
     name: glyph,
     codepoint: FONT_CODEPOINTS[glyph],
-    svg: readFileSync(new URL(`../../media/icons/${glyph}.svg`, import.meta.url), "utf8"),
+    svg: readFileSync(
+      new URL(`../../../../packages/brand/assets/glyphs/${glyph}.svg`, import.meta.url),
+      "utf8",
+    ),
   }));
   const font = await buildFont(icons);
   ({ svgFont } = font);

@@ -7,16 +7,14 @@ import { FONT_CODEPOINTS } from "../src/features/glyphs/glyphFont.util.ts";
 import { glyphIconId } from "../src/features/glyphs/glyphs.util.ts";
 
 // import consts
+import { BRAND_COLORS } from "@toucan/brand/colors.consts.ts";
+import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
 import {
   SIDEBAR_AVAILABLE_CONTEXT,
   SIDEBAR_CONTAINER_ID,
   SIDEBAR_VIEW_ID,
 } from "../src/core/ids.consts.ts";
-import {
-  COMMAND_CENTER_KEYS,
-  GLYPHS,
-  SIDEBAR_VISIBILITIES,
-} from "../src/shared/model/model.consts.ts";
+import { COMMAND_CENTER_KEYS, SIDEBAR_VISIBILITIES } from "../src/shared/model/model.consts.ts";
 
 const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const { properties } = manifest.contributes.configuration;
@@ -82,5 +80,11 @@ describe("the packaged LICENSE", () => {
     const packaged = readFileSync(new URL("../LICENSE", import.meta.url), "utf8");
     expect(packaged.startsWith("MIT License")).toBe(true);
     expect(packaged).toBe(readFileSync(new URL("../../../LICENSE", import.meta.url), "utf8"));
+  });
+});
+
+describe("the Marketplace banner", () => {
+  it("is the brand's jungle green", () => {
+    expect(manifest.galleryBanner).toEqual({ color: BRAND_COLORS.jungleGreen, theme: "dark" });
   });
 });
