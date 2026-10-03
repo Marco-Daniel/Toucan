@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 
 // import utils
 import { DevToolsSession, listTargets } from "./cdp.mts";
+import { TEMP_PREFIX } from "./cleanup.mts";
 import { REPOS } from "./fixture.mts";
 import { Main, STEP_TIMEOUT_MS, titleNames, Window } from "./vscode.mts";
 import { waitFor } from "./wait.mts";
@@ -76,7 +77,7 @@ export interface Paths {
 
 /** A new temp folder, and where VS Code's parts are in the app. */
 export function makePaths(app: string): Paths {
-  const temp = mkdtempSync(join(TEMP_PARENT, "toucan-shots-"));
+  const temp = mkdtempSync(join(TEMP_PARENT, TEMP_PREFIX));
   const userData = join(temp, "data");
   return {
     temp,
@@ -185,6 +186,7 @@ export function launch({ paths, pagePort, mainPort }: LaunchArgs): ChildProcess 
       `--inspect=${mainPort}`,
       "--new-window",
       join(paths.temp, first.name),
+      join(paths.temp, first.name, first.open),
     ],
     { env: demoEnv(paths), detached: true, stdio: "ignore" },
   );
@@ -226,11 +228,15 @@ export async function connect({ paths, pagePort, mainPort }: LaunchArgs): Promis
     },
     timeoutMs: STEP_TIMEOUT_MS,
   });
-  for (const { name } of REPOS.slice(1)) {
-    spawnSync(paths.cli, [...profile(paths), "--new-window", join(paths.temp, name)], {
-      env: demoEnv(paths),
-      timeout: CLI_TIMEOUT_MS,
-    });
+  for (const { name, open } of REPOS.slice(1)) {
+    spawnSync(
+      paths.cli,
+      [...profile(paths), "--new-window", join(paths.temp, name), join(paths.temp, name, open)],
+      {
+        env: demoEnv(paths),
+        timeout: CLI_TIMEOUT_MS,
+      },
+    );
   }
   const windows = new Map<string, Window>();
   await waitFor({

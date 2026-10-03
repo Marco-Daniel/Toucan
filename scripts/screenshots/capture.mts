@@ -42,7 +42,7 @@ interface RunArgs {
 
 async function run({ app, vsix, framesDir }: RunArgs): Promise<void> {
   const paths = makePaths(app);
-  const cleanup = new Cleanup(paths.temp);
+  const cleanup = new Cleanup({ temp: paths.temp });
   cleanup.handleExits();
   const deadline = setTimeout(() => {
     console.error(`Gave up after ${RUN_TIMEOUT_MS / MS_PER_SECOND} s.`);

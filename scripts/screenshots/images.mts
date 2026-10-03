@@ -102,25 +102,47 @@ export function stacked({ images, gap, background }: StackedArgs): Image {
   return { width, height, data };
 }
 
-interface HasColorArgs {
+interface ColorShareArgs {
   image: Image;
   color: Rgba;
   /** How far each channel may be off. */
   tolerance: number;
 }
 
-/** Whether any pixel is the color, give or take the tolerance per channel. */
-export function hasColor({ image, color, tolerance }: HasColorArgs): boolean {
+/** The share of pixels (0–1) that are the color, give or take the tolerance per channel. */
+export function colorShare({ image, color, tolerance }: ColorShareArgs): number {
+  const pixels = image.data.length / CHANNELS;
+  let matches = 0;
   for (let at = 0; at < image.data.length; at += CHANNELS) {
     if (
       color.every(
         (channel, index) => Math.abs((image.data[at + index] ?? 0) - channel) <= tolerance,
       )
     ) {
-      return true;
+      matches++;
     }
   }
-  return false;
+  return pixels === 0 ? 0 : matches / pixels;
+}
+
+/** The image's most frequent color; transparent black for an empty image. */
+export function dominantColor(image: Image): Rgba {
+  const counts = new Map<number, number>();
+  let best = 0;
+  let bestCount = 0;
+  for (let at = 0; at < image.data.length; at += CHANNELS) {
+    const key = new DataView(image.data.buffer, image.data.byteOffset + at, CHANNELS).getUint32(0);
+    const count = (counts.get(key) ?? 0) + 1;
+    counts.set(key, count);
+    if (count > bestCount) {
+      best = key;
+      bestCount = count;
+    }
+  }
+  const view = new DataView(new ArrayBuffer(CHANNELS));
+  view.setUint32(0, best);
+  const [red = 0, green = 0, blue = 0, alpha = 0] = new Uint8Array(view.buffer);
+  return [red, green, blue, alpha];
 }
 
 /** A GIF frame and how long it shows. */

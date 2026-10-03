@@ -7,7 +7,8 @@ import {
   decodePng,
   encodeGif,
   encodePng,
-  hasColor,
+  colorShare,
+  dominantColor,
   sideBySide,
   stacked,
 } from "../../../scripts/screenshots/images.mts";
@@ -67,16 +68,45 @@ describe("stacked", () => {
   });
 });
 
-describe("hasColor", () => {
-  const image = { width: 2, height: 1, data: new Uint8Array([...GREY, 250, 4, 6, 255]) };
+describe("colorShare", () => {
+  const image = {
+    width: 4,
+    height: 1,
+    data: new Uint8Array([...GREY, 250, 4, 6, 255, ...RED, ...BLUE]),
+  };
 
-  it("finds a pixel within the tolerance on every channel", () => {
-    expect(hasColor({ image, color: RED, tolerance: 6 })).toBe(true);
+  it("counts the pixels within the tolerance on every channel", () => {
+    expect(colorShare({ image, color: RED, tolerance: 6 })).toBe(0.5);
   });
 
-  it("misses when any channel is further off", () => {
-    expect(hasColor({ image, color: RED, tolerance: 5 })).toBe(false);
-    expect(hasColor({ image, color: BLUE, tolerance: 6 })).toBe(false);
+  it("leaves out pixels further off on any channel", () => {
+    expect(colorShare({ image, color: RED, tolerance: 5 })).toBe(0.25);
+    expect(colorShare({ image, color: GREEN, tolerance: 6 })).toBe(0);
+  });
+
+  it("is zero for an empty image", () => {
+    expect(
+      colorShare({
+        image: { width: 0, height: 0, data: new Uint8Array() },
+        color: RED,
+        tolerance: 0,
+      }),
+    ).toBe(0);
+  });
+});
+
+describe("dominantColor", () => {
+  it("is the most frequent color, ties going to the first to reach the count", () => {
+    const image = {
+      width: 5,
+      height: 1,
+      data: new Uint8Array([...RED, ...BLUE, ...BLUE, ...GREY, ...RED]),
+    };
+    expect(dominantColor(image)).toEqual([0, 0, 255, 255]);
+  });
+
+  it("is transparent black for an empty image", () => {
+    expect(dominantColor({ width: 0, height: 0, data: new Uint8Array() })).toEqual([0, 0, 0, 0]);
   });
 });
 

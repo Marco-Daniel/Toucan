@@ -3,12 +3,12 @@
 // feature.
 // import libraries
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 // import utils
 import { REPOS } from "./fixture.mts";
 import { around, rgb } from "./geometry.mts";
-import { encodeGif, encodePng, hasColor, stacked } from "./images.mts";
+import { colorShare, dominantColor, encodeGif, encodePng, stacked } from "./images.mts";
 import { baseSettings, writeSettings } from "./session.mts";
 import {
   MODIFIERS,
@@ -59,22 +59,24 @@ function half(size: number): number {
 
 /** How far a captured channel may be from the reference (scaling blends edges). */
 const COLOR_TOLERANCE = 6;
-/** A point inside the Command Center, left of its centered label: plain background. */
-const BACKGROUND_INSET = 12;
+/**
+ * The sidebar stills, and the share of the bar in the repository color that
+ * tells their styles apart: full style fills it, muted style only colors the
+ * glyph.
+ */
+const SIDEBAR_STILLS = [
+  { style: "full", name: "sidebar-block", share: { min: 0.6, max: 1 } },
+  { style: "muted", name: "sidebar-muted", share: { min: 0.005, max: 0.2 } },
+] as const;
 
 /**
- * The repository color as this screen's captures render it, read from the
- * Command Center's background. Captures are color-managed, so the CSS value
+ * The repository color as this screen's captures render it: the Command
+ * Center's most frequent color, its background. Captures are color-managed, so the CSS value
  * itself would be a few steps off on most displays.
  */
 async function commandCenterPixel(window: Window): Promise<Rgba> {
   const box = await window.box(".command-center");
-  const image = await window.capture({
-    clip: { x: box.x + BACKGROUND_INSET, y: box.y + half(box.height), width: 1, height: 1 },
-    scale: 1,
-  });
-  const [red = 0, green = 0, blue = 0, alpha = 0] = image.data;
-  return [red, green, blue, alpha];
+  return dominantColor(await window.capture({ clip: box, scale: SAMPLE_SCALE }));
 }
 
 /** The window the stills show. */
@@ -102,6 +104,26 @@ async function focusUntilColored({ session, name, color }: FocusArgs): Promise<v
         // Another app can take focus back; ask again each time.
         await session.main.focus(name);
         return (await window.commandCenterColor()) === expected || undefined;
+      },
+      timeoutMs: STEP_TIMEOUT_MS,
+    });
+  }
+  await titleBarsSettled({ session, name });
+}
+
+/** Waits until VS Code marks only this window's title bar active (bright), the others inactive (dim). */
+async function titleBarsSettled({ session, name }: FocusArgs): Promise<void> {
+  for (const window of session.all()) {
+    const inactive = window.name !== name;
+    await waitFor({
+      what: `${window.name}'s title bar to look ${inactive ? "inactive" : "active"}`,
+      check: async () => {
+        await session.main.focus(name);
+        return (
+          (await window.evaluate(
+            `document.querySelector(".part.titlebar")?.classList.contains("inactive") === ${inactive}`,
+          )) === true || undefined
+        );
       },
       timeoutMs: STEP_TIMEOUT_MS,
     });
@@ -150,8 +172,14 @@ interface RecordHeroArgs {
 }
 
 export async function recordHero({ session, out, framesDir }: RecordHeroArgs): Promise<void> {
+  // Each window opened its demo file at launch: DevTools key input would mark
+  // a page focused for good, and its Command Center would never look inactive.
   for (const { name, open } of REPOS) {
-    await session.window(name).open(open);
+    const file = basename(open);
+    await session.window(name).waitFor({
+      what: `the ${file} tab`,
+      expression: `[...document.querySelectorAll(".tab.active")].some((tab) => tab.getAttribute("aria-label")?.startsWith(${JSON.stringify(file)})) || undefined`,
+    });
   }
   const frames = [];
   for (const { name } of REPOS) {
@@ -262,6 +290,8 @@ async function pickerStill({ window, command, title, row }: PickerStillArgs): Pr
     what: `${command}'s preview`,
     expression: `(${TOUCAN_LABEL}) !== ${JSON.stringify(label)} || undefined`,
   });
+  // The picker fades in; capture once it's fully drawn.
+  await settledPixels({ window });
   const image = await window.capture({ scale: STILL_SCALE });
   await window.key({ key: "Escape" });
   return image;
@@ -321,7 +351,8 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
   });
   await window.key({ key: "Escape" });
 
-  for (const style of ["full", "muted"] as const) {
+  const sidebarStills: Image[] = [];
+  for (const { style, name, share } of SIDEBAR_STILLS) {
     writeSettings({
       paths,
       settings: {
@@ -332,26 +363,28 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
     });
     await focusUntilColored({ session, name: STILL_REPO });
     // The block is a webview, drawn in an overlay above the bar rather than
-    // inside it: wait until the bar's area shows the repository color (the
-    // glyph, in either style), then until the pixels stop changing.
+    // inside it. Wait until the bar shows this style: in full style the
+    // repository color fills most of it, in muted style only the glyph has it.
+    // The previous style's block stays on screen until the new one renders.
     const bar = await window.box(".part.auxiliarybar");
     const color = await commandCenterPixel(window);
     await waitFor({
-      what: `the ${style} sidebar block's content`,
-      check: async () =>
-        hasColor({
-          image: await window.capture({ clip: bar, scale: SAMPLE_SCALE }),
-          color,
-          tolerance: COLOR_TOLERANCE,
-        }) || undefined,
+      what: `the ${style} sidebar block`,
+      check: async () => {
+        const image = await window.capture({ clip: bar, scale: SAMPLE_SCALE });
+        const part = colorShare({ image, color, tolerance: COLOR_TOLERANCE });
+        return (part >= share.min && part <= share.max) || undefined;
+      },
       timeoutMs: STEP_TIMEOUT_MS,
     });
     await settledPixels({ window, clip: bar });
-    save({
-      out: paths.staging,
-      name: style === "full" ? "sidebar-block" : "sidebar-muted",
-      image: await window.capture({ scale: STILL_SCALE }),
-    });
+    const image = await window.capture({ scale: STILL_SCALE });
+    sidebarStills.push(image);
+    save({ out: paths.staging, name, image });
+  }
+  const [full, muted] = sidebarStills;
+  if (full && muted && Buffer.from(full.data).equals(Buffer.from(muted.data))) {
+    throw new Error("The full and muted sidebar stills are the same image");
   }
 
   writeSettings({

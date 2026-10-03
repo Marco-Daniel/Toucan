@@ -6,7 +6,7 @@ export interface DemoRepo {
   name: string;
   background: string;
   glyph: string;
-  /** The file each window shows in its editor. */
+  /** The file each window shows in its editor, as a path in the repository. */
   open: string;
   /** Path to contents. */
   files: Record<string, string>;
@@ -23,7 +23,7 @@ export const REPOS = [
     name: "webshop",
     background: "#e8579b",
     glyph: "heart",
-    open: "cart.ts",
+    open: "src/cart.ts",
     files: {
       "README.md":
         "# webshop\n\nThe storefront: catalog, cart and checkout.\n\nRun `npm run dev` and open http://localhost:5173.\n",
@@ -74,7 +74,7 @@ it("adds up the cart", () => {
     name: "payments-api",
     background: "#14939c",
     glyph: "rocket",
-    open: "payments.ts",
+    open: "src/routes/payments.ts",
     files: {
       "README.md":
         "# payments-api\n\nA small HTTP API that records payments.\n\nSee https://example.com/docs for the request format.\n",
@@ -124,7 +124,7 @@ it("accepts euros and dollars", () => {
     name: "docs-site",
     background: "#faa404",
     glyph: "leaf",
-    open: "getting-started.md",
+    open: "docs/getting-started.md",
     files: {
       "README.md": "# docs-site\n\nThe documentation website, built from Markdown.\n",
       "package.json": packageJson("docs-site", {
