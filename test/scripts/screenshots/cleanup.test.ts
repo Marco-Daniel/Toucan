@@ -533,7 +533,9 @@ describe("Cleanup on a signal or a crash", { timeout: HARD_TIMEOUT_MS }, () => {
       const code = exitOf(runner);
       runner.kill(signal);
       expect(await code).toBe(EXIT_INTERRUPTED);
-      expect([isRunning(pid), existsSync(temp)]).toEqual([false, false]);
+      expect(existsSync(temp)).toBe(false);
+      // Killed, but reaped a moment later: its parent, the harness, has just exited.
+      await expect.poll(() => isRunning(pid)).toBe(false);
     },
   );
 
@@ -542,6 +544,7 @@ describe("Cleanup on a signal or a crash", { timeout: HARD_TIMEOUT_MS }, () => {
       `setTimeout(() => { throw new Error("boom"); }, 50);`,
     );
     expect(await exitOf(runner)).toBe(1);
-    expect([isRunning(pid), existsSync(temp)]).toEqual([false, false]);
+    expect(existsSync(temp)).toBe(false);
+    await expect.poll(() => isRunning(pid)).toBe(false);
   });
 });
