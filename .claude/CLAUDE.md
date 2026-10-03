@@ -50,7 +50,7 @@ Every test has to survive one question: **would it still pass if the code it cov
 
 ## Keep docs in sync
 
-A change to a command, a path or a behaviour updates every doc that mentions it, in the same PR.
+A change to a command, a path or a behaviour updates every doc that mentions it, in the same PR. Run `/docs-sync` every so often to catch what slipped through.
 
 ## This repo is public
 
