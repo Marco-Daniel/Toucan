@@ -15,7 +15,7 @@ export function isProfileName(name: string): boolean {
 /** Linux's `ps -o comm` shows the executable's name cut to this many characters. */
 const LINUX_COMM_LENGTH = 15;
 
-/** A running process: its argv, and the executable it runs (`ps -o comm`). */
+/** A running process: its argv, and its `ps -o comm` (the executable's name on Linux, argv[0] on macOS). */
 export interface RunningProcess {
   pid: number;
   command: string;
@@ -51,17 +51,19 @@ export function parsePs({ commands, programs }: ParsePsArgs): RunningProcess[] {
 }
 
 interface IsRunBinaryArgs {
-  /** The process's executable, from `ps -o comm`. */
+  /** The process's `ps -o comm`. */
   program: string;
   /** The Chrome executable the run started. */
   chrome: string;
 }
 
 /**
- * Whether a process runs the Chrome this run started, judged by its
- * executable, never by its argv (a `tail`, `vim` or `grep` can name the
- * profile too). On macOS: that exact path, or one inside the same `.app`
- * bundle (its helpers). On Linux, where ps cuts the name: the same cut name.
+ * Whether a process runs the Chrome this run started, judged by its `ps -o
+ * comm` (the executable's name on Linux, argv[0] on macOS), not by the rest
+ * of its argv: a `tail`, `vim` or `grep` can name the profile too. Only a
+ * deliberately faked argv[0] plus this run's random profile could pass. On
+ * macOS: that exact path, or one inside the same `.app` bundle (its helpers).
+ * On Linux, where ps cuts the name: the same cut name.
  */
 export function isRunBinary({ program, chrome }: IsRunBinaryArgs): boolean {
   const bundle = /^(.*?\.app)\//.exec(chrome)?.[1];
@@ -217,4 +219,42 @@ export function runSweep({ plan, removeDir, report }: RunSweepArgs): boolean {
     report(`  ${pid}  ${command}`);
   }
   return false;
+}
+
+/** What the last-moment check reads about one process, and the one effect it may have. */
+export interface KillPorts {
+  /** The process's `ps -o comm` and argv right now, or undefined when it's gone. */
+  readProcess: (pid: number) => { program: string; command: string } | undefined;
+  kill: (pid: number) => void;
+}
+
+interface KillIfStillOursArgs {
+  pid: number;
+  /** The run's profile folder, absolute. */
+  profile: string;
+  /** The Chrome executable the run started. */
+  chrome: string;
+  ports: KillPorts;
+}
+
+/**
+ * SIGKILLs one pid only if, read again right now, it still runs this run's
+ * Chrome binary with this run's profile: between listing processes and
+ * killing them, a pid can exit and be reused by something else. Returns
+ * whether it killed.
+ */
+export function killIfStillOurs({ pid, profile, chrome, ports }: KillIfStillOursArgs): boolean {
+  if (pid <= 1) {
+    return false;
+  }
+  const now = ports.readProcess(pid);
+  if (
+    now === undefined ||
+    !isRunBinary({ program: now.program, chrome }) ||
+    !now.command.includes(profile)
+  ) {
+    return false;
+  }
+  ports.kill(pid);
+  return true;
 }

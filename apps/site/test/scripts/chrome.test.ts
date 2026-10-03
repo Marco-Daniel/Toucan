@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   chromePids,
   isProfileName,
+  killIfStillOurs,
   isRunBinary,
   parsePs,
   planSweep,
@@ -13,7 +14,7 @@ import {
 } from "../../scripts/chrome.mts";
 
 // import types
-import type { EntryFacts, SweepPlan } from "../../scripts/chrome.mts";
+import type { EntryFacts, KillPorts, SweepPlan } from "../../scripts/chrome.mts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const HELPER =
@@ -261,5 +262,45 @@ describe("runSweep", () => {
     expect(
       runSweep({ plan: { ...plan, suspects: [] }, removeDir: () => {}, report: () => {} }),
     ).toBe(true);
+  });
+});
+
+/** A process table that answers as seeded and records each kill instead of sending it. */
+function fakePorts(table: Record<number, { program: string; command: string }>) {
+  const killed: number[] = [];
+  const ports: KillPorts = {
+    readProcess: (pid) => table[pid],
+    kill: (pid) => killed.push(pid),
+  };
+  return { ports, killed };
+}
+
+describe("killIfStillOurs", () => {
+  it("kills a pid that, read again, still runs this run's Chrome with its profile", () => {
+    const { ports, killed } = fakePorts({
+      4300: { program: HELPER, command: `${HELPER} --user-data-dir=${PROFILE}` },
+    });
+    expect(killIfStillOurs({ pid: 4300, profile: PROFILE, chrome: CHROME, ports })).toBe(true);
+    expect(killed).toEqual([4300]);
+  });
+
+  it("skips a pid that's gone, or was reused by another program or a Chrome with another profile", () => {
+    const { ports, killed } = fakePorts({
+      4400: { program: "/usr/bin/tail", command: `tail -f ${PROFILE}/chrome_debug.log` },
+      4500: { program: CHROME, command: `${CHROME} --user-data-dir=/opt/browser/profile` },
+    });
+    for (const pid of [4300, 4400, 4500]) {
+      expect(killIfStillOurs({ pid, profile: PROFILE, chrome: CHROME, ports })).toBe(false);
+    }
+    expect(killed).toEqual([]);
+  });
+
+  it("never kills pid 0 or 1, whatever ps says", () => {
+    const ours = { program: CHROME, command: `${CHROME} --user-data-dir=${PROFILE}` };
+    const { ports, killed } = fakePorts({ 0: ours, 1: ours });
+    expect(
+      [0, 1].map((pid) => killIfStillOurs({ pid, profile: PROFILE, chrome: CHROME, ports })),
+    ).toEqual([false, false]);
+    expect(killed).toEqual([]);
   });
 });
