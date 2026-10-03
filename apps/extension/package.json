@@ -32,7 +32,7 @@
     "package": "tsdown && vsce package --no-dependencies --baseContentUrl https://github.com/Marco-Daniel/Toucan/blob/HEAD/apps/extension --baseImagesUrl https://github.com/Marco-Daniel/Toucan/raw/HEAD/apps/extension",
     "font": "node scripts/build-font.mts",
     "icon": "node scripts/build-icon.mts",
-    "check:generated": "\"$npm_execpath\" gen && \"$npm_execpath\" font && \"$npm_execpath\" icon && git diff --exit-code src/generated README.md media && test -z \"$(git status --porcelain src/generated README.md media)\"",
+    "check:generated": "\"$npm_execpath\" gen && \"$npm_execpath\" font && \"$npm_execpath\" icon && git diff --exit-code src/generated README.md media ../../packages/brand/assets && test -z \"$(git status --porcelain src/generated README.md media ../../packages/brand/assets)\"",
     "check:bundle": "node scripts/check-bundle.mts",
     "check:vsix": "node scripts/check-vsix.mts",
     "mutate": "node ../../scripts/mutate-cli.mts",
@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",
+    "@toucan/brand": "workspace:*",
     "@toucan/ts-config": "workspace:*",
     "@toucan/vite-config": "workspace:*",
     "@types/culori": "^4.0.1",

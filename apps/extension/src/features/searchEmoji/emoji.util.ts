@@ -2,7 +2,8 @@
 import { fromHex, toOklch } from "../../shared/color/color.util.ts";
 
 // import types
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { Hex } from "../../shared/model/model.types.ts";
 
 /** The color categories emoji come in. */
 export const EMOJI_COLORS = [

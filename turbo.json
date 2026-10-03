@@ -50,15 +50,33 @@
     // test. It imports from the extension, uses the Vitest base and checks the
     // ADRs cited in every package, so those files count as its inputs too.
     "//#lint:repo": {
-      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "apps/extension/**",
+        "config/vite/**",
+        "packages/brand/**",
+        "docs/adr/**"
+      ],
       "outputs": []
     },
     "//#typecheck:repo": {
-      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "apps/extension/**",
+        "config/vite/**",
+        "packages/brand/**",
+        "docs/adr/**"
+      ],
       "outputs": []
     },
     "//#test:repo": {
-      "inputs": ["$TURBO_DEFAULT$", "apps/extension/**", "config/vite/**", "docs/adr/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "apps/extension/**",
+        "config/vite/**",
+        "packages/brand/**",
+        "docs/adr/**"
+      ],
       "outputs": []
     }
   }

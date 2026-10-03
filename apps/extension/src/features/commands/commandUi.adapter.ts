@@ -17,7 +17,8 @@ import { configs } from "../../generated/meta.ts";
 import { saveFailed } from "../../shared/messages/notifications.messages.ts";
 
 // import types
-import type { Glyph, Hex } from "../../shared/model/model.types.ts";
+import type { Glyph } from "@toucan/brand/glyphs.types.ts";
+import type { Hex } from "../../shared/model/model.types.ts";
 import type { SettingsUpdate } from "../settings/settingsWrite.util.ts";
 import type { CommandHost } from "./commands.adapter.ts";
 

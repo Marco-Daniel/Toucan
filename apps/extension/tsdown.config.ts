@@ -15,8 +15,9 @@ export default defineConfig({
   deps: {
     // Provided by the VS Code extension host.
     neverBundle: ["vscode"],
-    // The VSIX ships without node_modules, so runtime dependencies are bundled.
-    alwaysBundle: [/^culori(\/|$)/, /^jsonc-parser(\/|$)/],
-    onlyBundle: [/^culori(\/|$)/, /^jsonc-parser(\/|$)/],
+    // The VSIX ships without node_modules, so runtime dependencies are bundled,
+    // and so is @toucan/brand, a workspace package that ships as source.
+    alwaysBundle: [/^culori(\/|$)/, /^jsonc-parser(\/|$)/, /^@toucan\/brand(\/|$)/],
+    onlyBundle: [/^culori(\/|$)/, /^jsonc-parser(\/|$)/, /^@toucan\/brand(\/|$)/],
   },
 });

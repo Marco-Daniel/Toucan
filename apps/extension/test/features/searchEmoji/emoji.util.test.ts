@@ -6,7 +6,7 @@ import { emojiColor, emojiFor } from "../../../src/features/searchEmoji/emoji.ut
 import { asHex } from "../../../src/shared/color/hex.util.ts";
 
 // import consts
-import { GLYPHS } from "../../../src/shared/model/model.consts.ts";
+import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
 
 describe("emojiColor", () => {
   // The toucan-v1/0014 presets, plus a few common colors that are hard to classify.

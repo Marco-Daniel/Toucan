@@ -1,0 +1,26 @@
+{
+  "name": "@toucan/brand",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Toucan's brand, shared by the extension and the site: the presets, color tokens, glyph names, icon, logo and glyph SVGs.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*",
+    "./assets/*": "./assets/*"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@toucan/ts-config": "workspace:*",
+    "@toucan/vite-config": "workspace:*",
+    "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

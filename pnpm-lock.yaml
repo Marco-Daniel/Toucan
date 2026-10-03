@@ -230,6 +230,9 @@ importers:
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
+      '@toucan/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@toucan/ts-config':
         specifier: workspace:*
         version: link:../../config/ts-config
@@ -311,6 +314,30 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+
+  packages/brand:
+    devDependencies:
+      '@toucan/ts-config':
+        specifier: workspace:*
+        version: link:../../config/ts-config
+      '@toucan/vite-config':
+        specifier: workspace:*
+        version: link:../../config/vite
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.4
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.86.0(oxlint-tsgolint@7.0.2003)
+      oxlint-tsgolint:
+        specifier: 'catalog:'
+        version: 7.0.2003
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@22.20.4)(vite@8.3.1(@types/node@22.20.4)(esbuild@0.28.2)(tsx@4.23.15))
 
 packages:
 
