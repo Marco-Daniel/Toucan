@@ -2,14 +2,16 @@
 
 See at a glance which repository a VS Code window has open, in the spirit of Peacock and Kingfisher. Colors are configured once, by repository name, in your own user settings. Toucan never writes anything into the opened repository.
 
-![Three VS Code windows: as focus moves, the Command Center takes the focused repository's color while each status bar keeps its own; then Set Color previews a new color and saves it](media/readme/hero.gif)
+![Three VS Code windows, each shown as its title bar and status bar: as focus moves, the Command Center takes the focused repository's color while each status bar keeps its own; then Set Color previews a new color and saves it](media/readme/hero.gif)
+
+_The Command Center follows the focused window; the status bar always shows each window's own color._
 
 - The Command Center (the search bar in the title bar) takes the focused window's repository color.
 - Every window, focused or not, shows a glyph and the repository name in that color on the status bar.
 - Opt-in extras: a color block in the secondary sidebar, and an experimental colored emoji in the search bar.
 - One setting for every repository you open, set through commands with a live preview, or by hand.
 
-> Status: in development. Not on the Marketplace yet; install it from a local VSIX.
+> Status: in development. Not on the Marketplace yet; install it from a local VSIX (see [Install](#install)).
 
 ## Features
 
@@ -19,7 +21,7 @@ VS Code has no per-window color API, so Toucan layers a few signals. Repositorie
 
 ![The Command Center in the repository's color](media/readme/command-center.png)
 
-The Command Center takes the focused window's repository color. Toucan writes it to your user-level `workbench.colorCustomizations` when a window gains focus, and that setting is shared by every window: the other windows' Command Centers show the same color, dimmed while they're unfocused. Each window's own color stays on its status bar, and on its sidebar block or search emoji if those are on. Switching to another window with a Toucan color replaces it at once; a window whose repository has no color clears it, and so does leaving VS Code, after a short delay. The other Command Center colors (text, hover, border, the unfocused look) are derived from the background so they stay readable; [`toucan.repos`](#toucanrepos) can override any of them.
+The Command Center takes the focused window's repository color. Toucan writes it to your user-level `workbench.colorCustomizations` when a window gains focus, and that setting is shared by every window: the other windows' Command Centers show the same background, with their text and border dimmed while they're unfocused. Each window's own color stays on its status bar, and on its sidebar block or search emoji if those are on. Switching to another window with a Toucan color replaces it at once; a window whose repository has no color clears it, and so does leaving VS Code, after a short delay. The other Command Center colors (text, hover, border, the unfocused look) are derived from the background so they stay readable; [`toucan.repos`](#toucanrepos) can override any of them.
 
 ### Status bar indicator
 
@@ -29,7 +31,7 @@ Every window shows the repository's glyph and name on the left of the status bar
 
 ### Sidebar block
 
-![The sidebar block in full style](media/readme/sidebar-block.png)
+![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
 An opt-in block in the secondary sidebar shows the repository's glyph large, with its name underneath, in the repository color. Turn it on with [`toucan.sidebarBlock.enabled`](#toucansidebarblockenabled) or [Toggle Sidebar Block](#toggle-sidebar-block), choose how strongly it's colored with [`toucan.sidebarBlock.style`](#toucansidebarblockstyle), and when it shows with [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility).
 
@@ -89,7 +91,7 @@ Run them from the Command Palette, or from the status bar item: click it for Set
 
 ### Toggle Sidebar Block
 
-![The sidebar block that Toggle Sidebar Block shows (the same image as the sidebar block)](media/readme/sidebar-block.png)
+![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
 **Toucan: Toggle Sidebar Block** shows or hides the [sidebar block](#sidebar-block). If the block is turned off, it offers to turn it on. Closing the block this way counts as your own close in `always` mode, and opening it again forgets that close. A repository needs a color first.
 
@@ -123,19 +125,19 @@ A value is either a color string, the Command Center background with everything 
 
 ### toucan.sidebarBlock.enabled
 
-![The sidebar block this setting turns on (the same image as the sidebar block)](media/readme/sidebar-block.png)
+![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
 Shows the [sidebar block](#sidebar-block) in the secondary sidebar, for repositories with a color. Off by default.
 
 ### toucan.sidebarBlock.style
 
-![The sidebar block in muted style](media/readme/sidebar-muted.png)
+![The sidebar block in muted style: a faint tint, the glyph in the repository color and the name in the theme's text color](media/readme/sidebar-muted.png)
 
 How strongly the sidebar block is colored: `full` (default) is the solid repository color, as in the [sidebar block](#sidebar-block) image; `muted` is a faint tint with the glyph in full color and the name in the theme's text color.
 
 ### toucan.sidebarBlock.visibility
 
-![The sidebar block, revealed according to this setting (the same image as the sidebar block)](media/readme/sidebar-block.png)
+![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
 When the sidebar block is shown. A repository's own `sidebarBlock` in [`toucan.repos`](#toucanrepos) overrides it.
 
@@ -144,7 +146,7 @@ When the sidebar block is shown. A repository's own `sidebarBlock` in [`toucan.r
 
 ### toucan.experimental.searchEmoji
 
-![The search emoji this setting turns on (the same image as the search emoji)](media/readme/search-emoji.png)
+![A colored emoji in front of the title in the search bar](media/readme/search-emoji.png)
 
 Shows the [search emoji](#search-emoji-experimental) in the Command Center label. Off by default. Toucan asks before it changes `window.title`.
 
@@ -188,22 +190,22 @@ code --install-extension toucan-*.vsix
 
 Requires Node 24 (see `.nvmrc`) and pnpm through corepack.
 
-| Command                | What it does                                                                        |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| `pnpm lint`            | Lint with oxlint, with type information; any finding fails                          |
-| `pnpm format:check`    | Check formatting with oxfmt (`pnpm format` to fix)                                  |
-| `pnpm typecheck`       | Typecheck with TypeScript 7                                                         |
-| `pnpm test`            | Run the unit tests with vitest                                                      |
-| `pnpm build`           | Bundle `dist/extension.cjs` with tsdown                                             |
-| `pnpm gen`             | Regenerate `src/generated/meta.ts` and the settings table above from `package.json` |
-| `pnpm font`            | Bake the glyph designs into paths and rebuild the glyph font in `media/`            |
-| `pnpm icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`             |
-| `pnpm screenshots`     | Regenerate the README images in `media/readme/`                                     |
-| `pnpm check:generated` | Regenerate everything above and fail if anything changed (CI runs this)             |
-| `pnpm package`         | Build and package a VSIX                                                            |
-| `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (see below)         |
-| `pnpm mutate [file…]`  | StrykerJS mutation testing of the given files, or all but `scripts/qmd`; on demand  |
-| `/docs-sync`           | Claude Code skill: report doc drift since the last run, with a fix per item         |
+| Command                | What it does                                                                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`            | Lint with oxlint, with type information; any finding fails                                                                                                                                        |
+| `pnpm format:check`    | Check formatting with oxfmt (`pnpm format` to fix)                                                                                                                                                |
+| `pnpm typecheck`       | Typecheck with TypeScript 7                                                                                                                                                                       |
+| `pnpm test`            | Run the unit tests with vitest                                                                                                                                                                    |
+| `pnpm build`           | Bundle `dist/extension.cjs` with tsdown                                                                                                                                                           |
+| `pnpm gen`             | Regenerate `src/generated/meta.ts` and the settings table above from `package.json`                                                                                                               |
+| `pnpm font`            | Bake the glyph designs into paths and rebuild the glyph font in `media/`                                                                                                                          |
+| `pnpm icon`            | Render the extension icon `media/icon.png` from `media/toucan-icon.svg`                                                                                                                           |
+| `pnpm screenshots`     | Regenerate the README images in `media/readme/` from the packaged extension. macOS only; VS Code in `/Applications`, or pass `--app <VS Code.app>`; `--frames <dir>` also keeps the hero's frames |
+| `pnpm check:generated` | Run `gen`, `font` and `icon` (the generated meta and settings table, the glyph font, the extension icon) and fail if anything changed (CI runs this)                                              |
+| `pnpm package`         | Build and package a VSIX                                                                                                                                                                          |
+| `pnpm docs:index`      | Register the docs with qmd and refresh its index and embeddings (see below)                                                                                                                       |
+| `pnpm mutate [file…]`  | StrykerJS mutation testing of the given files, or all but `scripts/qmd`; on demand                                                                                                                |
+| `/docs-sync`           | Claude Code skill: report doc drift since the last run, with a fix per item                                                                                                                       |
 
 `pnpm install` also sets up a pre-push hook (husky) that runs `typecheck`, `lint`, `format:check` and `test`. It's set up per checkout, so run `pnpm install` in a new worktree before pushing from it. `HUSKY=0` skips it; CI skips it and runs the full set itself.
 
