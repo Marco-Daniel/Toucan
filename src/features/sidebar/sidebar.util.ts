@@ -182,10 +182,27 @@ export class SidebarController {
     }
   }
 
-  /** After a settings change: shows the block if it now should be. */
+  /**
+   * After a settings change: shows the block if it now should be, or closes the
+   * bar it would leave empty. Call it before the block's view is hidden, so a
+   * block that goes off is still seen as visible.
+   */
   settingsChanged(): void {
     const { enabled, visibility } = this.settings();
-    if (this.disposed || !this.started || !enabled || this.visible) {
+    if (this.disposed || !this.started) {
+      return;
+    }
+    if (!enabled) {
+      if (this.visible) {
+        // The repo lost its color, or the setting went off. Toucan's close, so
+        // it's never remembered as the user's and the block comes back with a color.
+        this.closingByToucan = true; // cleared by its visibility event or the next focus change
+        this.ports.debug("closing the bar: the block is off");
+        this.post({ what: "Closing the bar", task: () => this.ports.closeBar() });
+      }
+      return;
+    }
+    if (this.visible) {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !this.focused) {

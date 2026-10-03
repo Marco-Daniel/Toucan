@@ -93,12 +93,21 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
     this.controller.visibilityChanged(view.visible);
   }
 
-  /** After the repo or a setting changed. */
+  /**
+   * After the repo or a setting changed. A block that goes off is told before
+   * the context key hides it, so the controller still sees it visible and closes
+   * the bar; one that comes on only after, so its view exists to be revealed.
+   */
   async refresh(): Promise<void> {
     const { enabled } = this.settings();
+    if (!enabled) {
+      this.controller.settingsChanged();
+    }
     await vscodeCommands.executeCommand("setContext", SIDEBAR_AVAILABLE_CONTEXT, enabled);
     this.render();
-    this.controller.settingsChanged();
+    if (enabled) {
+      this.controller.settingsChanged();
+    }
   }
 
   dispose(): void {

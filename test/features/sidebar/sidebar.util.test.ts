@@ -341,6 +341,46 @@ describe("SidebarController, settings changes", () => {
     expect(state.reveals).toBe(1);
   });
 
+  it("closes the bar when a visible block goes off, and reveals it again when it comes back", async () => {
+    const { controller, settings, state } = setup();
+    controller.start(true);
+    await settle();
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    expect(state.closes).toBe(1);
+    await vi.advanceTimersByTimeAsync(REMEMBER_CLOSE_DELAY_MS * 2);
+    expect(state.closed).toBe(false);
+    settings.enabled = true;
+    controller.settingsChanged();
+    await settle();
+    expect(state.reveals).toBe(2);
+  });
+
+  it("never remembers its close, even when the block is back on before the close's event", async () => {
+    const { controller, settings, state } = setup({ silentClose: true });
+    controller.start(true);
+    await settle();
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    settings.enabled = true;
+    // The close's visibility event, arriving after the color came back.
+    controller.visibilityChanged(false);
+    await vi.advanceTimersByTimeAsync(REMEMBER_CLOSE_DELAY_MS * 2);
+    expect([state.closes, state.closed]).toEqual([1, false]);
+  });
+
+  it("doesn't close the bar for a block that isn't visible", async () => {
+    const { controller, settings, state } = setup({ closed: true });
+    controller.start(true);
+    await settle();
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    expect([state.reveals, state.closes]).toEqual([0, 0]);
+  });
+
   it("doesn't start a second reveal while one is still running", async () => {
     const { controller, state, release } = setup({ holdReveals: true });
     controller.start(true);
@@ -424,6 +464,17 @@ describe("SidebarController, failures", () => {
         controller.start(false);
         await settle();
         controller.setFocused(true);
+      },
+      warning: "Closing the bar failed: Error: no secondary sidebar",
+    },
+    {
+      site: "the close when the block goes off",
+      options: { failCloses: true },
+      act: async ({ controller, settings }: Setup) => {
+        controller.start(true);
+        await settle();
+        settings.enabled = false;
+        controller.settingsChanged();
       },
       warning: "Closing the bar failed: Error: no secondary sidebar",
     },
