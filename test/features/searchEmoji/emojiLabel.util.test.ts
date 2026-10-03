@@ -4,25 +4,20 @@ import { describe, expect, it } from "vitest";
 // import utils
 import { EmojiLabel } from "../../../src/features/searchEmoji/emojiLabel.util.ts";
 
-/** Toucan wrote the title, with the emoji slot. */
-const TOUCANS = {
-  previous: undefined,
-  written: "${activeRepositoryName}${activeEditorShort}${separator}${toucanRepoEmoji}${rootName}",
-};
-const REPO = { name: "webshop", emoji: "🟧" };
+const REPO = { emoji: "🟧" };
 
-/** A fake window: every context write in order, and a registration that can fail. */
+/** A fake window: every registration and context write in order; registration can fail. */
 function create({ registerFails = false } = {}) {
-  const world = { registrations: 0, contexts: [] as string[], warnings: [] as string[] };
+  const world = { calls: [] as string[], warnings: [] as string[] };
   const label = new EmojiLabel({
-    register: async () => {
-      world.registrations += 1;
+    register: async (name, contextKey) => {
+      world.calls.push(`register ${name}=${contextKey}`);
       if (registerFails) {
         throw new Error("command 'registerWindowTitleVariable' not found");
       }
     },
     setContext: async (key, value) => {
-      world.contexts.push(`${key}=${value}`);
+      world.calls.push(`${key}=${value}`);
     },
     warn: (message) => world.warnings.push(message),
   });
@@ -30,35 +25,38 @@ function create({ registerFails = false } = {}) {
 }
 
 describe("EmojiLabel", () => {
-  it("registers the slot once and puts the emoji there while no editor is open", async () => {
+  it("registers both variables once, then moves the emoji as editors open and close", async () => {
     const { label, world } = create();
-    expect(await label.apply({ change: TOUCANS, repo: REPO, hasEditor: false })).toBe(true);
-    expect(await label.apply({ change: TOUCANS, repo: REPO, hasEditor: true })).toBe(true);
-    expect(world.registrations).toBe(1);
-    expect(world.contexts).toEqual([
-      "scmActiveRepositoryName=",
+    await label.apply({ repo: REPO, hasEditor: false, hasSlot: true });
+    await label.apply({ repo: REPO, hasEditor: true, hasSlot: true });
+    expect(world.calls).toEqual([
+      "register toucanRepoLead=toucan.repoLead",
+      "register toucanRepoEmoji=toucan.repoEmoji",
+      "toucan.repoLead=",
       "toucan.repoEmoji=🟧 ",
-      "scmActiveRepositoryName=🟧 ",
+      "toucan.repoLead=🟧 ",
       "toucan.repoEmoji=",
     ]);
     expect(world.warnings).toEqual([]);
   });
 
-  it("keeps the emoji in front when the slot can't be registered, and says so once", async () => {
+  it("shows no emoji when registration fails, says so once and doesn't retry", async () => {
     const { label, world } = create({ registerFails: true });
-    expect(await label.apply({ change: TOUCANS, repo: REPO, hasEditor: false })).toBe(true);
-    expect(await label.apply({ change: TOUCANS, repo: REPO, hasEditor: false })).toBe(true);
-    expect(world.registrations).toBe(1);
-    expect(world.contexts).toEqual(["scmActiveRepositoryName=🟧 ", "scmActiveRepositoryName=🟧 "]);
+    await label.apply({ repo: REPO, hasEditor: true, hasSlot: true });
+    await label.apply({ repo: REPO, hasEditor: false, hasSlot: true });
+    await label.clear();
+    expect(world.calls).toEqual(["register toucanRepoLead=toucan.repoLead"]);
     expect(world.warnings).toEqual([
-      "Couldn't register the search emoji's title variable, so the emoji stays in front: Error: command 'registerWindowTitleVariable' not found",
+      "Couldn't register the search emoji's title variables, so it doesn't show: Error: command 'registerWindowTitleVariable' not found",
     ]);
   });
 
-  it("hands back without registering when the user's own title has no color to show", async () => {
+  it("empties both variables on clear, once they're registered", async () => {
     const { label, world } = create();
-    const own = { previous: "${activeRepositoryName}", written: undefined };
-    expect(await label.apply({ change: own, repo: undefined, hasEditor: false })).toBe(false);
-    expect(world).toEqual({ registrations: 0, contexts: [], warnings: [] });
+    await label.clear();
+    expect(world.calls).toEqual([]);
+    await label.apply({ repo: REPO, hasEditor: true, hasSlot: false });
+    await label.clear();
+    expect(world.calls.slice(-2)).toEqual(["toucan.repoLead=", "toucan.repoEmoji="]);
   });
 });

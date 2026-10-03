@@ -1,37 +1,34 @@
 // import utils
-import { titleValues } from "./windowTitle.util.ts";
+import { EMOJI_VARIABLE_NAME, LEAD_VARIABLE_NAME, titleValues } from "./windowTitle.util.ts";
 import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
 
-// import types
-import type { TitleChange } from "./windowTitle.util.ts";
-
-/** The per-window context key behind `${activeRepositoryName}` (internal to VS Code). */
-export const REPO_NAME_CONTEXT = "scmActiveRepositoryName";
-/** Toucan's own context key behind `${toucanRepoEmoji}` (toucan-v1/0007). */
+/** Toucan's context key behind `${toucanRepoLead}` (toucan-v1/0007). */
+export const LEAD_CONTEXT = "toucan.repoLead";
+/** Toucan's context key behind `${toucanRepoEmoji}` (toucan-v1/0007). */
 export const EMOJI_CONTEXT = "toucan.repoEmoji";
 
 export interface EmojiLabelPorts {
-  /** Registers `${toucanRepoEmoji}` with the window title; may reject. */
-  register(): Promise<void>;
+  /** Registers a window title variable backed by a context key; may reject. */
+  register(name: string, contextKey: string): Promise<void>;
   setContext(key: string, value: string): Promise<void>;
   warn(message: string): void;
 }
 
 interface ApplyArgs {
-  change: TitleChange;
-  repo: { name: string; emoji: string } | undefined;
+  repo: { emoji: string } | undefined;
   hasEditor: boolean;
+  hasSlot: boolean;
 }
 
 /**
  * Sets the search emoji's two title variables in this window (see
- * `titleValues`). `${toucanRepoEmoji}` is registered through an internal
- * command (ADR-0003); if that fails, Toucan says so once, never tries again in
- * this window, and keeps the emoji in front as if an editor were open, so the
- * label still shows it.
+ * `titleValues`). They're registered through an internal command (ADR-0003).
+ * If that fails, Toucan says so once, never tries again in this window, and
+ * shows no emoji: the unregistered variables render empty, so the title reads
+ * like VS Code's own.
  */
 export class EmojiLabel {
-  /** `undefined` until the first attempt, then whether the slot is registered. */
+  /** `undefined` until the first attempt, then whether both variables are registered. */
   private registered: boolean | undefined;
   private readonly ports: EmojiLabelPorts;
 
@@ -39,29 +36,34 @@ export class EmojiLabel {
     this.ports = ports;
   }
 
-  /** Sets both keys; `false` when the change says SCM's own value should come back. */
-  async apply({ change, repo, hasEditor }: ApplyArgs): Promise<boolean> {
-    const values = titleValues({ change, repo, hasEditor });
-    if (values === undefined) {
-      return false;
+  async apply({ repo, hasEditor, hasSlot }: ApplyArgs): Promise<void> {
+    if (!(await this.register())) {
+      return;
     }
-    if (await this.slot()) {
-      await this.ports.setContext(REPO_NAME_CONTEXT, values.lead);
-      await this.ports.setContext(EMOJI_CONTEXT, values.beforeRoot);
-    } else {
-      // At most one of the two holds the emoji: without the slot it goes in front.
-      await this.ports.setContext(REPO_NAME_CONTEXT, values.lead + values.beforeRoot);
-    }
-    return true;
+    const values = titleValues({ repo, hasEditor, hasSlot });
+    await this.ports.setContext(LEAD_CONTEXT, values.lead);
+    await this.ports.setContext(EMOJI_CONTEXT, values.beforeRoot);
   }
 
-  private async slot(): Promise<boolean> {
+  /** Empties both variables, e.g. when the feature is turned off. */
+  async clear(): Promise<void> {
+    if (!this.registered) {
+      return;
+    }
+    await this.ports.setContext(LEAD_CONTEXT, "");
+    await this.ports.setContext(EMOJI_CONTEXT, "");
+  }
+
+  private async register(): Promise<boolean> {
     if (this.registered === undefined) {
-      const [, error] = await tryCatch(() => this.ports.register());
+      const [, error] = await tryCatch(async () => {
+        await this.ports.register(LEAD_VARIABLE_NAME, LEAD_CONTEXT);
+        await this.ports.register(EMOJI_VARIABLE_NAME, EMOJI_CONTEXT);
+      });
       this.registered = error === null;
       if (error !== null) {
         this.ports.warn(
-          `Couldn't register the search emoji's title variable, so the emoji stays in front: ${errorText(error)}`,
+          `Couldn't register the search emoji's title variables, so it doesn't show: ${errorText(error)}`,
         );
       }
     }

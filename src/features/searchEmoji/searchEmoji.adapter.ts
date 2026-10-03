@@ -1,5 +1,5 @@
 // import vscode
-import { commands as vscodeCommands, extensions, window, workspace } from "vscode";
+import { commands as vscodeCommands, window, workspace } from "vscode";
 
 // import adapters
 import { notify } from "../../core/notify.adapter.ts";
@@ -7,10 +7,9 @@ import { overriddenInWorkspace, writeUserSetting } from "../settings/settings.ad
 
 // import utils
 import { emojiFor } from "./emoji.util.ts";
-import { EMOJI_CONTEXT, EmojiLabel, REPO_NAME_CONTEXT } from "./emojiLabel.util.ts";
+import { EmojiLabel } from "./emojiLabel.util.ts";
 import { TitleSetup } from "./titleSetup.util.ts";
-import { EMOJI_VARIABLE_NAME, shouldLabel } from "./windowTitle.util.ts";
-import { errorText, tryCatch } from "../../shared/async/tryCatch.util.ts";
+import { EMOJI_VARIABLE, shouldLabel } from "./windowTitle.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
 import { logFailure } from "../../shared/async/logFailure.util.ts";
 
@@ -21,7 +20,7 @@ import { configs } from "../../generated/meta.ts";
 import { titleChangeFailed } from "../../shared/messages/notifications.messages.ts";
 
 // import types
-import type { Disposable, Event, ExtensionContext } from "vscode";
+import type { Disposable, ExtensionContext } from "vscode";
 import type { Log } from "../../core/log.adapter.ts";
 import type { EmojiLabelPorts } from "./emojiLabel.util.ts";
 import type { TitlePorts } from "./titleSetup.util.ts";
@@ -31,15 +30,8 @@ import type { ActiveRepo } from "../../core/repo.adapter.ts";
 const WINDOW_TITLE = "window.title";
 /** globalState: what Toucan changed in window.title (toucan-v1/0015). */
 const CHANGE_KEY = "searchEmoji.titleChange";
-/** SCM rewrites the key after its own events; reassert just after them. */
+/** Editor and tab events come in bursts; settle on the last one. */
 const REASSERT_DELAY_MS = 50;
-
-/** The slice of the built-in git extension's API this uses. */
-interface GitApi {
-  repositories: { state: { onDidChange: Event<void> } }[];
-  onDidOpenRepository: Event<{ state: { onDidChange: Event<void> } }>;
-  onDidCloseRepository: Event<unknown>;
-}
 
 interface SearchEmojiArgs {
   context: ExtensionContext;
@@ -48,21 +40,14 @@ interface SearchEmojiArgs {
 }
 
 /**
- * The experimental emoji in the Command Center label (toucan-v1/0007, toucan-v1/0015). It needs
- * `${activeRepositoryName}` in the global window.title, which Toucan only
- * adds after asking (with its own `${toucanRepoEmoji}` before the folder
- * name), and restores when the feature is turned off. Then it overwrites the
- * internal `scmActiveRepositoryName` context key and sets its own
- * `toucan.repoEmoji` (see `titleValues`), reasserting them after SCM, editor,
- * tab and focus events.
+ * The experimental emoji in the Command Center label (toucan-v1/0007, toucan-v1/0015). It
+ * needs Toucan's own variables in the global window.title, which Toucan only
+ * adds after asking, and restores when the feature is turned off. Then it sets
+ * them per window (see `EmojiLabel`), moving the emoji as editors open and
+ * close.
  */
 export class SearchEmoji implements Disposable {
   private readonly disposables: Disposable[] = [];
-  private gitHooked = false;
-  /** Whether a repository is open in git, so SCM would show a repo name. */
-  private gitHasRepository = false;
-  /** Whether this window has set the keys, so it can hand them back. */
-  private labelled = false;
   /** Whether the workspace's own window.title was logged, so it's logged once per change. */
   private reportedOverride = false;
   private readonly timer = createTimer();
@@ -107,10 +92,9 @@ export class SearchEmoji implements Disposable {
         );
       }
       this.reportedOverride = overridden;
-      await this.hookGit();
       await this.assert();
     } else {
-      await this.handBack();
+      await this.label.clear();
     }
   }
 
@@ -128,36 +112,14 @@ export class SearchEmoji implements Disposable {
       return;
     }
     const repo = this.repo();
-    const labelled = await this.label.apply({
-      change,
-      repo: repo && {
-        name: repo.name,
-        emoji: emojiFor({ hex: repo.config.background, glyph: repo.config.glyph }),
-      },
+    await this.label.apply({
+      repo: repo && { emoji: emojiFor({ hex: repo.config.background, glyph: repo.config.glyph }) },
       // VS Code's `${activeEditorShort}` is the active editor's title, empty without one.
       hasEditor: window.tabGroups.activeTabGroup.activeTab !== undefined,
+      hasSlot: (workspace.getConfiguration().get<string>(WINDOW_TITLE) ?? "").includes(
+        EMOJI_VARIABLE,
+      ),
     });
-    if (!labelled) {
-      // A repo without a color shows SCM's own value.
-      await this.handBack();
-      return;
-    }
-    this.labelled = true;
-  }
-
-  /**
-   * Replaces Toucan's label with what SCM would show (the key can't be read
-   * back): the folder name when git has a repository open, else nothing.
-   * SCM overwrites it on its next change anyway.
-   */
-  private async handBack(): Promise<void> {
-    if (!this.labelled) {
-      return;
-    }
-    this.labelled = false;
-    const name = this.gitHasRepository ? workspace.workspaceFolders?.[0]?.name : undefined;
-    await vscodeCommands.executeCommand("setContext", REPO_NAME_CONTEXT, name ?? "");
-    await vscodeCommands.executeCommand("setContext", EMOJI_CONTEXT, "");
   }
 
   private reassertSoon(): void {
@@ -174,43 +136,6 @@ export class SearchEmoji implements Disposable {
       },
     });
   }
-
-  /** SCM rewrites the key when repositories open, close or change branch. */
-  private async hookGit(): Promise<void> {
-    if (this.gitHooked) {
-      return;
-    }
-    this.gitHooked = true;
-    const [, error] = await tryCatch(() => this.watchGit());
-    if (error !== null) {
-      this.log.warn(`Couldn't watch git repositories for the search emoji: ${errorText(error)}`);
-    }
-  }
-
-  /** Reasserts after every change to a git repository, and when one opens or closes. */
-  private async watchGit(): Promise<void> {
-    const git = extensions.getExtension<{ getAPI(version: 1): GitApi }>("vscode.git");
-    if (!git) {
-      return;
-    }
-    const api = (await git.activate()).getAPI(1);
-    const watch = (repository: { state: { onDidChange: Event<void> } }) => {
-      this.disposables.push(repository.state.onDidChange(() => this.reassertSoon()));
-    };
-    api.repositories.forEach(watch);
-    this.gitHasRepository = api.repositories.length > 0;
-    this.disposables.push(
-      api.onDidOpenRepository((repository) => {
-        watch(repository);
-        this.gitHasRepository = true;
-        this.reassertSoon();
-      }),
-      api.onDidCloseRepository(() => {
-        this.gitHasRepository = api.repositories.length > 0;
-        this.reassertSoon();
-      }),
-    );
-  }
 }
 
 function enabled(): boolean {
@@ -218,20 +143,16 @@ function enabled(): boolean {
 }
 
 /**
- * The window title variable's ports. `registerWindowTitleVariable` registers
- * `${toucanRepoEmoji}`, backed by Toucan's own context key. It's an internal
- * command, not public API, so under ADR-0003 it may only serve this opt-in
- * experimental feature: `EmojiLabel` only runs from `assert`, which only runs
- * while the emoji is on and consented.
+ * The title variables' ports. `registerWindowTitleVariable` registers a
+ * variable backed by a context key. It's an internal command, not public API,
+ * so under ADR-0003 it may only serve this opt-in experimental feature:
+ * `EmojiLabel` only registers from `assert`, which only runs while the emoji
+ * is on and consented.
  */
 function labelPorts(log: Log): EmojiLabelPorts {
   return {
-    register: async () => {
-      await vscodeCommands.executeCommand(
-        "registerWindowTitleVariable",
-        EMOJI_VARIABLE_NAME,
-        EMOJI_CONTEXT,
-      );
+    register: async (name, contextKey) => {
+      await vscodeCommands.executeCommand("registerWindowTitleVariable", name, contextKey);
     },
     setContext: async (key, value) => {
       await vscodeCommands.executeCommand("setContext", key, value);
@@ -273,7 +194,7 @@ function titlePorts({ context, log }: TitlePortsArgs): TitlePorts {
         "Show the repo's emoji in the search bar?",
         {
           modal: true,
-          detail: `Toucan's experimental search emoji needs \${activeRepositoryName} at the start of window.title, so it changes that setting in your user settings. Turning the emoji off restores your previous title.${
+          detail: `Toucan's experimental search emoji needs its own variables in window.title, so it changes that setting in your user settings. Turning the emoji off restores your previous title.${
             overridden
               ? " This workspace sets its own window.title, so the emoji won't show in this window."
               : ""

@@ -33,10 +33,14 @@ The key's value (revised during implementation, to avoid showing the repo name t
 
 ## Amendment (2026-10-03)
 
-With no editor open, the label read "🟦 — webshop": the emoji in front kept VS Code's separator alive, because VS Code only drops a separator with nothing on one side. Toucan now registers its own title variable, `${toucanRepoEmoji}` (VS Code's `registerWindowTitleVariable` command, backed by Toucan's context key `toucan.repoEmoji`), and puts it directly in front of the first `${rootName}` when it writes `window.title`. The emoji goes in exactly one of the two places:
+Two problems with the context key: with no editor open the label read "🟦 — webshop" (the emoji in front kept VS Code's separator alive, since VS Code only drops a separator with nothing on one side), and after an uninstall or with Toucan disabled, the `${activeRepositoryName}` Toucan left in `window.title` was filled by source control again, so the title read "webshop — webshop" until the user removed it.
 
-- An editor is open: in `${activeRepositoryName}`, so "🟦 file.ts — webshop" as before.
-- No editor is open: in `${toucanRepoEmoji}`, with `${activeRepositoryName}` empty, so VS Code drops the separator: "🟦 webshop".
+Toucan now uses only window title variables of its own, registered per window through VS Code's `registerWindowTitleVariable` command (internal, so still only in this opt-in experimental feature, ADR-0003) and backed by Toucan's context keys: `${toucanRepoLead}` in front of the title and `${toucanRepoEmoji}` directly in front of the first `${rootName}`. The emoji goes in exactly one of them:
 
-A title written before this change, without the slot, gets it added in the focused window without asking again (the user consented to Toucan's title); restore accepts the title with or without the slot. A title without `${rootName}`, and the user's own title that already uses `${activeRepositoryName}`, keep the earlier behaviour.
+- An editor is open: in front, "🟦 file.ts — webshop".
+- No editor is open: in front of the folder name, so VS Code drops the separator: "🟦 webshop".
+- No color: both empty.
 
+A variable nobody registers renders empty, so a title left behind by an uninstall or a disabled Toucan reads like VS Code's own, with nothing to restore. If registering fails, the emoji doesn't show and Toucan says so once. Toucan no longer overwrites `scmActiveRepositoryName`, so there is no flicker when source control rewrites it, and no git watching.
+
+Titles written by earlier versions (with `${activeRepositoryName}` in front, with or without the slot) move to the new form in the focused window without asking again, while the title is still what Toucan wrote; restore accepts every form Toucan wrote. A user whose own title used `${activeRepositoryName}` (where Toucan used to show the emoji and name without changing the title) gets source control's plain name there again, and is asked whether Toucan may add its own variable in front.
