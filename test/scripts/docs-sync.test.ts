@@ -197,6 +197,43 @@ describe("diffCommands", () => {
       ],
     });
   });
+
+  it("compares the palette label, so a category change counts as a retitle", () => {
+    expect(
+      diffCommands({
+        before: {
+          contributes: {
+            commands: [
+              { command: "t.recategorised", category: "Old", title: "Set Color" },
+              { command: "t.categorised", title: "Clear" },
+              { command: "t.uncategorised", category: "Toucan", title: "Pick" },
+              { command: "t.kept", category: "Toucan", title: "Keep" },
+              { command: "t.untitled", category: "Toucan" },
+            ],
+          },
+        },
+        after: {
+          contributes: {
+            commands: [
+              { command: "t.recategorised", category: "Toucan", title: "Set Color" },
+              { command: "t.categorised", category: "Toucan", title: "Clear" },
+              { command: "t.uncategorised", title: "Pick" },
+              { command: "t.kept", category: "Toucan", title: "Keep" },
+              { command: "t.untitled", category: "Other" },
+            ],
+          },
+        },
+      }),
+    ).toEqual({
+      added: [],
+      removed: [],
+      retitled: [
+        { command: "t.categorised", from: "Clear", to: "Toucan: Clear" },
+        { command: "t.recategorised", from: "Old: Set Color", to: "Toucan: Set Color" },
+        { command: "t.uncategorised", from: "Toucan: Pick", to: "Pick" },
+      ],
+    });
+  });
 });
 
 describe("adrStatusChanges", () => {

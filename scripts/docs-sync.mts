@@ -165,7 +165,16 @@ export function diffSettings({
   };
 }
 
-/** The commands in `contributes.commands`: each id's title, or `null` without one. */
+/** A command's label in the Command Palette, `Category: Title`, or the bare title without a category. */
+function commandLabel(entry: Record<string, unknown>): string | null {
+  const { title, category } = entry;
+  if (typeof title !== "string") {
+    return null;
+  }
+  return typeof category === "string" ? `${category}: ${title}` : title;
+}
+
+/** The commands in `contributes.commands`: each id's label, or `null` without a title. */
 function commandsOf(manifest: unknown): Map<string, string | null> {
   const contributes = isRecord(manifest) ? manifest["contributes"] : undefined;
   const commands = isRecord(contributes) ? contributes["commands"] : undefined;
@@ -173,14 +182,14 @@ function commandsOf(manifest: unknown): Map<string, string | null> {
     Array.isArray(commands)
       ? commands.flatMap((entry) =>
           isRecord(entry) && typeof entry["command"] === "string"
-            ? [[entry["command"], typeof entry["title"] === "string" ? entry["title"] : null]]
+            ? [[entry["command"], commandLabel(entry)]]
             : [],
         )
       : [],
   );
 }
 
-/** The command ids added to or removed from `contributes.commands`, and those with a new title. */
+/** The command ids added to or removed from `contributes.commands`, and those with a new label (title or category). */
 export function diffCommands({
   before,
   after,
