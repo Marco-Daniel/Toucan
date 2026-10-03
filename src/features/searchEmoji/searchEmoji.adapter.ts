@@ -168,6 +168,10 @@ export class SearchEmoji implements Disposable {
   /**
    * Registers `${toucanRepoEmoji}` with VS Code's window title, backed by
    * Toucan's own context key. Per window; registering again is harmless.
+   *
+   * `registerWindowTitleVariable` is an internal command, not public API, so
+   * under ADR-0003 it may only serve this opt-in experimental feature: it runs
+   * from `assert`, which only runs while the emoji is on and consented.
    */
   private async registerEmojiVariable(): Promise<void> {
     if (this.registered) {

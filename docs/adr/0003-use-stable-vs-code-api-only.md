@@ -24,7 +24,7 @@ From GROUNDING.md's conventions and the toucan-v1 plan, where the stable API is 
 Chosen: **stable API only by default**. The rules:
 
 - No proposed APIs.
-- Anything relying on internal behavior (today: the search emoji, which sets the internal `scmActiveRepositoryName` context key) is off by default, opt-in, and labelled experimental in its setting and the README.
+- Anything relying on internal behavior (today: the search emoji, which sets the internal `scmActiveRepositoryName` context key and registers its own title variable through the internal `registerWindowTitleVariable` command) is off by default, opt-in, and labelled experimental in its setting and the README.
 
 ## Consequences
 
