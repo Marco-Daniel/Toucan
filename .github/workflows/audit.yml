@@ -23,6 +23,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
-      # Reads only the lockfile: nothing is installed, so no dependency code runs.
-      # Fails on high or critical advisories; lower ones are listed in the log.
-      - run: pnpm audit --audit-level high
+      # Both steps read only the lockfile: nothing is installed, so no
+      # dependency code runs. This one names every advisory, of any severity,
+      # in the log; it never fails the run.
+      - name: List all advisories
+        run: pnpm audit || true
+      # This one fails the run on high or critical advisories only. With a
+      # level set, pnpm prints just the counts, hence the step above.
+      - name: Fail on high or critical advisories
+        run: pnpm audit --audit-level high
