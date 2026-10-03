@@ -22,3 +22,7 @@ Chosen: **`@toucan/brand`**. It has no build step: `exports` points at `./src/*`
 
 - Good: one palette and one set of glyphs for both products, no build artifacts to keep in sync.
 - Bad: the extension's ADR-0010 layout gains an outside import path; the package must stay free of `vscode` and React.
+
+## Amendment (2026-10-03)
+
+The brand holds the glyph SVGs, not the font. The extension keeps the glyph designs (`glyphDesign.consts.ts`), the bake and the woff: VS Code loads `contributes.icons` from inside the extension's folder, and the site only needs the SVGs. `pnpm font` in the extension writes the SVGs into `packages/brand/assets/glyphs/`.

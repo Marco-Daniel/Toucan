@@ -158,6 +158,8 @@ describe("the ADR log", () => {
       "apps/extension/README.md",
       "config/vite/src",
       "config/vite/test",
+      "packages/brand/src",
+      "packages/brand/test",
       "scripts",
       "test",
       ".claude/CLAUDE.md",
