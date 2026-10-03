@@ -1,4 +1,4 @@
-// import consts
+// import utils
 import { LOW_CONTRAST_HINT } from "../../shared/color/contrast.util.ts";
 
 // import types
