@@ -1,9 +1,12 @@
 // import utils
 import {
+  currentForm,
+  LEAD_VARIABLE,
   searchEmojiStep,
   titleToRestore,
-  titleWithRepoVariable,
+  titleWithEmoji,
   unappliedChange,
+  writtenForms,
 } from "./windowTitle.util.ts";
 import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 
@@ -65,6 +68,9 @@ export class TitleSetup {
       await ports.writeChange(undefined);
       change = undefined;
     }
+    if (enabled && focused && change) {
+      change = await this.upgrade(change);
+    }
     const step = searchEmojiStep({ enabled, focused, change });
     if (step === "ask") {
       const [, error] = await tryCatch(() => this.askAndApply());
@@ -117,8 +123,51 @@ export class TitleSetup {
     }
   }
 
+  /**
+   * Moves a title an earlier version wrote to today's form (toucan-v1/0007)
+   * without asking again: the user consented to Toucan's title, and restore
+   * still brings back theirs. Only while the title is still a form of what
+   * Toucan wrote; one the user edited since is left alone. The title goes
+   * first; if the window dies before the record, the next focused window finds
+   * today's form already there and only records it, and restore accepts every
+   * form meanwhile.
+   *
+   * A record without a written title is from an earlier version that used the
+   * user's own `${activeRepositoryName}` without changing the title. Toucan no
+   * longer uses that variable, so unless the title already has Toucan's own,
+   * the record goes and the user is asked again.
+   */
+  private async upgrade(change: TitleChange): Promise<TitleChange | undefined> {
+    const { ports } = this;
+    const { written } = change;
+    const current = ports.title().global;
+    if (written === undefined) {
+      if (current?.includes(LEAD_VARIABLE)) {
+        return change;
+      }
+      await ports.writeChange(undefined);
+      return undefined;
+    }
+    const upgraded = currentForm(written);
+    if (upgraded === written || current === undefined || !writtenForms(written).includes(current)) {
+      return change;
+    }
+    if (current !== upgraded) {
+      const [, error] = await tryCatch(() => ports.writeTitle(upgraded));
+      if (error !== null) {
+        // The old title and its record still match, so nothing to undo.
+        ports.failed(error);
+        return change;
+      }
+    }
+    const next = { previous: change.previous, written: upgraded };
+    await ports.writeChange(next);
+    ports.info("Moved window.title to the search emoji's own variables.");
+    return next;
+  }
+
   private written(title: TitleSettings): string | undefined {
-    return titleWithRepoVariable(title.global ?? title.default ?? "");
+    return titleWithEmoji(title.global ?? title.default ?? "");
   }
 
   private async restore(change: TitleChange): Promise<void> {

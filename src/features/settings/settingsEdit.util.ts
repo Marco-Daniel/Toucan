@@ -85,6 +85,14 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
 
   const next = desired ?? {};
   const changed = changedKeys({ before: current, after: next });
+  // Nothing left to keep: remove the setting itself, so no empty object stays
+  // behind. With a comment inside, the object stays and only its keys go.
+  if (desired === undefined) {
+    const removed = removeSetting({ text, key });
+    if (removed !== undefined) {
+      return { kind: "edit", text: removed, changed };
+    }
+  }
   if (changed.length === 0) {
     return { kind: "noop" };
   }
@@ -115,6 +123,27 @@ export function planEdit({ text, key, view, desired }: EditInput): EditPlan {
     return { kind: "fallback", reason: "the in-place edit would drop a comment" };
   }
   return { kind: "edit", text: edited, changed };
+}
+
+interface RemoveSettingArgs {
+  text: string;
+  key: string;
+}
+
+/**
+ * The text without the `key` setting, by its whole lines like any removal, or
+ * `undefined` when that doesn't parse back without it or would drop a comment.
+ */
+function removeSetting({ text, key }: RemoveSettingArgs): string | undefined {
+  const path = [key];
+  const edits =
+    removeLines({ text, path }) ??
+    modify(text, path, undefined, { formattingOptions: detectFormatting(text) });
+  const edited = applyEdits(text, edits);
+  const result = parseSettings(edited);
+  return result && result[key] === undefined && keepsComments({ text, edited, paths: [] })
+    ? edited
+    : undefined;
 }
 
 /**

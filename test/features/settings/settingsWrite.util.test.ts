@@ -246,6 +246,29 @@ describe("SettingsFileWriter", () => {
     expect(updates).toEqual([NEXT]);
   });
 
+  it("removes the setting from the file when nothing of it is left", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(
+      file,
+      `{\n  "editor.fontSize": 13,\n  "${KEY}": {\n    "commandCenter.background": "#aa0000"\n  }\n}\n`,
+    );
+    await refreshView(file);
+    const { writer, updates } = setup({ file });
+    await writer.write({ key: KEY, update: () => ({ value: undefined }), target: "profile" });
+    expect(await readFile(file, "utf8")).toBe('{\n  "editor.fontSize": 13,\n}\n');
+    expect(updates).toEqual([]);
+  });
+
+  it("clears through update() with undefined, which removes the setting, when it can't edit in place", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    await refreshView(file);
+    const { writer, updates } = setup({ file, dirty: [file] });
+    await writer.write({ key: KEY, update: () => ({ value: undefined }), target: "profile" });
+    expect(await readFile(file, "utf8")).toBe(BEFORE);
+    expect(updates).toEqual([undefined]);
+  });
+
   it("uses update() when the setting isn't in the file", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, '{\n  "editor.fontSize": 13,\n}\n');

@@ -182,10 +182,30 @@ export class SidebarController {
     }
   }
 
-  /** After a settings change: shows the block if it now should be. */
+  /**
+   * After a settings change: shows the block if it now should be, or closes the
+   * bar Toucan opened for a block that went off. Call it before the block's view
+   * is hidden, so a block that goes off is still seen as visible.
+   */
   settingsChanged(): void {
     const { enabled, visibility } = this.settings();
-    if (this.disposed || !this.started || !enabled || this.visible) {
+    if (this.disposed || !this.started) {
+      return;
+    }
+    if (!enabled) {
+      // The repo lost its color, or the setting went off. Like the focus path,
+      // close only a bar Toucan opened: one the user opened may hold Chat or
+      // other views, so it stays, even if the block was all it showed. Only
+      // `unfocused` mode opens the bar for Toucan, so `always` never closes it.
+      if (this.openedByToucan && this.visible) {
+        this.openedByToucan = false;
+        this.closingByToucan = true; // cleared by its visibility event or the next focus change
+        this.ports.debug("closing the bar Toucan opened: the block is off");
+        this.post({ what: "Closing the bar", task: () => this.ports.closeBar() });
+      }
+      return;
+    }
+    if (this.visible) {
       return;
     }
     if (visibility === "always" ? !this.ports.readClosed() : !this.focused) {

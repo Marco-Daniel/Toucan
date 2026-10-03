@@ -341,6 +341,93 @@ describe("SidebarController, settings changes", () => {
     expect(state.reveals).toBe(1);
   });
 
+  it("closes the bar Toucan opened when the block goes off, and reveals it again with a color", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused" });
+    controller.start(false);
+    await settle();
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    expect(state.closes).toBe(1);
+    await vi.advanceTimersByTimeAsync(REMEMBER_CLOSE_DELAY_MS * 2);
+    expect(state.closed).toBe(false);
+    settings.enabled = true;
+    controller.settingsChanged();
+    await settle();
+    expect(state.reveals).toBe(2);
+  });
+
+  it("doesn't close again a bar the user reopened after Toucan closed it", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused" });
+    controller.start(false);
+    await settle();
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    // The user opens the bar again before any focus change; the block is back with a color.
+    controller.visibilityChanged(true);
+    settings.enabled = true;
+    controller.settingsChanged();
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    expect([state.reveals, state.closes]).toEqual([1, 1]);
+  });
+
+  it("doesn't close again a bar the user reopened after Toucan closed it on focus", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused" });
+    controller.start(false);
+    await settle();
+    controller.setFocused(true);
+    await settle();
+    // The user opens the bar again while the window keeps focus; then the block goes off.
+    controller.visibilityChanged(true);
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    expect([state.reveals, state.closes]).toEqual([1, 1]);
+  });
+
+  // The user's bar may hold Chat or other views: it stays, even if it ends up empty.
+  it.each([
+    {
+      opened: "with Toggle Sidebar Block",
+      options: { closed: true },
+      open: async ({ controller }: Setup) => {
+        controller.start(true);
+        await controller.toggle();
+      },
+    },
+    {
+      opened: "by the startup reveal in always mode",
+      options: {},
+      open: async ({ controller }: Setup) => {
+        controller.start(true);
+      },
+    },
+  ])(
+    "leaves the bar open when the block goes off after it was opened $opened",
+    async ({ options, open }) => {
+      const given = setup(options);
+      await open(given);
+      await settle();
+      given.settings.enabled = false;
+      given.controller.settingsChanged();
+      await settle();
+      expect([given.state.reveals, given.state.closes]).toEqual([1, 0]);
+    },
+  );
+
+  it("doesn't close for a block Toucan revealed that never became visible", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused", silentReveal: true });
+    controller.start(false);
+    await settle();
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    expect([state.reveals, state.closes]).toEqual([1, 0]);
+  });
+
   it("doesn't start a second reveal while one is still running", async () => {
     const { controller, state, release } = setup({ holdReveals: true });
     controller.start(true);
@@ -424,6 +511,17 @@ describe("SidebarController, failures", () => {
         controller.start(false);
         await settle();
         controller.setFocused(true);
+      },
+      warning: "Closing the bar failed: Error: no secondary sidebar",
+    },
+    {
+      site: "the close when the block goes off",
+      options: { visibility: "unfocused", failCloses: true },
+      act: async ({ controller, settings }: Setup) => {
+        controller.start(false);
+        await settle();
+        settings.enabled = false;
+        controller.settingsChanged();
       },
       warning: "Closing the bar failed: Error: no secondary sidebar",
     },

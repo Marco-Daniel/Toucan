@@ -1,5 +1,17 @@
-/** The window title variable the search emoji rides on (toucan-v1/0007). */
-export const REPO_VARIABLE = "${activeRepositoryName}";
+/**
+ * Toucan's own window title variables (toucan-v1/0007), registered per window
+ * and backed by Toucan's context keys: one in front of the title, one in front
+ * of the folder name. Nobody else sets them, and a variable nobody registers
+ * renders empty, so a title Toucan leaves behind (after an uninstall, or with
+ * Toucan disabled) shows no emoji and no repeated name.
+ */
+export const LEAD_VARIABLE_NAME = "toucanRepoLead";
+export const EMOJI_VARIABLE_NAME = "toucanRepoEmoji";
+export const LEAD_VARIABLE = `\${${LEAD_VARIABLE_NAME}}`;
+export const EMOJI_VARIABLE = `\${${EMOJI_VARIABLE_NAME}}`;
+/** What earlier versions put in front of the title, for upgrading and restoring theirs. */
+const LEGACY_LEAD = "${activeRepositoryName}";
+const ROOT_NAME = "${rootName}";
 
 /** What Toucan changed in `window.title`, so it can be undone (toucan-v1/0015). */
 export interface TitleChange {
@@ -22,32 +34,75 @@ export interface TitleChange {
 export const PENDING_STALE_MS = 30_000;
 
 /**
- * The title Toucan needs: the current one (or VS Code's default) with the
- * repository variable in front, so the Command Center label starts with it.
- * No space or separator in between: the value carries its own trailing space
- * (see `repoVariableValue`), so a repo without a color leaves no stray space
- * or dangling separator. `undefined` when the variable is already there.
+ * The title with the emoji slot directly in front of the first `${rootName}`,
+ * where the emoji goes while no editor is open. Unchanged when the slot is
+ * already there or the title has no `${rootName}`.
  */
-export function titleWithRepoVariable(current: string): string | undefined {
-  return current.includes(REPO_VARIABLE) ? undefined : `${REPO_VARIABLE}${current}`;
-}
-
-interface RepoVariableValueArgs {
-  change: TitleChange;
-  repo: { name: string; emoji: string } | undefined;
+export function withEmojiSlot(title: string): string {
+  return title.includes(EMOJI_VARIABLE) || !title.includes(ROOT_NAME)
+    ? title
+    : title.replace(ROOT_NAME, `${EMOJI_VARIABLE}${ROOT_NAME}`);
 }
 
 /**
- * What the variable shows. When Toucan added it, the title already names the
- * repo elsewhere, so the emoji and a space (nothing for a repo without a
- * color, so VS Code drops the separator after it). When the user's own title
- * used it, it stands in for SCM's repo name, so the emoji plus the name.
+ * The title Toucan needs: the current one (or VS Code's default) with its
+ * lead variable in front, so the Command Center label starts with it, and the
+ * emoji slot in front of the folder name (see `withEmojiSlot`). No space or
+ * separator next to either: the values carry their own trailing space (see
+ * `titleValues`), so an empty one leaves no stray space and lets VS Code drop
+ * the separator beside it. `undefined` when the lead variable is already there.
  */
-export function repoVariableValue({ change, repo }: RepoVariableValueArgs): string | undefined {
-  if (change.written !== undefined) {
-    return repo ? `${repo.emoji} ` : "";
+export function titleWithEmoji(current: string): string | undefined {
+  return current.includes(LEAD_VARIABLE) ? undefined : `${LEAD_VARIABLE}${withEmojiSlot(current)}`;
+}
+
+/**
+ * A title Toucan wrote, in today's form: an earlier version's
+ * `${activeRepositoryName}` in front becomes the lead variable, and the emoji
+ * slot is added. Today's form, or any other title, comes back unchanged.
+ */
+export function currentForm(written: string): string {
+  return written.startsWith(LEGACY_LEAD)
+    ? `${LEAD_VARIABLE}${withEmojiSlot(written.slice(LEGACY_LEAD.length))}`
+    : withEmojiSlot(written);
+}
+
+/**
+ * Every form of a title Toucan wrote that may still be in the settings: as
+ * recorded, with only the slot added (an earlier build of this change), and
+ * in today's form (an upgrade whose record didn't get written).
+ */
+export function writtenForms(written: string): string[] {
+  return [...new Set([written, withEmojiSlot(written), currentForm(written)])];
+}
+
+interface TitleValuesArgs {
+  repo: { emoji: string } | undefined;
+  /** Whether the window has an active editor, so `${activeEditorShort}` isn't empty. */
+  hasEditor: boolean;
+  /** Whether the title has the emoji slot in front of the folder name. */
+  hasSlot: boolean;
+}
+
+/** What the lead variable and the emoji slot show. */
+export interface TitleValues {
+  lead: string;
+  beforeRoot: string;
+}
+
+/**
+ * What the two variables show: the emoji and a space in exactly one of them,
+ * the other empty. In front while an editor is open ("🟦 file.ts — webshop");
+ * in front of the folder name while none is, so VS Code drops the separator
+ * that would otherwise trail the emoji ("🟦 webshop"). A title without the
+ * slot keeps the emoji in front. Both empty for a repo without a color.
+ */
+export function titleValues({ repo, hasEditor, hasSlot }: TitleValuesArgs): TitleValues {
+  if (!repo) {
+    return { lead: "", beforeRoot: "" };
   }
-  return repo && `${repo.emoji} ${repo.name}`;
+  const emoji = `${repo.emoji} `;
+  return !hasEditor && hasSlot ? { lead: "", beforeRoot: emoji } : { lead: emoji, beforeRoot: "" };
 }
 
 interface TitleToRestoreArgs {
@@ -57,14 +112,18 @@ interface TitleToRestoreArgs {
 
 /**
  * The value to restore when the search emoji is turned off: the previous one,
- * but only if `window.title` is still what Toucan wrote. If the user edited
- * it since, their edit stays.
+ * but only if `window.title` is still a form of what Toucan wrote (see
+ * `writtenForms`). If the user edited it since, their edit stays.
  */
 export function titleToRestore({
   change,
   current,
 }: TitleToRestoreArgs): { restore: true; value: string | undefined } | { restore: false } {
-  if (change.written === undefined || current !== change.written) {
+  if (
+    change.written === undefined ||
+    current === undefined ||
+    !writtenForms(change.written).includes(current)
+  ) {
     return { restore: false };
   }
   return { restore: true, value: change.previous };

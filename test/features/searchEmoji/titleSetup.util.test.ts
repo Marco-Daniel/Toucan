@@ -10,6 +10,13 @@ import type { TitleChange } from "../../../src/features/searchEmoji/windowTitle.
 
 const DEFAULT = "${activeEditorShort}${separator}${rootName}";
 const MINE = "${rootName} — ${activeEditorShort}";
+/** MINE as Toucan writes it now: its lead variable and the emoji slot. */
+const MINE_WRITTEN = "${toucanRepoLead}${toucanRepoEmoji}${rootName} — ${activeEditorShort}";
+/** MINE as v0.0.3 wrote it. */
+const MINE_V003 = "${activeRepositoryName}${rootName} — ${activeEditorShort}";
+/** MINE as an earlier build of the emoji slot wrote it. */
+const MINE_SLOT_ONLY =
+  "${activeRepositoryName}${toucanRepoEmoji}${rootName} — ${activeEditorShort}";
 
 /**
  * A fake VS Code: settings, globalState and the consent dialog. `calls` logs
@@ -76,18 +83,20 @@ describe("TitleSetup, consent", () => {
     const { title, world } = create({ title: MINE });
     const change = await title.settle();
     expect(world.calls).toEqual([
-      `record {"previous":"${MINE}","written":"\${activeRepositoryName}${MINE}","pendingSince":1000000}`,
-      `title \${activeRepositoryName}${MINE}`,
-      `record {"previous":"${MINE}","written":"\${activeRepositoryName}${MINE}"}`,
+      `record {"previous":"${MINE}","written":"${MINE_WRITTEN}","pendingSince":1000000}`,
+      `title ${MINE_WRITTEN}`,
+      `record {"previous":"${MINE}","written":"${MINE_WRITTEN}"}`,
     ]);
-    expect(change).toEqual({ previous: MINE, written: `\${activeRepositoryName}${MINE}` });
+    expect(change).toEqual({ previous: MINE, written: MINE_WRITTEN });
     expect(world.asked).toEqual([false]);
   });
 
   it("builds on VS Code's default title when the user has none", async () => {
     const { title, world } = create();
     await title.settle();
-    expect(world.title).toBe(`\${activeRepositoryName}${DEFAULT}`);
+    expect(world.title).toBe(
+      "${toucanRepoLead}${activeEditorShort}${separator}${toucanRepoEmoji}${rootName}",
+    );
     expect(world.change).toEqual({ previous: undefined, written: world.title });
   });
 
@@ -106,7 +115,7 @@ describe("TitleSetup, consent", () => {
   });
 
   it("records without asking when the title already has the variable", async () => {
-    const own = `\${activeRepositoryName} · ${MINE}`;
+    const own = `\${toucanRepoLead} · ${MINE}`;
     const { title, world } = create({ title: own });
     expect(await title.settle()).toEqual({ previous: own, written: undefined });
     expect(world.asked).toEqual([]);
@@ -123,7 +132,7 @@ describe("TitleSetup, consent", () => {
     await title.settle();
     expect(world.change).toEqual({
       previous: "${rootName}",
-      written: "${activeRepositoryName}${rootName}",
+      written: "${toucanRepoLead}${toucanRepoEmoji}${rootName}",
     });
   });
 
@@ -177,7 +186,7 @@ describe("TitleSetup, restore", () => {
 });
 
 describe("TitleSetup, crash recovery", () => {
-  const written = `\${activeRepositoryName}${MINE}`;
+  const written = MINE_WRITTEN;
 
   it("drops a stale pending record whose write never happened, then asks again", async () => {
     const { title, world } = create({
@@ -193,6 +202,88 @@ describe("TitleSetup, crash recovery", () => {
   it("leaves a stale pending record alone in an unfocused window", async () => {
     const change = { previous: MINE, written, pendingSince: 0 };
     const { title, world } = create({ title: MINE, focused: false, change });
+    expect(await title.settle()).toEqual(change);
+    expect(world.calls).toEqual([]);
+  });
+});
+
+describe("TitleSetup, upgrade to Toucan's own variables", () => {
+  const today = { previous: MINE, written: MINE_WRITTEN };
+
+  it.each([
+    ["v0.0.3's title", MINE_V003],
+    ["an earlier build's title with only the slot", MINE_SLOT_ONLY],
+  ])("moves %s to today's form without asking", async (_, written) => {
+    const { title, world } = create({ title: written, change: { previous: MINE, written } });
+    expect(await title.settle()).toEqual(today);
+    expect(world.calls).toEqual([
+      `title ${MINE_WRITTEN}`,
+      `record {"previous":"${MINE}","written":"${MINE_WRITTEN}"}`,
+    ]);
+    expect(world.asked).toEqual([]);
+  });
+
+  it("only records when the title is already in today's form (a window died in between)", async () => {
+    const { title, world } = create({
+      title: MINE_WRITTEN,
+      change: { previous: MINE, written: MINE_V003 },
+    });
+    await title.settle();
+    expect(world.calls).toEqual([`record {"previous":"${MINE}","written":"${MINE_WRITTEN}"}`]);
+  });
+
+  it("does nothing once the title and record are in today's form", async () => {
+    const { title, world } = create({ title: MINE_WRITTEN, change: today });
+    expect(await title.settle()).toEqual(today);
+    expect(world.calls).toEqual([]);
+  });
+
+  it("leaves a title the user changed since", async () => {
+    const older = { previous: MINE, written: MINE_V003 };
+    const { title, world } = create({ title: "${rootName}!", change: older });
+    expect(await title.settle()).toEqual(older);
+    expect(world.calls).toEqual([]);
+  });
+
+  it("leaves it to the focused window", async () => {
+    const older = { previous: MINE, written: MINE_V003 };
+    const { title, world } = create({ title: MINE_V003, change: older, focused: false });
+    await title.settle();
+    expect(world.calls).toEqual([]);
+  });
+
+  it("keeps the older title and record when the write fails, and tells the user", async () => {
+    const older = { previous: MINE, written: MINE_V003 };
+    const { title, world } = create({ title: MINE_V003, change: older, failTitle: true });
+    expect(await title.settle()).toEqual(older);
+    expect(world.calls).toEqual([`title ${MINE_WRITTEN}`]);
+    expect(world.warnings).toEqual(["Error: settings.json is read-only"]);
+  });
+
+  it("asks again when an earlier version only used the user's own title", async () => {
+    const own = `\${activeRepositoryName} · ${MINE}`;
+    const { title, world } = create({ title: own, change: { previous: own, written: undefined } });
+    await title.settle();
+    expect(world.calls[0]).toBe("record undefined");
+    expect(world.asked).toEqual([false]);
+    expect(world.change).toEqual({
+      previous: own,
+      written:
+        "${toucanRepoLead}${activeRepositoryName} · ${toucanRepoEmoji}${rootName} — ${activeEditorShort}",
+    });
+  });
+
+  it("asks again when that title has been removed since", async () => {
+    const { title, world } = create({ change: { previous: "${rootName}", written: undefined } });
+    await title.settle();
+    expect(world.calls[0]).toBe("record undefined");
+    expect(world.asked).toEqual([false]);
+  });
+
+  it("keeps a record without a write when the title has Toucan's variable", async () => {
+    const own = `\${toucanRepoLead}${MINE}`;
+    const change = { previous: own, written: undefined };
+    const { title, world } = create({ title: own, change });
     expect(await title.settle()).toEqual(change);
     expect(world.calls).toEqual([]);
   });
