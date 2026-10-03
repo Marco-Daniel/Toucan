@@ -442,6 +442,15 @@ describe("netlifyApi", () => {
     );
   });
 
+  it("names the deploy creation in its error when the answer isn't JSON", async () => {
+    const { fetchFn } = fakeFetch([new Response("<html>", { status: 201 })]);
+    await expect(
+      netlifyApi({ token: TOKEN, siteId: "site-1", fetchFn }).createDeploy({ "/index.html": "a1" }),
+    ).rejects.toThrow(
+      /^Netlify POST \/sites\/site-1\/deploys answered with something that isn't JSON$/,
+    );
+  });
+
   it("gives every request a timeout", async () => {
     const signals: unknown[] = [];
     const fetchFn = ((_url: string, init: RequestInit) => {

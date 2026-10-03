@@ -40,6 +40,10 @@ function pageProblems({ path, html, pages }: PageProblemsArgs): string[] {
     }
   };
   need("title", /<title>[^<]+<\/title>/g);
+  // The SPA fallback is unindexed; a real page must never inherit that.
+  if (html.includes('<meta name="robots" content="noindex"/>')) {
+    problems.push(`${path}: a real page is marked noindex`);
+  }
   need("description", /<meta name="description" content="[^"]+"/g);
   need("canonical URL", new RegExp(`<link rel="canonical" href="${SITE}${literal(path)}"`, "g"));
   need("Open Graph image", new RegExp(`<meta property="og:image" content="${OG_IMAGE}"`, "g"));

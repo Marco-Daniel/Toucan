@@ -156,6 +156,13 @@ describe("fetchGitHubReleases", () => {
     expect(requests[0]?.headers.get("authorization")).toBe("Bearer from-env");
   });
 
+  it("asks without authorization when GITHUB_TOKEN isn't set at all", async () => {
+    vi.stubEnv("GITHUB_TOKEN", undefined);
+    const { fetchFn, requests } = fakeFetch(Response.json([]));
+    await fetchGitHubReleases({ fetchFn });
+    expect(requests[0]?.headers.has("authorization")).toBe(false);
+  });
+
   it("asks without authorization when there's no token", async () => {
     for (const token of [undefined, ""]) {
       const { fetchFn, requests } = fakeFetch(Response.json([]));

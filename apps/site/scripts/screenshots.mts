@@ -12,7 +12,7 @@
 // import libraries
 import { spawn, spawnSync } from "node:child_process";
 import {
-  existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -34,10 +34,13 @@ import {
   tryCatchSync,
 } from "../../extension/src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../extension/src/shared/records/records.util.ts";
-import { chromePids, orphanPids, parsePs, PROFILE_PREFIX, staleProfiles } from "./chrome.mts";
+import { chromePids, parsePs, planSweep, PROFILE_PREFIX, runSweep } from "./chrome.mts";
 
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
+
+// import types
+import type { EntryFacts } from "./chrome.mts";
 
 const CLIENT = new URL("../build/client/", import.meta.url).pathname;
 /** Phone, tablet and desktop (website/0012). */
@@ -113,12 +116,34 @@ function processes() {
   return parsePs(spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout ?? "");
 }
 
-// What earlier runs left behind: a Chrome whose profile is gone, and profiles no process uses.
-for (const pid of orphanPids({ processes: processes(), exists: existsSync, self: process.pid })) {
-  tryCatchSync(() => process.kill(pid, "SIGKILL"));
+/** lstat of a temp folder entry, or undefined when it can't be read. */
+function entryFacts(path: string): EntryFacts | undefined {
+  const [stats] = tryCatchSync(() => lstatSync(path));
+  return stats === null
+    ? undefined
+    : {
+        isFolder: stats.isDirectory() && !stats.isSymbolicLink(),
+        uid: stats.uid,
+        ageMs: Date.now() - stats.mtimeMs,
+      };
 }
-for (const stale of staleProfiles({ names: readdirSync(TMP), tmp: TMP, processes: processes() })) {
-  rmSync(stale, { recursive: true, force: true });
+
+// What earlier runs left behind: old profiles of ours are removed, anything
+// else is only listed, and a possibly leftover Chrome stops the run.
+const isClear = runSweep({
+  plan: planSweep({
+    names: readdirSync(TMP),
+    tmp: TMP,
+    processes: processes(),
+    facts: entryFacts,
+    uid: process.getuid?.() ?? -1,
+    maxAgeMs: RUN_TIMEOUT_MS,
+  }),
+  removeDir: (path) => rmSync(path, { recursive: true, force: true }),
+  report: (line) => console.error(line),
+});
+if (!isClear) {
+  process.exit(1);
 }
 
 const profile = mkdtempSync(join(TMP, PROFILE_PREFIX));
@@ -265,6 +290,12 @@ const PROBLEMS = `(() => {
     }
     return false;
   };
+  // Code that doesn't fit its own box (a command clipped inside its card, say).
+  for (const code of document.querySelectorAll("code, pre")) {
+    if (code.closest("pre") !== code && code.closest("pre")) continue;
+    const scrolls = getComputedStyle(code).overflowX === "auto" || getComputedStyle(code).overflowX === "scroll";
+    if (!scrolls && code.scrollWidth > code.clientWidth + 1) problems.push("code doesn't fit its box: " + code.textContent.trim().slice(0, 40));
+  }
   for (const element of document.body.querySelectorAll("*")) {
     const box = element.getBoundingClientRect();
     const parent = element.parentElement.getBoundingClientRect();

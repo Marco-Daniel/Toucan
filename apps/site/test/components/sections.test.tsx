@@ -74,7 +74,10 @@ describe("the landing page sections", () => {
 
   it("installs the latest release's VSIX and marks the stores as coming", () => {
     const html = render(<Install version="0.0.4" releaseUrl="https://example.test/v0.0.4" />);
-    expect(html).toContain("code --install-extension toucan-0.0.4.vsix");
+    // It wraps only at the space before the file name, never inside either part.
+    expect(html).toContain(
+      '<span class="whitespace-nowrap">code --install-extension</span> <span class="whitespace-nowrap">toucan-0.0.4.vsix</span>',
+    );
     expect(html).toContain('<a href="https://example.test/v0.0.4"');
     expect([...html.matchAll(/Coming soon\./g)]).toHaveLength(2);
   });
