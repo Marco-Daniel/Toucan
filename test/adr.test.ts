@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const ROOT = join(import.meta.dirname, "..");
 const ADR_DIR = join(ROOT, "docs", "adr");
 /** The parts of a workspace package that instruct or run: an ADR cited there must be in force. */
-const PACKAGE_LIVE = ["src", "scripts", "test", "README.md"];
+const PACKAGE_LIVE = ["src", "app", "scripts", "test", "README.md"];
 
 /** Each workspace package's folder, from pnpm-workspace.yaml's `<group>/*` globs. */
 function packageFolders(): string[] {
@@ -156,6 +156,10 @@ describe("the ADR log", () => {
       "apps/extension/scripts",
       "apps/extension/test",
       "apps/extension/README.md",
+      "apps/site/app",
+      "apps/site/scripts",
+      "apps/site/test",
+      "apps/site/README.md",
       "config/vite/src",
       "config/vite/test",
       "packages/brand/src",

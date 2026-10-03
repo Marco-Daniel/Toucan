@@ -1,6 +1,6 @@
 ---
 name: docs-sync
-description: Finds documentation drift in Toucan since the last run (README.md, apps/extension/README.md, GROUNDING.md, .claude/CLAUDE.md, docs/adr/, docs/plans/) and reports each item with a ready fix. Applies nothing until the user approves; approved fixes land through a reviewed PR, and the docs-sync/last tag moves after it merges. Run it by hand every so often. Use --full to sweep every doc instead of the diff.
+description: Finds documentation drift in Toucan since the last run (README.md, apps/extension/README.md, apps/site/README.md, the site's docs pages, GROUNDING.md, .claude/CLAUDE.md, docs/adr/, docs/plans/) and reports each item with a ready fix. Applies nothing until the user approves; approved fixes land through a reviewed PR, and the docs-sync/last tag moves after it merges. Run it by hand every so often. Use --full to sweep every doc instead of the diff.
 argument-hint: "[--full]"
 ---
 
@@ -18,13 +18,13 @@ The periodic backstop for the CLAUDE.md rule that a change updates every doc tha
 
 ## 2. Find the mentions
 
-The docs are README.md, apps/extension/README.md, GROUNDING.md, .claude/CLAUDE.md, `docs/adr/` and `docs/plans/`. Leave out generated text: the extension README's settings table (`check:generated` keeps it in sync) and the ADR log's own mechanics (`test/adr.test.ts` checks numbering, the index and citations).
+The docs are README.md, apps/extension/README.md, apps/site/README.md, the site's docs pages in `apps/site/content/docs/`, GROUNDING.md, .claude/CLAUDE.md, `docs/adr/` and `docs/plans/`. Leave out generated text: the extension README's settings table (`check:generated` keeps it in sync) and the ADR log's own mechanics (`test/adr.test.ts` checks numbering, the index and citations).
 
 - **Diff run, names:** for each changed name (a path, an old path, a script, a setting key, a command id, an ADR, a symbol), find where the docs mention it. For a retitled command (`commands.retitled`), search its id, its old label and its old bare title (docs may quote either form). For a script, search its bare name (docs write `pnpm -C apps/extension check:vsix`, not `toucan#check:vsix`). For a changed setting (`settings.changed`), search its key and its old default and enum values, from `git diff <since> HEAD -- apps/extension/package.json`.
 - **Diff run, behaviour:** a change can make a doc false without renaming anything (a branch made unconditional, a default flipped). For each modified or renamed file under `apps/extension/src/`, `apps/extension/scripts/` and `scripts/`, and for `apps/extension/package.json`, read its diff: `git diff <since> HEAD -M -- <path>`. State each behaviour change in one line ("choosing _Not now_ no longer stops the prompt", say), and search the docs for that sentence as well as for the user-facing strings, titles and setting keys the hunks touch. Skip pure refactors, and say how many files you skipped that way.
 - How to search, for a name or a behaviour:
   - qmd, always on Toucan's own index: the `qmd` MCP server (it runs `qmd --index toucan`), with `toucan-docs` for `docs/` and `toucan-guides` for the READMEs and GROUNDING.md, a `lex` line with the exact name or string and a `vec` line for what it does (for a behaviour change, its one-line statement);
-  - plus a plain text search, which also catches what qmd's ranking leaves out: `git grep -nF -e '<name or string>' -- README.md apps/extension/README.md GROUNDING.md .claude/CLAUDE.md docs`.
+  - plus a plain text search, which also catches what qmd's ranking leaves out: `git grep -nF -e '<name or string>' -- README.md apps/extension/README.md apps/site/README.md apps/site/content GROUNDING.md .claude/CLAUDE.md docs`.
   - If qmd isn't available, say so once and continue with the text search alone.
 - **Full sweep:** read every doc and check each concrete claim it makes: paths, commands and scripts, setting keys, symbols, file roles and the rules CLAUDE.md states.
 
@@ -46,7 +46,7 @@ Classify each finding:
 
 ## 4. Propose a fix per item
 
-- **README.md, apps/extension/README.md, GROUNDING.md, .claude/CLAUDE.md:** a direct edit. CLAUDE.md stays a short set of rules with pointers, about 80 lines (`docs/plans/architecture-maintenance/decisions/0006-write-claude-md-as-lean-rules-plus-a-library-of-pointers.md`): put detail in the doc it points to.
+- **README.md, apps/extension/README.md, apps/site/README.md, the site's docs pages, GROUNDING.md, .claude/CLAUDE.md:** a direct edit. CLAUDE.md stays a short set of rules with pointers, about 80 lines (`docs/plans/architecture-maintenance/decisions/0006-write-claude-md-as-lean-rules-plus-a-library-of-pointers.md`): put detail in the doc it points to.
 - **An ADR:** an edit for wording only. If the rule itself no longer holds, propose a superseding ADR (the steps are in `docs/adr/README.md`); never rewrite an accepted rule in place.
 - **A plan** (`docs/plans/<plan>/`): plans are history, so never rewrite them.
   - A decision that no longer matches the code, where nothing else records why: a dated `## Amendment (YYYY-MM-DD)` note under it, keeping the original text.

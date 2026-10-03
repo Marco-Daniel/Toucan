@@ -1,0 +1,8 @@
+# Security headers for every page and file (Netlify's _headers). No
+# script-src or style-src yet: React Router inlines its hydration script, so a
+# full Content-Security-Policy needs hashes and a test against a deploy.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'

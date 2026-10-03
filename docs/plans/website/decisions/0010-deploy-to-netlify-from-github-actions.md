@@ -32,3 +32,7 @@ The site ID is the repository variable `NETLIFY_SITE_ID`. The Netlify site is no
 - Good: one CI, one set of gates; deploys only when the site really changed.
 - Good: a workflow change on a branch or in a pull request can't read the token.
 - Bad: no preview links on pull requests; the token expires and must be renewed.
+
+## Amendment (2026-10-03)
+
+The deploy uses the site's own script, `apps/site/scripts/deploy.mts`, instead of the pinned Netlify CLI. Pinning `netlify-cli` 27.10.2 added about 9,000 lines to `pnpm-lock.yaml` and three install scripts (netlify-cli, sharp, unix-dgram), all installed on every CI run, dev install and pre-push, and the deploy step would have run that whole tree with the token in its environment. The script uses Netlify's file-digest deploy API with plain `fetch` and no new dependencies: it announces every file's SHA-1, uploads the files Netlify asks for, and waits until the deploy is ready. It reads only files inside `build/client` (it refuses symlinks), never logs the token, and fails on any non-2xx answer with the method, endpoint and status alone. Marco approved the change. The rest of this decision stands: `main` only, the token in the `production` environment, `permissions: contents: read`, SHA-pinned actions.
