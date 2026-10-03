@@ -21,6 +21,7 @@ import {
   parsePs,
   processesUsing,
   safeTemp,
+  signalTarget,
   SYSTEM_PORTS,
   TEMP_PREFIX,
 } from "../../../scripts/screenshots/cleanup.mts";
@@ -147,11 +148,29 @@ async function exitOf(child: ChildProcess): Promise<NodeJS.Signals | number | nu
   return new Promise((resolve) => child.once("exit", (code, signal) => resolve(signal ?? code)));
 }
 
+/**
+ * Removes this exact folder once the test process is gone. afterEach does it
+ * normally; this covers a mutant that times out, whose test process is killed
+ * before afterEach can run.
+ */
+function guardFolder(folder: string): void {
+  const watcher = spawn(
+    process.execPath,
+    [
+      "-e",
+      `const owner = ${process.pid}; const folder = ${JSON.stringify(folder)}; setInterval(() => { try { process.kill(owner, 0); } catch { require("node:fs").rmSync(folder, { recursive: true, force: true }); process.exit(0); } }, 250);`,
+    ],
+    { detached: true, stdio: "ignore" },
+  );
+  watcher.unref();
+}
+
 /** A run folder in the OS temp folder, standing in for the capture profile. */
 function tempFolder(): string {
   const folder = mkdtempSync(join(tmpdir(), TEMP_PREFIX));
   writeFileSync(join(folder, "settings.json"), "{}");
   made.folders.push(folder);
+  guardFolder(folder);
   return folder;
 }
 
@@ -203,6 +222,7 @@ describe("safeTemp", () => {
   it("accepts a run folder directly in /tmp, where the script puts its own", () => {
     const folder = mkdtempSync(join("/tmp", TEMP_PREFIX));
     made.folders.push(folder);
+    guardFolder(folder);
     expect(safeTemp(folder)).toBe(folder);
   });
 
@@ -242,10 +262,23 @@ describe("the system ports", () => {
     expect(self?.command.includes("node")).toBe(true);
   });
 
-  it("refuse to signal -1, 0, 1 or a non-integer", () => {
-    // Safe even with this guard mutated away: process.kill itself is guarded here.
+  it("remove a folder that's already gone without complaint", () => {
+    const folder = tempFolder();
+    SYSTEM_PORTS.removeDir(folder);
+    SYSTEM_PORTS.removeDir(folder);
+    expect(existsSync(folder)).toBe(false);
+  });
+});
+
+// Pure: checks numbers only, never passes them to anything that signals.
+describe("signalTarget", () => {
+  it("passes a real process's pid or group through", () => {
+    expect([signalTarget(4242), signalTarget(-4242)]).toEqual([4242, -4242]);
+  });
+
+  it("refuses -1, 0, 1 and non-integers", () => {
     for (const target of [-1, 0, 1, Number.NaN]) {
-      expect(() => SYSTEM_PORTS.kill(target, "SIGTERM")).toThrow(`Refusing to signal ${target}`);
+      expect(() => signalTarget(target)).toThrow(`Refusing to signal ${target}`);
     }
   });
 });
@@ -348,6 +381,13 @@ describe("Cleanup with recorded effects", { timeout: HARD_TIMEOUT_MS }, () => {
     expect(calls).toEqual(["list", `remove ${temp}`]);
   });
 
+  it("disposes cleanly without ever having handled exits", () => {
+    const events = ["SIGINT", "SIGTERM", "SIGHUP", "uncaughtException"] as const;
+    const before = events.map((event) => process.listenerCount(event));
+    new Cleanup({ temp: tempFolder(), ports: recorder().ports }).dispose();
+    expect(events.map((event) => process.listenerCount(event))).toEqual(before);
+  });
+
   it("removes its signal and crash handlers on dispose", () => {
     const events = ["SIGINT", "SIGTERM", "SIGHUP", "uncaughtException"] as const;
     const before = events.map((event) => process.listenerCount(event));
@@ -358,6 +398,17 @@ describe("Cleanup with recorded effects", { timeout: HARD_TIMEOUT_MS }, () => {
     );
     cleanup.dispose();
     expect(events.map((event) => process.listenerCount(event))).toEqual(before);
+  });
+
+  it("abandons without signals once the process has exited, since its group id may be reused", async () => {
+    const temp = tempFolder();
+    const child = detached("");
+    expect(await exitOf(child)).toBe(0);
+    const { calls, ports } = recorder();
+    const cleanup = new Cleanup({ temp, ports });
+    cleanup.track(child);
+    cleanup.abandon();
+    expect(calls).toEqual(["list", `remove ${temp}`]);
   });
 
   it("closes without signals once the process has exited", async () => {
@@ -389,13 +440,27 @@ describe("Cleanup with real processes", { timeout: HARD_TIMEOUT_MS }, () => {
     expect(existsSync(temp)).toBe(false);
   });
 
-  it("stops the group gently on close", async () => {
+  it("stops the group gently on close: SIGTERM, and no SIGKILL for a group that ends", async () => {
     const temp = tempFolder();
     const child = detached(SLEEP);
-    const cleanup = new Cleanup({ temp, ports: guardedPorts });
+    const signals: string[] = [];
+    const ports: CleanupPorts = {
+      ...guardedPorts,
+      kill: (target, signal) => {
+        signals.push(`${target} ${signal}`);
+        guardedPorts.kill(target, signal);
+      },
+    };
+    const cleanup = new Cleanup({ temp, graceMs: 100, ports });
     cleanup.track(child);
     await cleanup.close();
-    expect([child.signalCode, existsSync(temp)]).toEqual(["SIGTERM", false]);
+    // Past the grace period: the SIGKILL timer was cleared, not just outrun.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect([signals, child.signalCode, existsSync(temp)]).toEqual([
+      [`-${child.pid} SIGTERM`],
+      "SIGTERM",
+      false,
+    ]);
   });
 
   it("kills a group that ignores SIGTERM once the grace period is over", async () => {
@@ -456,6 +521,7 @@ async function runHarness(end: string) {
   const started = JSON.parse(await firstLine(runner)) as { pid: number; temp: string };
   made.pids.push(started.pid);
   made.folders.push(started.temp);
+  guardFolder(started.temp);
   return { runner, ...started };
 }
 

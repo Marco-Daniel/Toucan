@@ -40,6 +40,14 @@ export function groupTarget(pid: number): number {
   return -pid;
 }
 
+/** A single process to signal: refuses -1, 0, 1 and non-integers, which reach every process or our own group. */
+export function signalTarget(target: number): number {
+  if (!Number.isInteger(target) || Math.abs(target) <= 1) {
+    throw new Error(`Refusing to signal ${target}`);
+  }
+  return target;
+}
+
 /**
  * The temp folder, if it's safe to remove and to find processes by: absolute,
  * directly inside /tmp or the OS temp folder (compared by real path), and
@@ -107,10 +115,7 @@ export function parsePs(text: string): RunningProcess[] {
 /** The real effects, each re-checking its target right before use. */
 export const SYSTEM_PORTS: CleanupPorts = {
   kill: (target, signal) => {
-    if (!Number.isInteger(target) || Math.abs(target) <= 1) {
-      throw new Error(`Refusing to signal ${target}`);
-    }
-    process.kill(target, signal);
+    process.kill(signalTarget(target), signal);
   },
   listProcesses: () =>
     parsePs(spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout ?? ""),
@@ -181,8 +186,10 @@ export class Cleanup {
 
   /** Kills VS Code's group at once and removes the temp folder; safe to call from a handler. */
   abandon(): void {
-    if (this.child?.pid !== undefined) {
-      killGroup({ pid: this.child.pid, signal: "SIGKILL", ports: this.ports });
+    const { child } = this;
+    // Once VS Code has exited, its group id may belong to someone else.
+    if (child?.pid !== undefined && !hasExited(child)) {
+      killGroup({ pid: child.pid, signal: "SIGKILL", ports: this.ports });
     }
     this.removeTemp();
   }
