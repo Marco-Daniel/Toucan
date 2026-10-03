@@ -17,3 +17,21 @@ catalog:
 allowBuilds:
   "@vscode/vsce-sign": false
   esbuild: false
+
+# Supply-chain checks. pnpm applies them on every install, including CI's
+# frozen one, and fails if a lockfile entry breaks them.
+# Install no version younger than a day, so a compromised release has time to
+# be caught first (pnpm's default, stated here so it stays on).
+minimumReleaseAge: 1440
+# Only direct dependencies may come from git or a tarball URL (pnpm's default,
+# stated here too).
+blockExoticSubdeps: true
+# Refuse a version published with less trust than an earlier one (say, without
+# the provenance its predecessors had): the mark of a hijacked package.
+trustPolicy: no-downgrade
+# Old releases from before these packages adopted trusted publishing, which
+# the check reads as a downgrade. Pinned by version, so a new release is still
+# checked.
+trustPolicyExclude:
+  - semver@6.3.1
+  - undici-types@6.21.0
