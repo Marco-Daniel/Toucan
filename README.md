@@ -1,6 +1,6 @@
 # Toucan
 
-Toucan is a VS Code extension that shows at a glance which repository a window has open. This is its repository: the extension, the shared configs, and the docs that hold its rules and plans.
+Toucan is a VS Code extension that shows at a glance which repository a window has open. This is its repository: the extension, its website at [toucan-vscode.netlify.app](https://toucan-vscode.netlify.app), the shared brand and configs, and the docs that hold its rules and plans.
 
 For what Toucan does and how to install it, see the [extension's README](apps/extension/README.md).
 
@@ -8,6 +8,7 @@ For what Toucan does and how to install it, see the [extension's README](apps/ex
 
 ```
 apps/extension/     toucan: the VS Code extension (src/, test/, scripts/, media/, its manifest and README)
+apps/site/          @toucan/site: the website, React Router pre-rendered to static pages (app/, content/, scripts/)
 packages/brand/     @toucan/brand: the presets, color tokens, glyph names, icon, logo and glyph SVGs
 config/ts-config/   @toucan/ts-config: the shared TypeScript settings
 config/vite/        @toucan/vite-config: the shared Vite and Vitest settings
@@ -16,7 +17,7 @@ docs/plans/         one folder per piece of work: its plan, decisions and progre
 scripts/, test/     the repo's own tooling and its tests: qmd docs search, the docs-sync helper and mutate
 ```
 
-The root is the workspace: `pnpm-workspace.yaml`, `turbo.json`, the shared `.oxlintrc.json` and oxfmt config, the husky hook and CI. The website plan ([docs/plans/website](docs/plans/website/plan.md)) adds `apps/site/`.
+The root is the workspace: `pnpm-workspace.yaml`, `turbo.json`, the shared `.oxlintrc.json` and oxfmt config, the husky hook and CI. The [website plan](docs/plans/website/plan.md) records how the repo got this shape.
 
 Start with the [architecture decisions](docs/adr/README.md): they're the most important docs. `GROUNDING.md` lists the repo's facts and conventions, and `.claude/CLAUDE.md` the rules agents work by.
 
@@ -26,12 +27,12 @@ Requires Node 24 (see `.nvmrc`) and pnpm through corepack. Run `corepack enable 
 
 From the root, Turborepo runs these in every package, in dependency order:
 
-| Command          | What it does                                                                    |
-| ---------------- | ------------------------------------------------------------------------------- |
-| `pnpm lint`      | Lint with oxlint, with type information; any finding fails                      |
-| `pnpm typecheck` | Typecheck with TypeScript 7                                                     |
-| `pnpm test`      | Run the unit tests with vitest                                                  |
-| `pnpm build`     | Build every package; for the extension, bundle `dist/extension.cjs` with tsdown |
+| Command          | What it does                                                                                              |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `pnpm lint`      | Lint with oxlint, with type information; any finding fails                                                |
+| `pnpm typecheck` | Typecheck with TypeScript 7                                                                               |
+| `pnpm test`      | Run the unit tests with vitest                                                                            |
+| `pnpm build`     | Build every package: the extension's `dist/extension.cjs` with tsdown, the site's pages with React Router |
 
 From the root, for the whole repo:
 
@@ -58,13 +59,17 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 
 `pnpm install` also sets up a pre-push hook (husky) that runs `typecheck`, `lint`, `format:check` and `test` from the root. It's set up per checkout, so run `pnpm install` in a new worktree before pushing from it. `HUSKY=0` skips it; CI skips it and runs the full set itself.
 
+### The website
+
+`apps/site` is the website. Its commands (`dev`, `build`, `check:pages`, `screenshots`, `og-image`, `releases:snapshot`) are in [its README](apps/site/README.md). The `Deploy site` workflow deploys it to Netlify from `main` only: after a push to `main` that touches the site or what it's built from, or by hand. After a release, run `pnpm -C apps/site releases:snapshot`, commit the result, and run `Deploy site` by hand so the changelog shows the new release.
+
 ### Generated files
 
 `src/generated/`, the glyph font and the extension icon in `apps/extension`, and the glyph SVGs in `packages/brand/assets/glyphs/`, are written only by the extension's `gen`, `font` and `icon` scripts, never by hand. `check:generated` regenerates them and fails if the result differs from what's committed, and CI runs it.
 
 ### Mutation testing
 
-`mutate` runs StrykerJS on demand, not in CI or the pre-push hook: `pnpm mutate` at the root for the repo's own tooling, `pnpm -C apps/extension mutate` for the extension and `pnpm -C packages/brand mutate` for the brand, each with its package's `stryker.config.json`. Pass the files you changed, relative to that package; it refuses files outside it. Read every survived mutant: kill it with a test, or say why it's equivalent. The qmd tooling in `scripts/qmd/` is never mutated: the root's config leaves it out and `mutate` refuses its files ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Reports land in the package's `reports/stryker/`; delete that folder after changing what's excluded.
+`mutate` runs StrykerJS on demand, not in CI or the pre-push hook: `pnpm mutate` at the root for the repo's own tooling, and `pnpm -C <package> mutate` for the extension, the brand and the site, each with its package's `stryker.config.json`. The site's mutates in place, because it imports from other packages, so commit your work before you run it. Pass the files you changed, relative to that package; it refuses files outside it. Read every survived mutant: kill it with a test, or say why it's equivalent. The qmd tooling in `scripts/qmd/` is never mutated: the root's config leaves it out and `mutate` refuses its files ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Reports land in the package's `reports/stryker/`; delete that folder after changing what's excluded.
 
 ### Docs search with qmd
 

@@ -1,0 +1,20 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node node_modules/vitest/vitest.mjs run"
+  },
+  "coverageAnalysis": "off",
+  "mutate": ["app/lib/**/*.ts", "scripts/netlify.mts", "!app/lib/releases.server.ts"],
+  "incremental": true,
+  "incrementalFile": "reports/stryker/incremental.json",
+  "reporters": ["clear-text", "html", "progress"],
+  "htmlReporter": {
+    "fileName": "reports/stryker/mutation.html"
+  },
+  "tempDirName": ".stryker-tmp",
+  "inPlace": true,
+  "tsconfigFile": "no-tsconfig-rewrite.json",
+  "concurrency": 4,
+  "timeoutMS": 30000
+}

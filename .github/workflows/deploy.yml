@@ -1,0 +1,60 @@
+name: Deploy site
+
+# Production deploys of apps/site to Netlify, from main only (website/0010):
+# after a push to main that touches the site or what it's built from, or by
+# hand from main (after a release, to refresh the changelog). Never on pull
+# requests. The token lives in the `production` environment, which only main
+# may use, and only the deploy step sees it.
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/site/**
+      - packages/brand/**
+      - apps/extension/media/**
+      - apps/extension/src/shared/**
+      - config/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - turbo.json
+      - .github/workflows/deploy.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time; a newer push waits rather than cancelling one mid-upload.
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The same gates as CI for the site and the packages it's built from.
+      # The changelog reads the GitHub releases with the workflow's token.
+      - name: Check and build the site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: pnpm turbo run lint typecheck test build check:pages --filter=@toucan/site...
+      - name: Deploy to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+        run: pnpm -C apps/site deploy:netlify

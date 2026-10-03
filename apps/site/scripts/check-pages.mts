@@ -12,14 +12,22 @@ import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
 import { SITE_URL } from "../app/lib/site.consts.ts";
 
 const CLIENT = new URL("../build/client/", import.meta.url).pathname;
+const OG_IMAGE = `${SITE_URL}/og-image.png`.replaceAll(".", "\\.");
 
 /** A page's built file: /path → path/index.html. */
 function pageFile(path: string): string {
   return join(CLIENT, path, "index.html");
 }
 
+interface PageProblemsArgs {
+  path: string;
+  html: string;
+  /** Every built page's HTML by path, to check links and anchors against. */
+  pages: ReadonlyMap<string, string>;
+}
+
 /** What's wrong with one built page. */
-function pageProblems(path: string, html: string, pages: ReadonlyMap<string, string>): string[] {
+function pageProblems({ path, html, pages }: PageProblemsArgs): string[] {
   const problems: string[] = [];
   const need = (label: string, pattern: RegExp) => {
     if ([...html.matchAll(pattern)].length !== 1) {
@@ -29,9 +37,17 @@ function pageProblems(path: string, html: string, pages: ReadonlyMap<string, str
   need("title", /<title>[^<]+<\/title>/g);
   need("description", /<meta name="description" content="[^"]+"/g);
   need("canonical URL", new RegExp(`<link rel="canonical" href="${SITE_URL}${path}"`, "g"));
+  need("Open Graph image", new RegExp(`<meta property="og:image" content="${OG_IMAGE}"`, "g"));
   need(
-    "Open Graph image",
-    new RegExp(`<meta property="og:image" content="${SITE_URL}/assets/[^"]+\\.png"`, "g"),
+    "Open Graph image size",
+    /<meta property="og:image:width" content="1200"\/><meta property="og:image:height" content="630"\/>/g,
+  );
+  need(
+    "Twitter card",
+    new RegExp(
+      `<meta name="twitter:card" content="summary_large_image"/><meta name="twitter:image" content="${OG_IMAGE}"`,
+      "g",
+    ),
   );
 
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(([, id]) => id);
@@ -63,7 +79,10 @@ if (JSON.stringify(built) !== JSON.stringify([...PAGE_PATHS].toSorted())) {
 }
 const pages = new Map(PAGE_PATHS.map((path) => [path, readFileSync(pageFile(path), "utf8")]));
 for (const [path, html] of pages) {
-  problems.push(...pageProblems(path, html, pages));
+  problems.push(...pageProblems({ path, html, pages }));
+}
+if (!existsSync(join(CLIENT, "og-image.png"))) {
+  problems.push("og-image.png, every page's card, isn't in the build");
 }
 if (readFileSync(join(CLIENT, "404.html"), "utf8") !== pages.get("/404")) {
   problems.push("404.html isn't the /404 page");

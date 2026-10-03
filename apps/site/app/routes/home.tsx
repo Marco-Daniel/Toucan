@@ -13,7 +13,6 @@ import { Section } from "../components/section.view.tsx";
 // import consts
 import { screenshotUrl } from "../lib/brand.assets.ts";
 import { RELEASES_URL } from "../lib/site.consts.ts";
-import ICON_PNG from "@extension-media/icon.png?url";
 
 // import types
 import type { Route } from "./+types/home";
@@ -31,7 +30,6 @@ export function meta() {
     description:
       "A VS Code extension that gives every repository its own color: the Command Center, a status bar glyph and an optional sidebar block.",
     path: "/",
-    image: ICON_PNG,
   });
 }
 

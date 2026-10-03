@@ -35,6 +35,9 @@ describe("sizedSvg", () => {
 
   it("throws on something that isn't an SVG", () => {
     expect(() => sizedSvg({ svg: "<div></div>", className: "x" })).toThrow("Not an SVG document");
+    expect(() => sizedSvg({ svg: '<div><svg width="1"></svg></div>', className: "x" })).toThrow(
+      "Not an SVG document",
+    );
   });
 });
 

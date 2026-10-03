@@ -8,7 +8,6 @@ import { BuildMarkup } from "../components/buildMarkup.view.tsx";
 
 // import consts
 import { RELEASES_URL } from "../lib/site.consts.ts";
-import ICON_PNG from "@extension-media/icon.png?url";
 
 // import types
 import type { Route } from "./+types/changelog";
@@ -33,7 +32,6 @@ export function meta() {
     title: "Changelog",
     description: "Every Toucan release and what it changed, from the GitHub release notes.",
     path: "/changelog",
-    image: ICON_PNG,
   });
 }
 

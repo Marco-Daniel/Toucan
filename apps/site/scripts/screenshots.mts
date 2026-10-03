@@ -4,10 +4,12 @@
 // each, and fails when a page scrolls sideways or has a tap target smaller
 // than 44 px outside running text. Local only: it needs Chrome.
 //
-// It starts one Chrome with its own temporary profile and stops only that
-// process; nothing else is signalled.
+// It starts one Chrome with its own temporary profile and stops only the
+// processes that name that profile: Chrome on macOS hands itself over to a new
+// process, so the one it spawned isn't the one to stop. It asks Chrome to
+// close first and kills what's left after that.
 // import libraries
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
@@ -86,7 +88,8 @@ const address = server.address();
 const origin = `http://127.0.0.1:${isRecord(address) ? String(address["port"]) : ""}`;
 
 const profile = mkdtempSync(join(tmpdir(), "toucan-site-shots-"));
-const chrome = spawn(
+// Stopped by cleanUp through its profile, not through this child (see the header).
+spawn(
   values.chrome,
   [
     "--headless=new",
@@ -100,10 +103,39 @@ const chrome = spawn(
   { stdio: "ignore" },
 );
 
-/** Stops the Chrome this script started (never anything else) and removes its profile. */
-function cleanUp(): void {
-  if (chrome.pid !== undefined && chrome.pid > 1 && chrome.exitCode === null) {
-    chrome.kill("SIGKILL");
+/** The pids of the processes whose command line names this run's profile: its Chrome and Chrome's helpers. */
+function chromeProcesses(): number[] {
+  const listing = spawnSync("ps", ["-axo", "pid=,command="], { encoding: "utf8" }).stdout ?? "";
+  return listing.split("\n").flatMap((line) => {
+    const [, pid = "", command = ""] = /^\s*(\d+)\s+(.*)$/.exec(line) ?? [];
+    const number = Number(pid);
+    return number > 1 && number !== process.pid && command.includes(profile) ? [number] : [];
+  });
+}
+
+/** Closes this run's Chrome (never anything else), waits for it to go, kills what's left, removes its profile. */
+async function cleanUp(port: string | undefined): Promise<void> {
+  if (port !== undefined) {
+    await tryCatch(async () => {
+      const version: unknown = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+      const url = isRecord(version) ? version["webSocketDebuggerUrl"] : undefined;
+      if (typeof url === "string") {
+        const browser = await connect(url);
+        await tryCatch(() => browser.send("Browser.close"));
+        browser.close();
+      }
+    });
+  }
+  const deadline = Date.now() + STARTUP_MS;
+  while (chromeProcesses().length > 0 && Date.now() < deadline) {
+    await sleep(POLL_MS);
+  }
+  for (const pid of chromeProcesses()) {
+    tryCatchSync(() => process.kill(pid, "SIGKILL"));
+  }
+  const killed = Date.now() + STARTUP_MS;
+  while (chromeProcesses().length > 0 && Date.now() < killed) {
+    await sleep(POLL_MS);
   }
   server.close();
   rmSync(profile, { recursive: true, force: true });
@@ -196,8 +228,9 @@ const PROBLEMS = `(() => {
 
 const failures: string[] = [];
 
+let port: string | undefined;
 const [, error] = await tryCatch(async () => {
-  const port = await devToolsPort();
+  port = await devToolsPort();
   const targets: unknown = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
   const list: unknown[] = Array.isArray(targets) ? targets : [];
   const page = list.find((target) => isRecord(target) && target["type"] === "page");
@@ -239,7 +272,7 @@ const [, error] = await tryCatch(async () => {
   }
   cdp.close();
 });
-cleanUp();
+await cleanUp(port);
 if (error !== null) {
   console.error(errorText(error));
   process.exit(1);

@@ -43,10 +43,10 @@ describe("renderMarkdown", () => {
     expect(
       renderMarkdown({
         markdown:
-          "[a](https://x.dev) [b](/docs) [c](#top) [d](mailto:a@b.c) [e](javascript:alert(1))",
+          "[a](https://x.dev) [f](http://x.dev) [b](/docs) [c](#top) [d](mailto:a@b.c) [e](javascript:alert(1)) [g](data:text/html,x)",
       }),
     ).toBe(
-      '<p><a href="https://x.dev">a</a> <a href="/docs">b</a> <a href="#top">c</a> <a href="mailto:a@b.c">d</a> e</p>\n',
+      '<p><a href="https://x.dev">a</a> <a href="http://x.dev">f</a> <a href="/docs">b</a> <a href="#top">c</a> <a href="mailto:a@b.c">d</a> e g</p>\n',
     );
   });
 
@@ -59,6 +59,12 @@ describe("renderMarkdown", () => {
     ).toBe('<p><img src="/assets/hero-1a.gif" alt="A shot" loading="lazy"></p>\n');
     expect(() => renderMarkdown({ markdown: "![x](gone.png)" })).toThrow(
       "Unknown image in markdown: gone.png",
+    );
+  });
+
+  it("renders GitHub-flavored tables, as the commands page uses", () => {
+    expect(renderMarkdown({ markdown: "| A | B |\n| --- | --- |\n| 1 | 2 |\n" })).toBe(
+      "<table>\n<thead>\n<tr>\n<th>A</th>\n<th>B</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>1</td>\n<td>2</td>\n</tr>\n</tbody></table>\n",
     );
   });
 

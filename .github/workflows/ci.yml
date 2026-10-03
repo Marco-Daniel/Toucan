@@ -25,10 +25,11 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Regenerates the generated files and fails on any change, including new
-      # untracked files. package.yml runs the same script.
+      # Regenerates every package's generated files and fails on any change:
+      # the extension's (including new untracked files; package.yml runs the
+      # same script) and the site's social media card.
       - name: Check generated files are up to date
-        run: pnpm -C apps/extension check:generated
+        run: pnpm turbo run check:generated
       - run: pnpm format:check
       # Every package's gates and the root's own tooling, in dependency order.
       # The site's changelog reads the GitHub releases with the workflow's token.

@@ -9,11 +9,11 @@ import { docsPath } from "../lib/docs.util.ts";
 
 // import views
 import { BuildMarkup } from "../components/buildMarkup.view.tsx";
+import { GlyphShowcase } from "../components/glyphShowcase.view.tsx";
 
 // import consts
 import { SCREENSHOT_URLS } from "../lib/brand.assets.ts";
 import { DOCS_PAGES } from "../lib/docs.consts.ts";
-import ICON_PNG from "@extension-media/icon.png?url";
 
 // import types
 import type { Route } from "./+types/docsPage";
@@ -34,7 +34,6 @@ export function meta({ loaderData }: Route.MetaArgs) {
     title: page.title,
     description: page.description,
     path: docsPath(page.slug),
-    image: ICON_PNG,
   });
 }
 
@@ -47,6 +46,11 @@ export default function DocsPage({ loaderData }: Route.ComponentProps) {
       </h1>
       <p className="mt-3 text-lg text-muted">{page.description}</p>
       <BuildMarkup className="prose block" html={html} />
+      {page.slug === "glyphs" ? (
+        <div className="mt-8 rounded-2xl bg-ink p-5 text-cream sm:p-6">
+          <GlyphShowcase />
+        </div>
+      ) : null}
     </article>
   );
 }

@@ -71,10 +71,18 @@ export async function loadReleases({
   return { releases: parseReleases(snapshot), source: "snapshot" };
 }
 
-/** The GitHub API's answer, with the build's token when it has one (CI does; it raises the rate limit). */
-export async function fetchGitHubReleases(): Promise<unknown> {
-  const token = process.env["GITHUB_TOKEN"];
-  const response = await fetch(RELEASES_API, {
+interface FetchGitHubReleasesArgs {
+  /** CI's token raises the rate limit; without one the request is anonymous. */
+  token?: string | undefined;
+  fetchFn?: typeof fetch;
+}
+
+/** The GitHub API's answer. Throws on a status other than 2xx. */
+export async function fetchGitHubReleases({
+  token = process.env["GITHUB_TOKEN"],
+  fetchFn = fetch,
+}: FetchGitHubReleasesArgs = {}): Promise<unknown> {
+  const response = await fetchFn(RELEASES_API, {
     headers: {
       accept: "application/vnd.github+json",
       ...(token === undefined || token === "" ? {} : { authorization: `Bearer ${token}` }),

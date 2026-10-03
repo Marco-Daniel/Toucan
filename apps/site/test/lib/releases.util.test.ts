@@ -1,8 +1,13 @@
 // import libraries
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // import utils
-import { loadReleases, parseReleases } from "../../app/lib/releases.util.ts";
+import {
+  fetchGitHubReleases,
+  loadReleases,
+  parseReleases,
+  RELEASES_API,
+} from "../../app/lib/releases.util.ts";
 
 const api = (overrides: Record<string, unknown>) => ({
   tag_name: "v0.0.1",
@@ -55,6 +60,15 @@ describe("parseReleases", () => {
     expect(parseReleases([release])).toEqual([release]);
   });
 
+  it.each([
+    ["name", { name: 5 }],
+    ["published_at", { published_at: null }],
+    ["html_url", { html_url: undefined }],
+    ["body", { body: 7 }],
+  ])("leaves out a release whose %s isn't text", (_field, overrides) => {
+    expect(parseReleases([api(overrides)])).toEqual([]);
+  });
+
   it("throws when the answer isn't a list", () => {
     expect(() => parseReleases({ message: "API rate limit exceeded" })).toThrow(
       "Expected a list of releases",
@@ -99,5 +113,57 @@ describe("loadReleases", () => {
       "Changelog: using the committed snapshot, GitHub failed: Error: GitHub answered 403",
       "Changelog: using the committed snapshot, GitHub failed: Error: Expected a list of releases",
     ]);
+  });
+});
+
+function fakeFetch(response: Response) {
+  const requests: { url: string; headers: Headers }[] = [];
+  const fetchFn = ((url: string, init: RequestInit) => {
+    requests.push({ url, headers: new Headers(init.headers) });
+    return Promise.resolve(response);
+  }) as typeof fetch;
+  return { fetchFn, requests };
+}
+
+describe("fetchGitHubReleases", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("asks the releases API with the token, and returns its JSON", async () => {
+    const { fetchFn, requests } = fakeFetch(Response.json([{ tag_name: "v1" }]));
+    expect(await fetchGitHubReleases({ token: "t0k", fetchFn })).toEqual([{ tag_name: "v1" }]);
+    expect(
+      requests.map(({ url, headers }) => [
+        url,
+        headers.get("accept"),
+        headers.get("authorization"),
+      ]),
+    ).toEqual([[RELEASES_API, "application/vnd.github+json", "Bearer t0k"]]);
+    expect(RELEASES_API).toBe(
+      "https://api.github.com/repos/Marco-Daniel/Toucan/releases?per_page=100",
+    );
+  });
+
+  it("takes the token from GITHUB_TOKEN by default, as CI sets it", async () => {
+    vi.stubEnv("GITHUB_TOKEN", "from-env");
+    const { fetchFn, requests } = fakeFetch(Response.json([]));
+    await fetchGitHubReleases({ fetchFn });
+    expect(requests[0]?.headers.get("authorization")).toBe("Bearer from-env");
+  });
+
+  it("asks without authorization when there's no token", async () => {
+    for (const token of [undefined, ""]) {
+      const { fetchFn, requests } = fakeFetch(Response.json([]));
+      await fetchGitHubReleases({ token, fetchFn });
+      expect(requests[0]?.headers.has("authorization")).toBe(false);
+    }
+  });
+
+  it("throws with the status when GitHub refuses", async () => {
+    const { fetchFn } = fakeFetch(new Response("{}", { status: 403 }));
+    await expect(fetchGitHubReleases({ token: "", fetchFn })).rejects.toThrow(
+      "GitHub answered 403",
+    );
   });
 });
