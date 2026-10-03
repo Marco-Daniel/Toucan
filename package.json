@@ -39,7 +39,8 @@
     "check:bundle": "node scripts/check-bundle.mts",
     "check:vsix": "node scripts/check-vsix.mts",
     "prepare": "husky",
-    "mutate": "node scripts/mutate.mts"
+    "mutate": "node scripts/mutate.mts",
+    "screenshots": "\"$npm_execpath\" package && node scripts/screenshots/capture.mts --vsix toucan-$npm_package_version.vsix"
   },
   "dependencies": {
     "culori": "^4.0.2",
@@ -50,13 +51,16 @@
     "@stryker-mutator/core": "10.0.0",
     "@types/culori": "^4.0.1",
     "@types/node": "^22.0.0",
+    "@types/pngjs": "6.0.5",
     "@types/vscode": "1.138.0",
     "@vscode/vsce": "^4.0.0",
     "clipper-lib": "6.4.2",
+    "gifenc": "1.0.3",
     "husky": "^9.1.7",
     "oxfmt": "^0.71.0",
     "oxlint": "^1.86.0",
     "oxlint-tsgolint": "7.0.2003",
+    "pngjs": "7.0.0",
     "svg2ttf": "^6.1.0",
     "svgicons2svgfont": "^16.0.0",
     "tsdown": "^0.23.0",

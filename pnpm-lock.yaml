@@ -185,6 +185,9 @@ importers:
       '@types/node':
         specifier: ^22.0.0
         version: 22.20.4
+      '@types/pngjs':
+        specifier: 6.0.5
+        version: 6.0.5
       '@types/vscode':
         specifier: 1.138.0
         version: 1.138.0
@@ -194,6 +197,9 @@ importers:
       clipper-lib:
         specifier: 6.4.2
         version: 6.4.2
+      gifenc:
+        specifier: 1.0.3
+        version: 1.0.3
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -206,6 +212,9 @@ importers:
       oxlint-tsgolint:
         specifier: 7.0.2003
         version: 7.0.2003
+      pngjs:
+        specifier: 7.0.0
+        version: 7.0.0
       svg2ttf:
         specifier: ^6.1.0
         version: 6.1.0
@@ -1376,6 +1385,9 @@ packages:
   '@types/node@24.19.0':
     resolution: {integrity: sha512-zY+5tKxXdhGh1PYI0ac+7juvEu4OI6vWtVVoj5i2m42jxAY1U+zHGt6QCyOFwykdP62sM3MJ9stoYYUw5aCWew==}
 
+  '@types/pngjs@6.0.5':
+    resolution: {integrity: sha512-0k5eKfrA83JOZPppLtS2C7OUtyNAl2wKNxfyYl9Q5g9lPkgBl/9hNyAu6HuEH2J4XmIv2znEpkDd0SaZVxW6iQ==}
+
   '@types/sax@1.2.7':
     resolution: {integrity: sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==}
 
@@ -1994,6 +2006,9 @@ packages:
     resolution: {integrity: sha512-X6fBC0pmImC70gvX2zm56go9hx0MyoGVdG0tUCkg/D+Xnh5TJsOZ7iDbOdI3PvmtrDxnu1YdDufpK2QJX1Meqw==}
     engines: {node: '>=20.20.0'}
 
+  gifenc@1.0.3:
+    resolution: {integrity: sha512-xdr6AdrfGBcfzncONUOlXMBuc5wJDtOueE3c5rdG0oNgtINLD+f2iFZltrBRZYzACRbKr+mSVU/x98zv2u3jmw==}
+
   glob@13.0.6:
     resolution: {integrity: sha512-Wjlyrolmm8uDpm/ogGyXZXb1Z+Ca2B8NbJwqBVg0axK9GbBeoS7yGV6vjXnYdGm6X53iehEuxxbyiKp8QmN4Vw==}
     engines: {node: 18 || 20 || >=22}
@@ -2372,6 +2387,10 @@ packages:
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
+
+  pngjs@7.0.0:
+    resolution: {integrity: sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow==}
+    engines: {node: '>=14.19.0'}
 
   postcss@8.5.28:
     resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
@@ -3718,6 +3737,10 @@ snapshots:
     dependencies:
       undici-types: 7.24.6
 
+  '@types/pngjs@6.0.5':
+    dependencies:
+      '@types/node': 22.20.4
+
   '@types/sax@1.2.7':
     dependencies:
       '@types/node': 24.19.0
@@ -4212,6 +4235,8 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
+  gifenc@1.0.3: {}
+
   glob@13.0.6:
     dependencies:
       minimatch: 10.2.6
@@ -4535,6 +4560,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
+
+  pngjs@7.0.0: {}
 
   postcss@8.5.28:
     dependencies:
