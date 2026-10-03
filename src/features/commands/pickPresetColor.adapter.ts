@@ -3,8 +3,9 @@ import { statusBarAgainst, swatch, writeRepos } from "./commandUi.adapter.ts";
 import { pickWithPreview } from "./pickWithPreview.adapter.ts";
 
 // import utils
-import { LOW_CONTRAST_WARNING, lowContrast } from "../../shared/color/contrast.util.ts";
+import { lowContrast } from "../../shared/color/contrast.util.ts";
 import { withBackground } from "./entries.util.ts";
+import { presetDescription } from "./presetItem.util.ts";
 
 // import consts
 import { DEFAULT_GLYPH } from "../../shared/model/model.consts.ts";
@@ -22,14 +23,14 @@ export async function pickPreset({ host, name }: CommandArgs): Promise<void> {
   const items = PRESETS.map((preset) => {
     const item: QuickPickItem & { hex: Hex } = {
       label: preset.name,
-      description: preset.hex === current ? `${preset.hex} · current` : preset.hex,
+      description: presetDescription({
+        hex: preset.hex,
+        isCurrent: preset.hex === current,
+        isLowContrast: lowContrast({ color: preset.hex, background: statusBar }),
+      }),
       iconPath: swatch({ glyph, hex: preset.hex }),
       hex: preset.hex,
     };
-    // Marked, not hidden: the user can still pick it (toucan-v1/0018).
-    if (lowContrast({ color: preset.hex, background: statusBar })) {
-      item.detail = `$(warning) ${LOW_CONTRAST_WARNING}`;
-    }
     return item;
   });
   const picked = await pickWithPreview({
