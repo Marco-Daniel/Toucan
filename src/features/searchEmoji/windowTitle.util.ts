@@ -3,7 +3,7 @@
  * and backed by Toucan's context keys: one in front of the title, one in front
  * of the folder name. Nobody else sets them, and a variable nobody registers
  * renders empty, so a title Toucan leaves behind (after an uninstall, or with
- * Toucan disabled) reads like VS Code's own.
+ * Toucan disabled) shows no emoji and no repeated name.
  */
 export const LEAD_VARIABLE_NAME = "toucanRepoLead";
 export const EMOJI_VARIABLE_NAME = "toucanRepoEmoji";

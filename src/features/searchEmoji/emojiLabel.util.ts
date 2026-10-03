@@ -24,8 +24,7 @@ interface ApplyArgs {
  * Sets the search emoji's two title variables in this window (see
  * `titleValues`). They're registered through an internal command (ADR-0003).
  * If that fails, Toucan says so once, never tries again in this window, and
- * shows no emoji: the unregistered variables render empty, so the title reads
- * like VS Code's own.
+ * shows no emoji: the unregistered variables render empty.
  */
 export class EmojiLabel {
   /** `undefined` until the first attempt, then whether both variables are registered. */
