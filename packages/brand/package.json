@@ -6,13 +6,13 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    "./*": "./src/*",
-    "./assets/*": "./assets/*"
+    "./*": "./src/*"
   },
   "scripts": {
     "lint": "oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mutate": "node ../../scripts/mutate-cli.mts"
   },
   "devDependencies": {
     "@toucan/ts-config": "workspace:*",

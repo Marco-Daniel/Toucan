@@ -64,7 +64,7 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 
 ### Mutation testing
 
-`mutate` runs StrykerJS on demand, not in CI or the pre-push hook: `pnpm mutate` at the root for the repo's own tooling, `pnpm -C apps/extension mutate` for the extension, each with its package's `stryker.config.json`. Pass the files you changed, relative to that package; it refuses files outside it. Read every survived mutant: kill it with a test, or say why it's equivalent. The qmd tooling in `scripts/qmd/` is never mutated: the root's config leaves it out and `mutate` refuses its files ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Reports land in the package's `reports/stryker/`; delete that folder after changing what's excluded.
+`mutate` runs StrykerJS on demand, not in CI or the pre-push hook: `pnpm mutate` at the root for the repo's own tooling, `pnpm -C apps/extension mutate` for the extension and `pnpm -C packages/brand mutate` for the brand, each with its package's `stryker.config.json`. Pass the files you changed, relative to that package; it refuses files outside it. Read every survived mutant: kill it with a test, or say why it's equivalent. The qmd tooling in `scripts/qmd/` is never mutated: the root's config leaves it out and `mutate` refuses its files ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Reports land in the package's `reports/stryker/`; delete that folder after changing what's excluded.
 
 ### Docs search with qmd
 
