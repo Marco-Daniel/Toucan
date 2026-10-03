@@ -374,6 +374,20 @@ describe("SidebarController, settings changes", () => {
     expect([state.reveals, state.closes]).toEqual([1, 1]);
   });
 
+  it("doesn't close again a bar the user reopened after Toucan closed it on focus", async () => {
+    const { controller, settings, state } = setup({ visibility: "unfocused" });
+    controller.start(false);
+    await settle();
+    controller.setFocused(true);
+    await settle();
+    // The user opens the bar again while the window keeps focus; then the block goes off.
+    controller.visibilityChanged(true);
+    settings.enabled = false;
+    controller.settingsChanged();
+    await settle();
+    expect([state.reveals, state.closes]).toEqual([1, 1]);
+  });
+
   // The user's bar may hold Chat or other views: it stays, even if it ends up empty.
   it.each([
     {
