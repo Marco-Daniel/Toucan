@@ -403,9 +403,52 @@ describe("settingsFiles", () => {
 });
 
 describe("planEdit, clearing every key", () => {
-  // Keeps the (now empty) object: removing the key would drop comments inside it (toucan-v1/0017).
-  it("leaves an empty object (closing brace on its own line) in a plain file", () => {
+  // Nothing of the setting is left, so it goes as a whole. The user's own keys
+  // keep it in place instead: see "clears Toucan's keys by whole lines".
+  it("removes the setting by its lines, keeping the settings and comments around it", () => {
+    const text = `{
+  // my settings
+  "editor.fontSize": 13,
+  "${KEY}": {
+    "commandCenter.background": "#aa0000",
+    "commandCenter.border": "#111111"
+  },
+  // after it
+  "files.autoSave": "off"
+}
+`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { "commandCenter.background": "#aa0000", "commandCenter.border": "#111111" },
+      desired: undefined,
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{
+  // my settings
+  "editor.fontSize": 13,
+  // after it
+  "files.autoSave": "off"
+}
+`,
+      changed: ["commandCenter.background", "commandCenter.border"],
+    });
+  });
+
+  it("leaves an empty file object when it was the only setting", () => {
     const text = `{\n  "${KEY}": {\n    "commandCenter.background": "#aa0000"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { "commandCenter.background": "#aa0000" },
+      desired: undefined,
+    });
+    expect(plan).toEqual({ kind: "edit", text: "{\n}\n", changed: ["commandCenter.background"] });
+  });
+
+  it("removes a setting that shares its line through jsonc-parser, in the file's format", () => {
+    const text = `{ "editor.fontSize": 13, "${KEY}": { "commandCenter.background": "#aa0000" } }\n`;
     const plan = planEdit({
       text,
       key: KEY,
@@ -414,13 +457,13 @@ describe("planEdit, clearing every key", () => {
     });
     expect(plan).toEqual({
       kind: "edit",
-      text: `{\n  "${KEY}": {\n  }\n}\n`,
+      text: '{\n  "editor.fontSize": 13\n}\n',
       changed: ["commandCenter.background"],
     });
   });
 
   it("keeps CRLF line endings", () => {
-    const text = `{\r\n  "${KEY}": {\r\n    "a": "#000000",\r\n    "b": "#111111"\r\n  }\r\n}\r\n`;
+    const text = `{\r\n  "editor.fontSize": 13,\r\n  "${KEY}": {\r\n    "a": "#000000",\r\n    "b": "#111111"\r\n  }\r\n}\r\n`;
     const plan = planEdit({
       text,
       key: KEY,
@@ -429,8 +472,25 @@ describe("planEdit, clearing every key", () => {
     });
     expect(plan).toEqual({
       kind: "edit",
-      text: `{\r\n  "${KEY}": {\r\n  }\r\n}\r\n`,
+      text: `{\r\n  "editor.fontSize": 13,\r\n}\r\n`,
       changed: ["a", "b"],
+    });
+  });
+
+  // A comment inside may be the user's own note: removing the setting would drop
+  // it, so the object stays with the comment and only Toucan's keys go (toucan-v1/0017).
+  it("keeps the object, with its comment, when it holds one", () => {
+    const text = `{\n  "${KEY}": {\n    // my note\n    "commandCenter.background": "#aa0000"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { "commandCenter.background": "#aa0000" },
+      desired: undefined,
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    // my note\n  }\n}\n`,
+      changed: ["commandCenter.background"],
     });
   });
 });
