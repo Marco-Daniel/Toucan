@@ -52,7 +52,7 @@ describe("sitePolicy", () => {
         "default-src 'self'",
         `script-src 'self' ${LOG_HASH}`,
         `style-src 'self' ${STYLE_HASH}`,
-        "img-src 'self' data:",
+        "img-src 'self'",
         "font-src 'self'",
         "connect-src 'self'",
         "manifest-src 'self'",

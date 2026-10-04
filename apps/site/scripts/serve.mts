@@ -14,6 +14,7 @@ import { isRecord } from "../../extension/src/shared/records/records.util.ts";
 import { headersForAll } from "./csp.mts";
 
 const OK = 200;
+const BAD_REQUEST = 400;
 const NOT_FOUND = 404;
 
 const TYPES: Record<string, string> = {
@@ -36,7 +37,16 @@ export interface BuildServer {
 export async function serveBuild(client: string): Promise<BuildServer> {
   const headers = headersForAll(readFileSync(join(client, "_headers"), "utf8"));
   const server = createServer((request, response) => {
-    const path = normalize(decodeURIComponent(new URL(request.url ?? "/", "http://x").pathname));
+    // A malformed escape (/%E0) would throw here and stop the server mid-run.
+    const [decoded] = tryCatchSync(() =>
+      decodeURIComponent(new URL(request.url ?? "/", "http://x").pathname),
+    );
+    if (decoded === null) {
+      response.writeHead(BAD_REQUEST, headers);
+      response.end();
+      return;
+    }
+    const path = normalize(decoded);
     const candidates = [path, join(path, "index.html")].map((file) => join(client, file));
     for (const file of candidates) {
       const [body] = tryCatchSync(() => readFileSync(file));

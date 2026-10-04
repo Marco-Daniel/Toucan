@@ -47,7 +47,7 @@ export function sitePolicy({ scripts, styles }: SitePolicyArgs): string {
     "default-src 'self'",
     `script-src 'self' ${hashes(scripts)}`.trimEnd(),
     `style-src 'self' ${hashes(styles)}`.trimEnd(),
-    "img-src 'self' data:",
+    "img-src 'self'",
     "font-src 'self'",
     "connect-src 'self'",
     "manifest-src 'self'",
