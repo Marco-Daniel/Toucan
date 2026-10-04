@@ -106,3 +106,18 @@ describe("what a mutate run leaves out", () => {
     ]);
   });
 });
+
+describe("every package's Stryker config", () => {
+  it.each([
+    ["stryker.config.json"],
+    ["apps/extension/stryker.config.json"],
+    ["packages/brand/stryker.config.json"],
+    ["apps/site/stryker.config.json"],
+  ])("%s runs in full every time, with no incremental cache (#16)", (path) => {
+    const config = JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8"));
+    expect({ incremental: config.incremental, incrementalFile: config.incrementalFile }).toEqual({
+      incremental: false,
+      incrementalFile: undefined,
+    });
+  });
+});

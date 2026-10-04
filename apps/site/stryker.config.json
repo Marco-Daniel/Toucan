@@ -15,8 +15,7 @@
     "!app/lib/brand.assets.ts",
     "!app/lib/docs.content.ts"
   ],
-  "incremental": true,
-  "incrementalFile": "reports/stryker/incremental.json",
+  "incremental": false,
   "reporters": ["clear-text", "html", "progress"],
   "htmlReporter": {
     "fileName": "reports/stryker/mutation.html"

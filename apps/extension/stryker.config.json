@@ -6,8 +6,7 @@
   },
   "coverageAnalysis": "off",
   "mutate": ["src/**/*.ts", "scripts/**/*.mts", "!src/generated/**"],
-  "incremental": true,
-  "incrementalFile": "reports/stryker/incremental.json",
+  "incremental": false,
   "reporters": ["clear-text", "html", "progress"],
   "htmlReporter": {
     "fileName": "reports/stryker/mutation.html"

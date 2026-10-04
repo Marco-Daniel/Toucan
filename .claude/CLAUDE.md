@@ -46,7 +46,7 @@ Every test has to survive one question: **would it still pass if the code it cov
 - Fakes must be able to disagree: seed them with state that differs from the desired result, and assert what the code wrote.
 - Don't restate the implementation (that a method called its one dependency once), and don't duplicate a test across files.
 - Prove it can fail: break the line it protects, see it go red, restore.
-- Mutation testing, on demand (not in CI or the pre-push hook): `pnpm mutate <files you changed>` at the root for its tooling, `pnpm -C <package> mutate <files>` for a package (`apps/extension`, `packages/brand`, `apps/site`), with paths relative to that package. Read every survived mutant; kill it with a test or say why it's equivalent. Never chase the percentage. `scripts/qmd/` is never mutated (ADR-0012); delete the package's `reports/stryker` after changing what's excluded.
+- Mutation testing, on demand (not in CI or the pre-push hook): `pnpm mutate <files you changed>` at the root for its tooling, `pnpm -C <package> mutate <files>` for a package (`apps/extension`, `packages/brand`, `apps/site`), with paths relative to that package. Read every survived mutant; kill it with a test or say why it's equivalent. Never chase the percentage. `scripts/qmd/` is never mutated (ADR-0012). Every run is a full run (`incremental: false`): no result comes from a cache, so a weakened test shows at once.
 
 ## Keep docs in sync
 
