@@ -22,6 +22,7 @@ jobs:
       attestations: read
     outputs:
       vsix-sha256: ${{ steps.vsix.outputs.sha256 }}
+      node: ${{ steps.node.outputs.version }}
       vsce-sha256: ${{ steps.vsce.outputs.sha256 }}
     env:
       GH_TOKEN: ${{ github.token }}
@@ -65,6 +66,10 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: pnpm install --frozen-lockfile --filter toucan --ignore-scripts
+      # publish has no checkout: it runs vsce on the Node version .nvmrc names.
+      - id: node
+        name: Read the Node version
+        run: echo "version=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
       - id: vsce
         name: Pack vsce
         run: |
@@ -94,10 +99,10 @@ jobs:
       VSIX_SHA256: ${{ needs.verify.outputs.vsix-sha256 }}
       VSCE_SHA256: ${{ needs.verify.outputs.vsce-sha256 }}
     steps:
-      # The repo's .nvmrc version; this job has no checkout to read it from.
+      # The .nvmrc version, which verify read: this job has no checkout.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version: ${{ needs.verify.outputs.node }}
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: publish

@@ -116,10 +116,16 @@ jobs:
           name: release
           path: release
       # One release per version: never a second draft beside an earlier one.
+      # Goes on only when GitHub says there's no such release; any other answer
+      # (a release, a draft, a rate limit, an outage) stops the run.
       - name: Check v$VERSION has no release or draft yet
         run: |
-          if gh release view "v$VERSION" > /dev/null 2>&1; then
+          if answer=$(gh release view "v$VERSION" --json tagName 2>&1); then
             echo "v$VERSION already has a release or a draft" >&2
+            exit 1
+          fi
+          if [ "$answer" != "release not found" ]; then
+            echo "Couldn't check for v$VERSION: $answer" >&2
             exit 1
           fi
       # A draft: its tag is made only when Marco publishes it.
