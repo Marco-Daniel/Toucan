@@ -7,9 +7,9 @@
 // package's stryker.config.json, so the files must be inside that package.
 // With no files it mutates what the config lists; with files it mutates just
 // those and runs only the tests related to them, which is what a change needs.
-// Reports land in the package's reports/stryker/; delete that folder after
-// changing what's excluded, or the incremental file carries the old results
-// into later reports.
+// Reports land in the package's reports/stryker/. Every run is a full run
+// (incremental: false): with the command runner, Stryker can't tell which
+// tests cover a mutant, so a cached result could hide a weakened test.
 //
 // Why the command runner rather than @stryker-mutator/vitest-runner: under
 // Vitest 5 that runner never switched mutants on inside functions, so nearly

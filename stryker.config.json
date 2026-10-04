@@ -7,8 +7,7 @@
   "coverageAnalysis": "off",
   "mutate": ["scripts/**/*.mts", "!scripts/qmd/**", "!scripts/mutate-cli.mts"],
   "ignorePatterns": ["apps/*/media", "apps/*/dist", "apps/*/*.vsix", ".turbo"],
-  "incremental": true,
-  "incrementalFile": "reports/stryker/incremental.json",
+  "incremental": false,
   "reporters": ["clear-text", "html", "progress"],
   "htmlReporter": {
     "fileName": "reports/stryker/mutation.html"
