@@ -12,10 +12,12 @@ import { colorShare, dominantColor, encodeGif, encodePng, stacked } from "./imag
 import { baseSettings, writeSettings } from "./session.mts";
 import {
   MODIFIERS,
-  pickerTitle,
+  PICKER_TITLED,
   STEP_TIMEOUT_MS,
+  TAB_ACTIVE,
   TOUCAN_ITEM,
   TOUCAN_LABEL,
+  TOUCAN_LABEL_CHANGED,
   WINDOW,
 } from "./vscode.mts";
 import { waitFor } from "./wait.mts";
@@ -25,6 +27,21 @@ import type { Rect } from "./geometry.mts";
 import type { Image, Rgba } from "./images.mts";
 import type { Paths, Session } from "./session.mts";
 import type { Window } from "./vscode.mts";
+
+/** Whether the title bar's inactive (dim) look matches the argument. */
+const TITLE_BAR_INACTIVE = `function (inactive) {
+  return document.querySelector(".part.titlebar")?.classList.contains("inactive") === inactive;
+}`;
+const DIALOG_OPEN = `function () {
+  return document.querySelector(".monaco-dialog-box") !== null;
+}`;
+/** Clicks the open dialog's button with this text. */
+const CLICK_DIALOG_BUTTON = `function (text) {
+  [...document.querySelectorAll(".monaco-dialog-box .monaco-button")].find((b) => b.textContent.trim() === text)?.click();
+}`;
+const EMOJI_IN_COMMAND_CENTER = `function () {
+  return /^\\p{Extended_Pictographic}/u.test(document.querySelector(".command-center")?.innerText ?? "") || undefined;
+}`;
 
 /** The hero shows each window's bars at this scale: 880 pixels wide, the README's column. */
 const HERO_SCALE = 0.8;
@@ -120,9 +137,7 @@ async function titleBarsSettled({ session, name }: FocusArgs): Promise<void> {
       check: async () => {
         await session.main.focus(name);
         return (
-          (await window.evaluate(
-            `document.querySelector(".part.titlebar")?.classList.contains("inactive") === ${inactive}`,
-          )) === true || undefined
+          (await window.call({ fn: TITLE_BAR_INACTIVE, args: [inactive] })) === true || undefined
         );
       },
       timeoutMs: STEP_TIMEOUT_MS,
@@ -154,12 +169,12 @@ interface PreviewArgs {
 
 /** Types a color into the open Set Color input and waits for the status bar to show it. */
 async function preview({ window, color }: PreviewArgs): Promise<void> {
-  const before = await window.evaluate(TOUCAN_LABEL);
+  const before = await window.call({ fn: TOUCAN_LABEL, args: [TOUCAN_ITEM] });
   await window.key({ key: "a", modifiers: MODIFIERS.meta });
   await window.type(color);
   await window.waitFor({
     what: `the ${color} preview`,
-    expression: `(${TOUCAN_LABEL}) !== ${JSON.stringify(before)} || undefined`,
+    call: { fn: TOUCAN_LABEL_CHANGED, args: [TOUCAN_ITEM, before] },
   });
 }
 
@@ -176,10 +191,9 @@ export async function recordHero({ session, out, framesDir }: RecordHeroArgs): P
   // a page focused for good, and its Command Center would never look inactive.
   for (const { name, open } of REPOS) {
     const file = basename(open);
-    await session.window(name).waitFor({
-      what: `the ${file} tab`,
-      expression: `[...document.querySelectorAll(".tab.active")].some((tab) => tab.getAttribute("aria-label")?.startsWith(${JSON.stringify(file)})) || undefined`,
-    });
+    await session
+      .window(name)
+      .waitFor({ what: `the ${file} tab`, call: { fn: TAB_ACTIVE, args: [file] } });
   }
   const frames = [];
   for (const { name } of REPOS) {
@@ -192,7 +206,7 @@ export async function recordHero({ session, out, framesDir }: RecordHeroArgs): P
   await window.run("Toucan: Set Color for This Repo");
   await window.waitFor({
     what: "the Set Color input",
-    expression: pickerTitle(`Toucan: Color for ${name}`),
+    call: { fn: PICKER_TITLED, args: [`Toucan: Color for ${name}`] },
   });
   for (const color of HERO_PREVIEWS) {
     await preview({ window, color });
@@ -268,7 +282,9 @@ interface PickerStillArgs {
 }
 
 /** The highlighted row's label in an open picker. */
-const FOCUSED_ROW = `document.querySelector(".quick-input-widget .monaco-list-row.focused")?.getAttribute("aria-label") ?? ""`;
+const FOCUSED_ROW = `function () {
+  return document.querySelector(".quick-input-widget .monaco-list-row.focused")?.getAttribute("aria-label") ?? "";
+}`;
 /** More rows than any Toucan picker has. */
 const MAX_ROWS = 40;
 
@@ -276,10 +292,10 @@ async function pickerStill({ window, command, title, row }: PickerStillArgs): Pr
   await window.run(command);
   await window.waitFor({
     what: command,
-    expression: pickerTitle(`Toucan: ${title} for ${window.name}`),
+    call: { fn: PICKER_TITLED, args: [`Toucan: ${title} for ${window.name}`] },
   });
-  const label = await window.evaluate(TOUCAN_LABEL);
-  const isRow = async () => String(await window.evaluate(FOCUSED_ROW)).startsWith(row);
+  const label = await window.call({ fn: TOUCAN_LABEL, args: [TOUCAN_ITEM] });
+  const isRow = async () => String(await window.call({ fn: FOCUSED_ROW })).startsWith(row);
   for (let step = 0; step < MAX_ROWS && !(await isRow()); step++) {
     await window.key({ key: "ArrowUp" });
   }
@@ -288,7 +304,7 @@ async function pickerStill({ window, command, title, row }: PickerStillArgs): Pr
   }
   await window.waitFor({
     what: `${command}'s preview`,
-    expression: `(${TOUCAN_LABEL}) !== ${JSON.stringify(label)} || undefined`,
+    call: { fn: TOUCAN_LABEL_CHANGED, args: [TOUCAN_ITEM, label] },
   });
   // The picker fades in; capture once it's fully drawn.
   await settledPixels({ window });
@@ -311,7 +327,7 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
   await window.run("Toucan: Set Color for This Repo");
   await window.waitFor({
     what: "the Set Color input",
-    expression: pickerTitle(`Toucan: Color for ${STILL_REPO}`),
+    call: { fn: PICKER_TITLED, args: [`Toucan: Color for ${STILL_REPO}`] },
   });
   await preview({ window, color: STILL_PREVIEW });
   save({
@@ -395,20 +411,15 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
     what: "the search emoji's consent dialog",
     check: async () => {
       await session.main.focus(STILL_REPO);
-      return (
-        (await window.evaluate(`document.querySelector(".monaco-dialog-box") !== null`)) === true ||
-        undefined
-      );
+      return (await window.call({ fn: DIALOG_OPEN })) === true || undefined;
     },
     timeoutMs: STEP_TIMEOUT_MS,
   });
-  await window.evaluate(
-    `[...document.querySelectorAll(".monaco-dialog-box .monaco-button")].find((b) => b.textContent.trim() === "Change Window Title")?.click()`,
-  );
+  await window.call({ fn: CLICK_DIALOG_BUTTON, args: ["Change Window Title"] });
   await window.open("README.md");
   await window.waitFor({
     what: "the emoji in the Command Center",
-    expression: `/^\\p{Extended_Pictographic}/u.test(document.querySelector(".command-center")?.innerText ?? "") || undefined`,
+    call: { fn: EMOJI_IN_COMMAND_CENTER },
   });
   // The title settles a moment after the emoji appears (the file name follows).
   await settledPixels({ window, clip: await window.box(".part.titlebar") });

@@ -6,7 +6,7 @@ import { waitFor } from "./wait.mts";
 import { isRecord } from "../../src/shared/records/records.util.ts";
 
 // import types
-import type { DevToolsSession } from "./cdp.mts";
+import type { DevToolsSession, FunctionCall } from "./cdp.mts";
 import type { Rect } from "./geometry.mts";
 import type { Image } from "./images.mts";
 
@@ -23,16 +23,72 @@ const CASCADE = { left: 40, top: 40, stepX: 60, stepY: 40 } as const;
 /** VS Code's window title separator. */
 const TITLE_SEPARATOR = " — ";
 
-const QUICK_INPUT_OPEN = `(() => { const w = document.querySelector(".quick-input-widget"); return w && w.style.display !== "none" && w.offsetHeight > 0 || undefined; })()`;
+// Page and main-process code is fixed function source: whatever varies goes in
+// as an argument (FunctionCall), never spliced into the text.
 
-/** An expression that holds once a Toucan picker with this title is open. */
-export function pickerTitle(title: string): string {
-  return `(() => { const w = document.querySelector(".quick-input-widget"); return w && w.offsetHeight > 0 && w.querySelector(".quick-input-title")?.textContent === ${JSON.stringify(title)} || undefined; })()`;
-}
+const QUICK_INPUT_OPEN = `function () {
+  const w = document.querySelector(".quick-input-widget");
+  return (w && w.style.display !== "none" && w.offsetHeight > 0) || undefined;
+}`;
+
+/** Holds once a Toucan picker with the title (argument) is open. */
+export const PICKER_TITLED = `function (title) {
+  const w = document.querySelector(".quick-input-widget");
+  return (w && w.offsetHeight > 0 && w.querySelector(".quick-input-title")?.textContent === title) || undefined;
+}`;
+
+/** The focused picker row's label starts with (`"start"`) or includes (`"include"`) the text. */
+const FOCUSED_ROW_HAS = `function (how, text) {
+  const label = document.querySelector(".quick-input-widget .monaco-list-row.focused")?.getAttribute("aria-label") ?? "";
+  return (how === "start" ? label.startsWith(text) : label.includes(text)) || undefined;
+}`;
+
+/** Holds once the active tab is the file (argument). */
+export const TAB_ACTIVE = `function (file) {
+  return [...document.querySelectorAll(".tab.active")].some((tab) => tab.getAttribute("aria-label")?.startsWith(file)) || undefined;
+}`;
+
+/** An element's box, once it has a width. */
+const BOX = `function (selector) {
+  const r = document.querySelector(selector)?.getBoundingClientRect();
+  return r && r.width > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : undefined;
+}`;
+
+const COMMAND_CENTER_COLOR = `function () {
+  return [...document.querySelectorAll(".command-center *")].map((e) => getComputedStyle(e).backgroundColor).find((c) => c !== "rgba(0, 0, 0, 0)");
+}`;
+
+const DEVICE_PIXEL_RATIO = `function () {
+  return devicePixelRatio;
+}`;
 
 export const TOUCAN_ITEM = `[id="marco-daniel.toucan.toucan.indicator"]`;
-/** The Toucan status bar item's label, e.g. "Toucan: webshop, Canopy Teal heart". */
-export const TOUCAN_LABEL = `document.querySelector('${TOUCAN_ITEM}')?.getAttribute("aria-label") ?? undefined`;
+/** The Toucan status bar item's label (e.g. "Toucan: webshop, Canopy Teal heart"), from its selector. */
+export const TOUCAN_LABEL = `function (selector) {
+  return document.querySelector(selector)?.getAttribute("aria-label") ?? undefined;
+}`;
+/** Holds once the Toucan item's label (selector) differs from the one before. */
+export const TOUCAN_LABEL_CHANGED = `function (selector, before) {
+  return (document.querySelector(selector)?.getAttribute("aria-label") ?? undefined) !== before || undefined;
+}`;
+
+/** Sizes every window and cascades them; `this` is the electron module. */
+const SIZE_WINDOWS = `function (size, cascade) {
+  this.BrowserWindow.getAllWindows().forEach((w, i) => {
+    w.setContentSize(size.width, size.height);
+    w.setPosition(cascade.left + i * cascade.stepX, cascade.top + i * cascade.stepY);
+  });
+}`;
+
+/** Focuses the window whose title names the folder; `this` is the electron module. */
+const FOCUS_WINDOW = `function (separator, name) {
+  const { app, BrowserWindow } = this;
+  const w = BrowserWindow.getAllWindows().find((w) => w.getTitle().split(separator).includes(name));
+  if (!w) return false;
+  app.focus({ steal: true });
+  w.focus();
+  return w.isFocused();
+}`;
 
 interface WindowArgs {
   name: string;
@@ -51,8 +107,8 @@ interface PointArgs {
 
 interface WaitArgs {
   what: string;
-  /** Page JavaScript; `undefined` or `null` means "not yet". */
-  expression: string;
+  /** Page code; a result of `undefined` or `null` means "not yet". */
+  call: FunctionCall;
 }
 
 interface CaptureArgs {
@@ -71,8 +127,9 @@ export class Window {
     this.page = page;
   }
 
-  async evaluate(expression: string): Promise<unknown> {
-    return this.page.evaluate(expression);
+  /** The function's result in the page. */
+  async call(call: FunctionCall): Promise<unknown> {
+    return this.page.call(call);
   }
 
   async key({ key, modifiers = 0 }: KeyArgs): Promise<void> {
@@ -99,11 +156,11 @@ export class Window {
   /** Runs a command by its palette title, once the palette has it on top. */
   async run(title: string): Promise<void> {
     await this.key({ key: "p", modifiers: MODIFIERS.meta | MODIFIERS.shift });
-    await this.waitFor({ what: "the Command Palette", expression: QUICK_INPUT_OPEN });
+    await this.waitFor({ what: "the Command Palette", call: { fn: QUICK_INPUT_OPEN } });
     await this.type(title);
     await this.waitFor({
       what: `"${title}" in the Command Palette`,
-      expression: `document.querySelector(".quick-input-widget .monaco-list-row.focused")?.getAttribute("aria-label")?.startsWith(${JSON.stringify(title)}) || undefined`,
+      call: { fn: FOCUSED_ROW_HAS, args: ["start", title] },
     });
     await this.key({ key: "Enter" });
   }
@@ -111,43 +168,35 @@ export class Window {
   /** Opens a file by name with Quick Open, and waits for its tab. */
   async open(file: string): Promise<void> {
     await this.key({ key: "p", modifiers: MODIFIERS.meta });
-    await this.waitFor({ what: "Quick Open", expression: QUICK_INPUT_OPEN });
+    await this.waitFor({ what: "Quick Open", call: { fn: QUICK_INPUT_OPEN } });
     await this.type(file);
     await this.waitFor({
       what: `${file} in Quick Open`,
-      expression: `document.querySelector(".quick-input-widget .monaco-list-row.focused")?.getAttribute("aria-label")?.includes(${JSON.stringify(file)}) || undefined`,
+      call: { fn: FOCUSED_ROW_HAS, args: ["include", file] },
     });
     await this.key({ key: "Enter" });
-    await this.waitFor({
-      what: `the ${file} tab`,
-      expression: `[...document.querySelectorAll(".tab.active")].some((tab) => tab.getAttribute("aria-label")?.startsWith(${JSON.stringify(file)})) || undefined`,
-    });
+    await this.waitFor({ what: `the ${file} tab`, call: { fn: TAB_ACTIVE, args: [file] } });
   }
 
-  /** The expression's first defined value in the page. */
-  async waitFor({ what, expression }: WaitArgs): Promise<unknown> {
+  /** The call's first defined value in the page. */
+  async waitFor({ what, call }: WaitArgs): Promise<unknown> {
     return waitFor({
       what: `${what} in ${this.name}`,
-      check: async () =>
-        this.evaluate(
-          `(() => { const v = (${expression}); return v === null ? undefined : v; })()`,
-        ),
+      check: async () => (await this.call(call)) ?? undefined,
       timeoutMs: STEP_TIMEOUT_MS,
     });
   }
 
   /** The Command Center's background as the page renders it, if it has one. */
   async commandCenterColor(): Promise<string | undefined> {
-    const value = await this.evaluate(
-      `[...document.querySelectorAll(".command-center *")].map((e) => getComputedStyle(e).backgroundColor).find((c) => c !== "rgba(0, 0, 0, 0)")`,
-    );
+    const value = await this.call({ fn: COMMAND_CENTER_COLOR });
     return typeof value === "string" ? value : undefined;
   }
 
   /** The page, or a part of it, as an image. */
   async capture({ clip, scale }: CaptureArgs): Promise<Image> {
     const area = clip ?? { x: 0, y: 0, ...WINDOW };
-    const ratio = await this.evaluate("devicePixelRatio");
+    const ratio = await this.call({ fn: DEVICE_PIXEL_RATIO });
     const reply = await this.page.send("Page.captureScreenshot", {
       format: "png",
       // DevTools scales in device pixels, so divide out the screen's own ratio.
@@ -161,10 +210,7 @@ export class Window {
 
   /** An element's box, once it's on screen. */
   async box(selector: string): Promise<Rect> {
-    const value = await this.waitFor({
-      what: selector,
-      expression: `(() => { const r = document.querySelector(${JSON.stringify(selector)})?.getBoundingClientRect(); return r && r.width > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : undefined; })()`,
-    });
+    const value = await this.waitFor({ what: selector, call: { fn: BOX, args: [selector] } });
     if (!isRect(value)) {
       throw new Error(`No box for ${selector}`);
     }
@@ -182,6 +228,9 @@ function isRect(value: unknown): value is Rect {
   );
 }
 
+/** The main process's electron module, the `this` of its calls. */
+const ELECTRON = `require("electron")`;
+
 /** VS Code's main process, through --inspect: window size and focus. */
 export class Main {
   private readonly session: DevToolsSession;
@@ -191,16 +240,16 @@ export class Main {
   }
 
   async sizeWindows(): Promise<void> {
-    await this.session.evaluate(
-      `require("electron").BrowserWindow.getAllWindows().forEach((w, i) => { w.setContentSize(${WINDOW.width}, ${WINDOW.height}); w.setPosition(${CASCADE.left} + i * ${CASCADE.stepX}, ${CASCADE.top} + i * ${CASCADE.stepY}); })`,
-    );
+    await this.session.call({ fn: SIZE_WINDOWS, args: [WINDOW, CASCADE], on: ELECTRON });
   }
 
   /** Brings the window with this folder to the front; `true` once it has focus. */
   async focus(name: string): Promise<boolean> {
-    const value = await this.session.evaluate(
-      `(() => { const { app, BrowserWindow } = require("electron"); const w = BrowserWindow.getAllWindows().find((w) => w.getTitle().split(${JSON.stringify(TITLE_SEPARATOR)}).includes(${JSON.stringify(name)})); if (!w) return false; app.focus({ steal: true }); w.focus(); return w.isFocused(); })()`,
-    );
+    const value = await this.session.call({
+      fn: FOCUS_WINDOW,
+      args: [TITLE_SEPARATOR, name],
+      on: ELECTRON,
+    });
     return value === true;
   }
 }
