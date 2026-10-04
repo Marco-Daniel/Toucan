@@ -10,6 +10,8 @@ interface DisclosureProps {
   summary: ReactNode;
   className: string;
   summaryClassName: string;
+  /** The toggle's accessible name, when its content is an icon. */
+  label?: string;
   children: ReactNode;
 }
 
@@ -18,7 +20,13 @@ interface DisclosureProps {
  * run closes again on navigation, on a link click inside it, on Escape and on
  * a click outside it.
  */
-export function Disclosure({ summary, className, summaryClassName, children }: DisclosureProps) {
+export function Disclosure({
+  summary,
+  className,
+  summaryClassName,
+  label,
+  children,
+}: DisclosureProps) {
   const details = useRef<HTMLDetailsElement>(null);
   const { pathname, hash } = useLocation();
 
@@ -62,8 +70,11 @@ export function Disclosure({ summary, className, summaryClassName, children }: D
   };
 
   return (
+    // <summary> tells assistive tech itself whether the <details> is open, with or without scripts.
     <details ref={details} className={className} onClick={onClick}>
-      <summary className={summaryClassName}>{summary}</summary>
+      <summary className={summaryClassName} aria-label={label}>
+        {summary}
+      </summary>
       {children}
     </details>
   );
