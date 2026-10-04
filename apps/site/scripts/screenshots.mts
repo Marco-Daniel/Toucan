@@ -35,12 +35,14 @@ import {
 } from "../../extension/src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../extension/src/shared/records/records.util.ts";
 import { chromePids, killIfStillOurs, planSweep, PROFILE_PREFIX, runSweep } from "./chrome.mts";
+import { connect, evaluate } from "./cdp.mts";
 import { KILL_PORTS, processes } from "./ps.mts";
 
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
 
 // import types
+import type { Cdp } from "./cdp.mts";
 import type { EntryFacts } from "./chrome.mts";
 
 const CLIENT = new URL("../build/client/", import.meta.url).pathname;
@@ -214,58 +216,6 @@ async function devToolsPort(): Promise<string> {
   throw new Error("Chrome didn't start");
 }
 
-interface Cdp {
-  send: (method: string, params?: Record<string, unknown>) => Promise<Record<string, unknown>>;
-  close: () => void;
-}
-
-/** A minimal DevTools protocol client for one page target. */
-async function connect(url: string): Promise<Cdp> {
-  const socket = new WebSocket(url);
-  await new Promise((resolve, reject) => {
-    socket.addEventListener("open", resolve, { once: true });
-    socket.addEventListener("error", reject, { once: true });
-  });
-  let nextId = 0;
-  const pending = new Map<number, (message: Record<string, unknown>) => void>();
-  socket.addEventListener("message", (event) => {
-    const message: unknown = JSON.parse(String(event.data));
-    // Only answers to our own requests: an id this script issued, with its own callback.
-    const id = isRecord(message) ? message["id"] : undefined;
-    const settle = typeof id === "number" ? pending.get(id) : undefined;
-    if (isRecord(message) && typeof id === "number" && typeof settle === "function") {
-      pending.delete(id);
-      settle(message);
-    }
-  });
-  return {
-    send: (method, params = {}) =>
-      new Promise((resolve, reject) => {
-        nextId++;
-        pending.set(nextId, (message) => {
-          const { error, result } = message;
-          if (isRecord(error)) {
-            reject(new Error(`${method}: ${String(error["message"])}`));
-          } else {
-            resolve(isRecord(result) ? result : {});
-          }
-        });
-        socket.send(JSON.stringify({ id: nextId, method, params }));
-      }),
-    close: () => socket.close(),
-  };
-}
-
-/** Runs JavaScript in the page and returns its JSON-serialisable value. */
-async function evaluate(cdp: Cdp, expression: string): Promise<unknown> {
-  const { result } = await cdp.send("Runtime.evaluate", {
-    expression,
-    returnByValue: true,
-    awaitPromise: true,
-  });
-  return isRecord(result) ? result["value"] : undefined;
-}
-
 /** The page loaded, every image loaded (lazy ones too), and the fonts ready. */
 const SETTLE = `(async () => {
   for (const image of document.images) image.loading = "eager";
@@ -313,8 +263,28 @@ const PROBLEMS = `(() => {
 const failures: string[] = [];
 
 /** The site menu's state: whether it's open, and the page's path. */
-/** Whether the menu is open, what its toggle tells assistive tech, and the page's path. */
-const MENU_STATE = `[document.querySelector('nav[aria-label="Site"] details').open, document.querySelector('nav[aria-label="Site"] summary').getAttribute("aria-expanded"), location.pathname]`;
+const MENU_STATE = `[document.querySelector('nav[aria-label="Site"] details').open, location.pathname]`;
+
+/** Whether the menu's toggle reads as expanded to assistive tech, from Chrome's accessibility tree. */
+async function menuExpanded(cdp: Cdp): Promise<unknown> {
+  const { root } = await cdp.send("DOM.getDocument");
+  const { nodeId } = await cdp.send("DOM.querySelector", {
+    nodeId: isRecord(root) ? root["nodeId"] : 0,
+    selector: 'nav[aria-label="Site"] summary',
+  });
+  const { nodes } = await cdp.send("Accessibility.getPartialAXTree", {
+    nodeId,
+    fetchRelatives: false,
+  });
+  const list: unknown[] = Array.isArray(nodes) ? nodes : [];
+  const [node] = list;
+  const listed: unknown = isRecord(node) ? node["properties"] : undefined;
+  const properties: unknown[] = Array.isArray(listed) ? listed : [];
+  const expanded = properties.find(
+    (property) => isRecord(property) && property["name"] === "expanded",
+  );
+  return isRecord(expanded) && isRecord(expanded["value"]) ? expanded["value"]["value"] : false;
+}
 const OPEN_MENU = `document.querySelector('nav[aria-label="Site"] summary').click()`;
 
 /**
@@ -347,7 +317,7 @@ async function menuProblems(cdp: Cdp): Promise<string[]> {
   const problems: string[] = [];
   for (const [what, action, path] of steps) {
     await evaluate(cdp, OPEN_MENU);
-    const opened = await evaluate(cdp, MENU_STATE);
+    const opened = [await evaluate(cdp, MENU_STATE), await menuExpanded(cdp)];
     if (what === "Escape") {
       // The open menu, as it looks on a phone.
       await sleep(SETTLE_MS);
@@ -356,11 +326,11 @@ async function menuProblems(cdp: Cdp): Promise<string[]> {
     }
     await evaluate(cdp, action);
     await sleep(SETTLE_MS);
-    const after = await evaluate(cdp, MENU_STATE);
+    const after = [await evaluate(cdp, MENU_STATE), await menuExpanded(cdp)];
     if (
       JSON.stringify(opened) !==
-        JSON.stringify([true, "true", path === "/changelog" ? "/docs" : path]) ||
-      JSON.stringify(after) !== JSON.stringify([false, "false", path])
+        JSON.stringify([[true, path === "/changelog" ? "/docs" : path], true]) ||
+      JSON.stringify(after) !== JSON.stringify([[false, path], false])
     ) {
       problems.push(
         `The phone menu doesn't close on ${what}: open ${JSON.stringify(opened)}, then ${JSON.stringify(after)}`,

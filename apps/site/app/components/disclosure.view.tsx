@@ -1,5 +1,5 @@
 // import libraries
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router";
 
 // import types
@@ -28,8 +28,6 @@ export function Disclosure({
   children,
 }: DisclosureProps) {
   const details = useRef<HTMLDetailsElement>(null);
-  // Mirrors the <details>' own state, so the toggle can say whether it's open.
-  const [isOpen, setIsOpen] = useState(false);
   const { pathname, hash } = useLocation();
 
   useEffect(() => {
@@ -72,13 +70,9 @@ export function Disclosure({
   };
 
   return (
-    <details
-      ref={details}
-      className={className}
-      onClick={onClick}
-      onToggle={(event) => setIsOpen(event.currentTarget.open)}
-    >
-      <summary className={summaryClassName} aria-label={label} aria-expanded={isOpen}>
+    // <summary> tells assistive tech itself whether the <details> is open, with or without scripts.
+    <details ref={details} className={className} onClick={onClick}>
+      <summary className={summaryClassName} aria-label={label}>
         {summary}
       </summary>
       {children}
