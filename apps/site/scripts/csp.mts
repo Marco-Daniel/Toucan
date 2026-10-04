@@ -12,12 +12,12 @@ export interface InlineSources {
   styleAttributes: number;
 }
 
-/** The inline scripts (no `src`) and `<style>` blocks of a page, and its style attributes. */
+/** The inline scripts (no `src`) and `<style>` blocks of a page, in any letter case, and its style attributes. */
 export function inlineSources(html: string): InlineSources {
-  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)]
-    .filter(([, attributes = ""]) => !/\ssrc=/.test(attributes))
+  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+    .filter(([, attributes = ""]) => !/\ssrc=/i.test(attributes))
     .map(([, , body = ""]) => body);
-  const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map(
+  const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)].map(
     ([, body = ""]) => body,
   );
   const styleAttributes = [...html.matchAll(/<[a-z][^>]*\sstyle=/gi)].length;
