@@ -16,6 +16,8 @@
 
 ## Decision Outcome
 
+Superseded for now by [marketplace-upload](../../marketplace-upload/plan.md): no Azure subscription, so releases are uploaded by hand until trusted publishing.
+
 Chosen: **Entra ID with a user-assigned managed identity** in a free Azure subscription. It has no Azure role (Reader only if publishing proves to need it) and one federated credential that trusts only this repo's GitHub environment `marketplace`, in the immutable subject format. The environment allows `v*` tags only (main just for the one-off check), admin bypass is off, and only Marco may create `v*` tags. The publish job signs in with `azure/login` (OIDC, `allow-no-subscriptions`) and runs `vsce publish --azure-credential --packagePath <vsix>`, the pattern GitHub uses for its own CodeQL extension. The identity is a publisher member (Contributor), added by the member id `profiles/me` returns when called as the identity. No long-lived secret exists. When the Marketplace enables trusted publishing, a later plan can switch to it.
 
 ## Consequences
