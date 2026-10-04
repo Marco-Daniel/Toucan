@@ -1,5 +1,5 @@
 // import libraries
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router";
 
 // import types
@@ -10,6 +10,8 @@ interface DisclosureProps {
   summary: ReactNode;
   className: string;
   summaryClassName: string;
+  /** The toggle's accessible name, when its content is an icon. */
+  label?: string;
   children: ReactNode;
 }
 
@@ -18,8 +20,16 @@ interface DisclosureProps {
  * run closes again on navigation, on a link click inside it, on Escape and on
  * a click outside it.
  */
-export function Disclosure({ summary, className, summaryClassName, children }: DisclosureProps) {
+export function Disclosure({
+  summary,
+  className,
+  summaryClassName,
+  label,
+  children,
+}: DisclosureProps) {
   const details = useRef<HTMLDetailsElement>(null);
+  // Mirrors the <details>' own state, so the toggle can say whether it's open.
+  const [isOpen, setIsOpen] = useState(false);
   const { pathname, hash } = useLocation();
 
   useEffect(() => {
@@ -62,8 +72,15 @@ export function Disclosure({ summary, className, summaryClassName, children }: D
   };
 
   return (
-    <details ref={details} className={className} onClick={onClick}>
-      <summary className={summaryClassName}>{summary}</summary>
+    <details
+      ref={details}
+      className={className}
+      onClick={onClick}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+    >
+      <summary className={summaryClassName} aria-label={label} aria-expanded={isOpen}>
+        {summary}
+      </summary>
       {children}
     </details>
   );

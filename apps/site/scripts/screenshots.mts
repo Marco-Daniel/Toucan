@@ -313,7 +313,8 @@ const PROBLEMS = `(() => {
 const failures: string[] = [];
 
 /** The site menu's state: whether it's open, and the page's path. */
-const MENU_STATE = `[document.querySelector('nav[aria-label="Site"] details').open, location.pathname]`;
+/** Whether the menu is open, what its toggle tells assistive tech, and the page's path. */
+const MENU_STATE = `[document.querySelector('nav[aria-label="Site"] details').open, document.querySelector('nav[aria-label="Site"] summary').getAttribute("aria-expanded"), location.pathname]`;
 const OPEN_MENU = `document.querySelector('nav[aria-label="Site"] summary').click()`;
 
 /**
@@ -347,12 +348,19 @@ async function menuProblems(cdp: Cdp): Promise<string[]> {
   for (const [what, action, path] of steps) {
     await evaluate(cdp, OPEN_MENU);
     const opened = await evaluate(cdp, MENU_STATE);
+    if (what === "Escape") {
+      // The open menu, as it looks on a phone.
+      await sleep(SETTLE_MS);
+      const { data } = await cdp.send("Page.captureScreenshot", { format: "png" });
+      writeFileSync(join(out, `menu-open-${PHONE}.png`), Buffer.from(String(data), "base64"));
+    }
     await evaluate(cdp, action);
     await sleep(SETTLE_MS);
     const after = await evaluate(cdp, MENU_STATE);
     if (
-      JSON.stringify(opened) !== JSON.stringify([true, path === "/changelog" ? "/docs" : path]) ||
-      JSON.stringify(after) !== JSON.stringify([false, path])
+      JSON.stringify(opened) !==
+        JSON.stringify([true, "true", path === "/changelog" ? "/docs" : path]) ||
+      JSON.stringify(after) !== JSON.stringify([false, "false", path])
     ) {
       problems.push(
         `The phone menu doesn't close on ${what}: open ${JSON.stringify(opened)}, then ${JSON.stringify(after)}`,

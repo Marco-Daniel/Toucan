@@ -4,6 +4,7 @@ import { Link } from "react-router";
 // import views
 import { Disclosure } from "./disclosure.view.tsx";
 import { Logo } from "./logo.view.tsx";
+import { MenuIcon } from "./menuIcon.view.tsx";
 
 // import consts
 import { REPO_URL } from "../lib/site.consts.ts";
@@ -19,7 +20,7 @@ const LINKS = [
 export function SiteNav() {
   return (
     <nav className="sticky top-0 z-10 bg-paper/90 backdrop-blur-md" aria-label="Site">
-      <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-7 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-[1120px] items-center gap-3 px-4 sm:px-6 md:gap-7">
         <Link
           to="/"
           className="flex min-h-11 items-center gap-2.5 text-xl font-extrabold tracking-tight"
@@ -44,10 +45,17 @@ export function SiteNav() {
             GitHub
           </a>
         </div>
+        <Link
+          to="/#install"
+          className="ml-auto inline-flex min-h-11 items-center rounded-[10px] border-2 border-ink bg-ink px-3.5 text-sm font-bold text-cream md:ml-0"
+        >
+          Install
+        </Link>
         <Disclosure
-          className="relative ml-auto md:hidden"
-          summaryClassName="flex min-h-11 cursor-pointer list-none items-center rounded-lg border-2 border-ink px-3 font-bold"
-          summary="Menu"
+          className="relative md:hidden"
+          summaryClassName="flex size-11 cursor-pointer list-none items-center justify-center rounded-[10px] border-2 border-ink [&::-webkit-details-marker]:hidden"
+          summary={<MenuIcon />}
+          label="Menu"
         >
           <div className="absolute right-0 mt-2 flex w-48 flex-col rounded-xl border-2 border-ink bg-paper py-1 shadow-[4px_4px_0_var(--color-amber)]">
             {LINKS.map(({ label, to }) => (
@@ -60,12 +68,6 @@ export function SiteNav() {
             </a>
           </div>
         </Disclosure>
-        <Link
-          to="/#install"
-          className="inline-flex min-h-11 items-center rounded-[10px] border-2 border-ink bg-ink px-3.5 text-sm font-bold text-cream md:ml-0"
-        >
-          Install
-        </Link>
       </div>
       <div className="beak-band h-1" />
     </nav>
