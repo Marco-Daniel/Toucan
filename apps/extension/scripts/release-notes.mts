@@ -25,6 +25,9 @@ export function releaseNotesProblems({ notes, version }: ReleaseNotesProblemsArg
     ...(placeholders === 1
       ? []
       : [`they have ${placeholders} ${SHA256_PLACEHOLDER} placeholders, not 1`]),
+    ...(notes.includes("#BUMP-PR")
+      ? ["they still have the #BUMP-PR placeholder for the bump PR's link"]
+      : []),
     // publish.yml finds the checksum by this exact line.
     ...(notes.includes(SHA256_LINE) ? [] : [`they have no line ${SHA256_LINE}`]),
   ];
