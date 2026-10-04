@@ -33,6 +33,12 @@ describe("whatsNew", () => {
     );
   });
 
+  it("keeps a smaller Install heading, which isn't the install steps", () => {
+    expect(whatsNew("News.\n\n### Install tips\n\nStill news.\n\n## Install\n\nsteps")).toBe(
+      "News.\n\n### Install tips\n\nStill news.",
+    );
+  });
+
   it("doesn't take a heading that only starts like Install", () => {
     expect(whatsNew("News.\n\n## Installer\n\nStill news.")).toBe(
       "News.\n\n## Installer\n\nStill news.",
@@ -99,6 +105,16 @@ Toucan's releases, newest first. Each one's full notes, with the install steps a
 
 First.
 `);
+  });
+
+  it("moves only headings down, and keeps a tag's letters past its leading v", () => {
+    expect(
+      changelogMarkdown({
+        releases: [release("2.0.0-dev", "2026-11-01T00:00:00Z", "Uses C# and #12 notes.")],
+      }),
+    ).toContain(
+      "## [2.0.0-dev](https://github.com/Marco-Daniel/Toucan/releases/tag/2.0.0-dev) (2026-11-01)\n\nUses C# and #12 notes.\n",
+    );
   });
 
   it("refuses an upcoming version that's already released", () => {

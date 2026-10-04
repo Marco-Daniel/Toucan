@@ -37,6 +37,12 @@ describe("releaseNotesProblems", () => {
     ]);
   });
 
+  it("doesn't take a smaller Install heading as the install steps", () => {
+    expect(
+      releaseNotesProblems({ notes: NOTES.replace("## Install", "### Install"), version: "1.0.0" }),
+    ).toEqual(["they have no ## Install section"]);
+  });
+
   it("refuses a placeholder outside the checksum line", () => {
     expect(
       releaseNotesProblems({
