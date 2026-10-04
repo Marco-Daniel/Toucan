@@ -6,8 +6,17 @@
 // When the run ends the folder is removed, and the run fails if any test left
 // something in tmp/: each test removes what it made. Nothing outside the run
 // folder is ever listed or removed, so runs side by side don't meet.
+//
+// A test that runs Vitest itself starts a nested run with its own run folder
+// inside this one's tmp/: if that nested run is killed before it ends, this
+// run's check names its folder.
+//
+// The one deliberate exception is /tmp: the screenshot script puts VS Code's
+// profile there, because its socket path must stay under about 100
+// characters. The tests that make folders there check in afterAll that
+// they're gone (test/scripts/screenshots/cleanup.test.ts).
 // import libraries
-import { mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -33,10 +42,16 @@ export default function setup(): () => void {
   process.env["XDG_CACHE_HOME"] = home;
   process.env["TMPDIR"] = temp;
   return () => {
-    const error = leftoversError(readdirSync(temp));
-    rmSync(run, { recursive: true, force: true });
-    if (error !== undefined) {
-      throw error;
+    // A test that removed the temp folder itself counts as a leftover too.
+    const names = existsSync(temp) ? readdirSync(temp) : ["tmp/ itself, which a test removed"];
+    try {
+      const error = leftoversError(names);
+      if (error !== undefined) {
+        throw error;
+      }
+    } finally {
+      // The run folder goes whatever the check found.
+      rmSync(run, { recursive: true, force: true });
     }
   };
 }

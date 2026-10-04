@@ -59,7 +59,7 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 
 `pnpm install` also sets up a pre-push hook (husky) that runs `typecheck`, `lint`, `format:check` and `test` from the root. It's set up per checkout, so run `pnpm install` in a new worktree before pushing from it. `HUSKY=0` skips it; CI skips it and runs the full set itself.
 
-Every test run gets its own folder in the OS temp folder (`toucan-test-run-…`, from `config/vite/src/testRun.ts`), and every test worker and process a test starts uses it for its HOME, its qmd cache and its TMPDIR. When the run ends the folder is removed, and the run fails if a test left a temp folder behind, naming it: a test removes what it makes, in an `afterEach` or `afterAll`. A run that's killed (a timeout, or a mutant Stryker stops) leaves its one run folder, which `find "${TMPDIR:-/tmp}" -maxdepth 1 -type d -name 'toucan-*' -user "$(id -un)" -mtime +1` lists for removal.
+Every test run gets its own folder in the OS temp folder (`toucan-test-run-…`, from `config/vite/src/testRun.ts`), and every test worker and process a test starts uses it for its HOME, its qmd cache and its TMPDIR. When the run ends the folder is removed, and the run fails if a test left a temp folder behind, naming it: a test removes what it makes, in an `afterEach` or `afterAll`. A run that's killed (a timeout, or a mutant Stryker stops) leaves its one run folder; `find "${TMPDIR:-/tmp}" -maxdepth 1 -type d -name 'toucan-test-run-*' -user "$(id -un)" -mmin +1440` lists those older than a day, for removal. The one exception is `/tmp`, where the extension's screenshot script keeps VS Code's profile because its socket path must stay short: the tests that make folders there check that they're gone.
 
 ### The website
 
