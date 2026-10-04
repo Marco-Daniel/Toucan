@@ -9,7 +9,9 @@ Toucan shows at a glance which repository a VS Code window has open. Colors are 
 
 ## Install
 
-Toucan isn't on the Visual Studio Marketplace or Open VSX yet. Download the `.vsix` from the latest [GitHub release](https://github.com/Marco-Daniel/Toucan/releases/latest), then either:
+Install Toucan from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marco-daniel.toucan): in VS Code, open the Extensions view and search for **Toucan**, or run `code --install-extension marco-daniel.toucan`.
+
+It isn't on Open VSX (Cursor, VSCodium, Windsurf) yet. There, download the `.vsix` from the latest [GitHub release](https://github.com/Marco-Daniel/Toucan/releases/latest), then either:
 
 - in VS Code: Extensions view → `…` → **Install from VSIX…**, or
 - from a terminal: `code --install-extension toucan-<version>.vsix`

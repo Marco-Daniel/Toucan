@@ -10,3 +10,7 @@
 - Checked by hand: `published` against a well-known extension lists its versions; `verify 0.0.4` stops at `verify-asset`, because 0.0.4 predates release attestations.
 - Next: the 1.0.0 bump PR, with the version and the notes only; then `verify` against the real 1.0.0 release, before Marco uploads.
 
+## 2026-10-04: the implementer, after the 1.0.0 upload
+
+- Did: Marco uploaded the verified `toucan-1.0.0.vsix` through the publisher page; `published 1.0.0` confirmed the public gallery lists it. The site card now links the store (marketplace-launch/0009).
+- Next: each later release follows the same route, `/marketplace-upload <version>`, until trusted publishing (→ 0006).

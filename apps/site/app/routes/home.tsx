@@ -76,7 +76,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         id="install"
         tone="cream"
         title="Install"
-        lead="Toucan isn't in the extension stores yet: install it from a GitHub release. Then run Toucan: Set Color for This Repo from the Command Palette."
+        lead="Install Toucan from the Visual Studio Marketplace, or from a GitHub release. Then run Toucan: Set Color for This Repo from the Command Palette."
       >
         {version === undefined ? (
           <p>
