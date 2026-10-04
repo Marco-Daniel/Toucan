@@ -15,6 +15,8 @@ Something has to start a Marketplace publish, and a published version can never 
 
 ## Decision Outcome
 
+Superseded for now by [marketplace-upload](../../marketplace-upload/plan.md): `publish.yml` verifies every release, and the upload is by hand until trusted publishing.
+
 Chosen: **automatically**, Marco's choice. A workflow on `release: published` downloads the release's VSIX asset, verifies it (`gh release verify-asset`, the SHA-256 in the notes, `gh attestation verify`) and publishes exactly those bytes. Nothing is rebuilt. The release itself is the point of control.
 
 ## Consequences

@@ -87,8 +87,14 @@ jobs:
   # Can mint an OIDC token for the whole job, so it runs no repo or dependency
   # code before vsce: no checkout, no install, only pinned actions and the
   # two files verify handed over, each checked by its SHA-256.
+  # Dormant until the managed identity exists (ADR-0015): it runs only when the
+  # repository variable MARKETPLACE_PUBLISH is "true". Until then it's skipped,
+  # and Marco uploads the VSIX verify checked by hand (/marketplace-upload). A
+  # job's `if` can't see its environment's variables, so the switch is the
+  # repository's, while the client and tenant ids stay the environment's.
   publish:
     needs: verify
+    if: vars.MARKETPLACE_PUBLISH == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: marketplace

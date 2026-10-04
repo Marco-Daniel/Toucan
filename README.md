@@ -37,12 +37,13 @@ From the root, Turborepo runs these in every package, in dependency order:
 
 From the root, for the whole repo:
 
-| Command               | What it does                                                                |
-| --------------------- | --------------------------------------------------------------------------- |
-| `pnpm format:check`   | Check formatting with oxfmt (`pnpm format` to fix)                          |
-| `pnpm docs:index`     | Register the docs with qmd and refresh its index and embeddings (see below) |
-| `pnpm mutate [file…]` | StrykerJS mutation testing of the root's own tooling (see below); on demand |
-| `/docs-sync`          | Claude Code skill: report doc drift since the last run, with a fix per item |
+| Command               | What it does                                                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm format:check`   | Check formatting with oxfmt (`pnpm format` to fix)                                                                                                       |
+| `pnpm docs:index`     | Register the docs with qmd and refresh its index and embeddings (see below)                                                                              |
+| `pnpm mutate [file…]` | StrykerJS mutation testing of the root's own tooling (see below); on demand                                                                              |
+| `/docs-sync`          | Claude Code skill: report doc drift since the last run, with a fix per item                                                                              |
+| `/marketplace-upload` | Claude Code skill: verify a published release's VSIX, hand over the file and the publisher link for a manual upload, then check the Marketplace lists it |
 
 The extension's own scripts run with `pnpm -C apps/extension <script>` from the root (`pnpm -C apps/extension package`, say), or `pnpm <script>` inside `apps/extension`. Its package keeps the name `toucan`, part of the extension ID `marco-daniel.toucan`. Paths below are relative to `apps/extension`.
 
@@ -65,13 +66,14 @@ Every test run gets its own folder in the OS temp folder (`toucan-test-run-…`,
 
 ### Releasing
 
-A release goes from GitHub to the VS Code Marketplace without a publishing secret ([ADR-0015](docs/adr/0015-release-through-drafts-and-publish-from-actions.md)):
+A release goes from GitHub to the VS Code Marketplace as exactly the file it released, with no publishing secret ([ADR-0015](docs/adr/0015-release-through-drafts-and-publish-from-actions.md)):
 
 1. **The bump PR** sets the version in `apps/extension/package.json` and writes the release's notes in `apps/extension/release-notes.md`, with everything [ADR-0013](docs/adr/0013-release-notes-for-every-release.md) asks for. The VSIX's checksum isn't known yet, so its line reads ``SHA-256: `{{sha256}}` ``.
 2. **Run `Package VSIX`** (`package.yml`) on `main`. It runs every gate, writes `CHANGELOG.md` from these notes and every published release's, packages the VSIX, fills in its SHA-256, attests it, and creates a **draft** release with the VSIX and the notes.
 3. **Check the draft and publish it**, as Marco: publishing makes the `v*` tag, which only he can create.
-4. **`Publish to the Marketplace`** (`publish.yml`) then runs on its own. It checks the release's VSIX (the release asset, the SHA-256 in the notes, the attestation from `package.yml` on `main`) and publishes exactly that file. It signs in as a managed identity through the `marketplace` environment, whose client and tenant ids are its variables.
-5. Refresh the site's changelog snapshot (below).
+4. **`Publish to the Marketplace`** (`publish.yml`) then runs on its own. Its `verify` job checks the release's VSIX (the release asset, the SHA-256 in the notes, the attestation from `package.yml` on `main`). Its `publish` job, which would sign in as a managed identity and upload that file, is dormant: it runs only once the repository variable `MARKETPLACE_PUBLISH` is `true`, which waits for the Marketplace's trusted publishing.
+5. **Upload it by hand** meanwhile: `/marketplace-upload <version>` in Claude Code downloads and verifies the same file, gives Marco its path and the publisher page's link to upload it in a private window, and then checks the Marketplace lists the version.
+6. Refresh the site's changelog snapshot (below).
 
 ### The website
 

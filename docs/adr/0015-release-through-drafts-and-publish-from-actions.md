@@ -5,7 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: releases
-- Decided in: [marketplace-launch/0002](../plans/marketplace-launch/decisions/0002-publish-with-entra-id-and-a-managed-identity.md), [marketplace-launch/0003](../plans/marketplace-launch/decisions/0003-publish-automatically-on-a-published-release.md), [marketplace-launch/0004](../plans/marketplace-launch/decisions/0004-build-releases-as-drafts-and-publish-them-as-marco.md), [marketplace-launch/0005](../plans/marketplace-launch/decisions/0005-attest-the-vsix-build-provenance.md), [marketplace-launch/0010](../plans/marketplace-launch/decisions/0010-ship-a-changelog-from-the-release-notes.md)
+- Decided in: [marketplace-launch/0002](../plans/marketplace-launch/decisions/0002-publish-with-entra-id-and-a-managed-identity.md), [marketplace-launch/0003](../plans/marketplace-launch/decisions/0003-publish-automatically-on-a-published-release.md), [marketplace-launch/0004](../plans/marketplace-launch/decisions/0004-build-releases-as-drafts-and-publish-them-as-marco.md), [marketplace-launch/0005](../plans/marketplace-launch/decisions/0005-attest-the-vsix-build-provenance.md), [marketplace-launch/0010](../plans/marketplace-launch/decisions/0010-ship-a-changelog-from-the-release-notes.md), [marketplace-upload/0001](../plans/marketplace-upload/decisions/0001-upload-releases-by-hand-until-trusted-publishing.md), [marketplace-upload/0004](../plans/marketplace-upload/decisions/0004-keep-the-azure-publish-job-dormant.md)
 
 ## Context and Problem
 
@@ -26,8 +26,9 @@ Chosen: **attested drafts, published from Actions with no secret**:
 - **Marco publishes the draft.** A release published by a person fires `release: published`, and creating its `v*` tag is restricted to him.
 - **`publish.yml` publishes exactly the released file**, in two jobs. `verify`, which can't mint an OIDC token, downloads the release's VSIX and checks it (`gh release verify-asset`, the SHA-256 in the notes, `gh attestation verify` for `package.yml` on `main`), installs vsce from the lockfile with scripts off, and hands both on as files with their SHA-256s. `publish`, in the `marketplace` environment, which admits only `v*` tags, has no checkout and installs nothing: it checks both files' SHA-256s, signs in with `azure/login` as a managed identity (OIDC, no subscription) and runs that vsce's `publish --azure-credential --packagePath --skip-duplicate`. Nothing is rebuilt.
 - **No secret exists.** The identity's client and tenant ids are the environment's variables; its federated credential trusts only that environment.
+- **Until trusted publishing, Marco uploads by hand.** The managed identity needs an Azure subscription, which needs a credit card, so the `publish` job stays dormant: it runs only when the repository variable `MARKETPLACE_PUBLISH` is `true`. `verify` still runs on every published release. Marco uploads that same VSIX through the publisher page, in a private browser window, with `/marketplace-upload <version>` verifying the file first and checking the listing after; nothing signs in on his behalf. When the Marketplace supports trusted publishing (`vsce publish --oidc`), the `publish` job switches to it and runs on every release.
 
 ## Consequences
 
 - Good: no publishing secret to leak or rotate, and the store, the GitHub release and the attestation all name the same bytes. The changelog can't drift from the releases.
-- Bad: a release needs Marco to publish it, an Azure tenant holds the identity, and the notes are written before the VSIX exists. When the Marketplace supports trusted publishing, the identity can go.
+- Bad: a release needs Marco to publish it and, for now, to upload it, and the notes are written before the VSIX exists.

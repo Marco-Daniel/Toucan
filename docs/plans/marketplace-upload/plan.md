@@ -30,7 +30,7 @@ The identity check and the environment's temporary main policy are removed (→ 
 ## Components
 
 - `.claude/skills/marketplace-upload/`: the skill (SKILL.md plus a script for the verification), built with the skill-creator guidance, with tests for its pure parts.
-- publish.yml: the `publish` job gets `if: vars.AZURE_CLIENT_ID != ''`, so it's skipped, not failed.
+- publish.yml: the `publish` job gets `if: vars.MARKETPLACE_PUBLISH == 'true'`, a repository variable, so it's skipped, not failed (→ 0004: a job's `if` can't see its environment's variables).
 - `.github/workflows/marketplace-identity.yml` is deleted.
 - Docs:
   - the README's Releasing section gets the manual step and the skill;
