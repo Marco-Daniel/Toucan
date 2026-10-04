@@ -21,9 +21,8 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createServer } from "node:http";
 import { tmpdir } from "node:os";
-import { extname, join, normalize } from "node:path";
+import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parseArgs } from "node:util";
 
@@ -37,6 +36,7 @@ import { isRecord } from "../../extension/src/shared/records/records.util.ts";
 import { chromePids, killIfStillOurs, planSweep, PROFILE_PREFIX, runSweep } from "./chrome.mts";
 import { connect, evaluate } from "./cdp.mts";
 import { KILL_PORTS, processes } from "./ps.mts";
+import { serveBuild } from "./serve.mts";
 
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
@@ -51,8 +51,6 @@ const PHONE = 390;
 const TABLET = 768;
 const DESKTOP = 1280;
 const WIDTHS = [PHONE, TABLET, DESKTOP] as const;
-const OK = 200;
-const NOT_FOUND = 404;
 const VIEWPORT_HEIGHT = 900;
 const MIN_TAP = 44;
 const MOBILE_MAX_WIDTH = 500;
@@ -67,16 +65,6 @@ const MS_PER_SECOND = 1000;
 const EXIT_INTERRUPTED = 130;
 const DEFAULT_CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
-const TYPES: Record<string, string> = {
-  ".html": "text/html",
-  ".css": "text/css",
-  ".js": "text/javascript",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-  ".json": "application/json",
-};
-
 /** Paths the site doesn't have: each must show the not-found page once, in one page frame. */
 const MISSING = ["/docs/nope", "/nope"];
 const PAGES = [...PAGE_PATHS, ...MISSING];
@@ -90,26 +78,8 @@ const { values } = parseArgs({
 const { out } = values;
 mkdirSync(out, { recursive: true });
 
-/** build/client served as Netlify serves it: /path → path/index.html, any other path → the SPA fallback with a 404 (public/_redirects). */
-const server = createServer((request, response) => {
-  const path = normalize(decodeURIComponent(new URL(request.url ?? "/", "http://x").pathname));
-  const candidates = [path, join(path, "index.html")].map((file) => join(CLIENT, file));
-  for (const file of candidates) {
-    const [body] = tryCatchSync(() => readFileSync(file));
-    if (body !== null && file.startsWith(CLIENT)) {
-      response.writeHead(OK, {
-        "content-type": TYPES[extname(file)] ?? "application/octet-stream",
-      });
-      response.end(body);
-      return;
-    }
-  }
-  response.writeHead(NOT_FOUND, { "content-type": "text/html" });
-  response.end(readFileSync(join(CLIENT, "__spa-fallback.html")));
-});
-await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-const address = server.address();
-const origin = `http://127.0.0.1:${isRecord(address) ? String(address["port"]) : ""}`;
+const server = await serveBuild(CLIENT);
+const { origin } = server;
 
 /** The temp folder by its real path, so the profile path matches Chrome's command line exactly. */
 const TMP = realpathSync(tmpdir());
@@ -262,6 +232,23 @@ const PROBLEMS = `(() => {
 
 const failures: string[] = [];
 
+/**
+ * Runs before any of the page's own code: records every Content-Security-Policy
+ * violation, which the browser reports as an event on the document.
+ */
+const RECORD_VIOLATIONS = `window.__violations = [];
+document.addEventListener("securitypolicyviolation", (event) => {
+  window.__violations.push(event.effectiveDirective + " blocked " + (event.blockedURI || "inline") + " " + event.sample);
+});`;
+
+/** The policy violations the current page recorded. */
+async function violations(cdp: Cdp): Promise<string[]> {
+  const found = await evaluate(cdp, "window.__violations ?? []");
+  return (Array.isArray(found) ? found : []).map(
+    (violation) => `Content-Security-Policy violation: ${String(violation)}`,
+  );
+}
+
 /** The site menu's state: whether it's open, and the page's path. */
 const MENU_STATE = `[document.querySelector('nav[aria-label="Site"] details').open, location.pathname]`;
 
@@ -324,9 +311,14 @@ async function menuProblems(cdp: Cdp): Promise<string[]> {
       const { data } = await cdp.send("Page.captureScreenshot", { format: "png" });
       writeFileSync(join(out, `menu-open-${PHONE}.png`), Buffer.from(String(data), "base64"));
     }
+    // A full page load would drop this; client navigation keeps it.
+    await evaluate(cdp, "window.__sameDocument = true");
     await evaluate(cdp, action);
     await sleep(SETTLE_MS);
     const after = [await evaluate(cdp, MENU_STATE), await menuExpanded(cdp)];
+    if ((await evaluate(cdp, "window.__sameDocument")) !== true) {
+      problems.push(`Following ${what} loaded a new page: the app didn't hydrate`);
+    }
     if (
       JSON.stringify(opened) !==
         JSON.stringify([[true, path === "/changelog" ? "/docs" : path], true]) ||
@@ -337,6 +329,7 @@ async function menuProblems(cdp: Cdp): Promise<string[]> {
       );
     }
   }
+  problems.push(...(await violations(cdp)).map((violation) => `The phone menu: ${violation}`));
   return problems;
 }
 
@@ -366,6 +359,7 @@ const [, error] = await tryCatch(async () => {
   }
   const cdp = await connect(socketUrl);
   await cdp.send("Page.enable");
+  await cdp.send("Page.addScriptToEvaluateOnNewDocument", { source: RECORD_VIOLATIONS });
   for (const width of WIDTHS) {
     await cdp.send("Emulation.setDeviceMetricsOverride", {
       width,
@@ -381,7 +375,9 @@ const [, error] = await tryCatch(async () => {
       );
       await evaluate(cdp, SETTLE);
       await sleep(SETTLE_MS);
-      const problems = await evaluate(cdp, PROBLEMS);
+      const layout = await evaluate(cdp, PROBLEMS);
+      const listed: unknown[] = Array.isArray(layout) ? layout : [];
+      const problems = [...(await violations(cdp)), ...listed.map(String)];
       if (MISSING.includes(path)) {
         const shown = await evaluate(
           cdp,
@@ -393,8 +389,8 @@ const [, error] = await tryCatch(async () => {
           );
         }
       }
-      for (const problem of Array.isArray(problems) ? problems : []) {
-        failures.push(`${path} at ${width} px: ${String(problem)}`);
+      for (const problem of problems) {
+        failures.push(`${path} at ${width} px: ${problem}`);
       }
       const { cssContentSize } = await cdp.send("Page.getLayoutMetrics");
       const height = isRecord(cssContentSize) ? Number(cssContentSize["height"]) : VIEWPORT_HEIGHT;

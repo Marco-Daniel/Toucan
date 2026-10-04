@@ -9,6 +9,7 @@ import { join } from "node:path";
 
 // import utils
 import { tryCatchSync } from "../../extension/src/shared/async/tryCatch.util.ts";
+import { inlineSources, sha256Source, sitePolicy } from "./csp.mts";
 
 // import consts
 import { PAGE_PATHS } from "../app/lib/pages.consts.ts";
@@ -109,7 +110,6 @@ const HEADERS = [
   "X-Content-Type-Options: nosniff",
   "Referrer-Policy: strict-origin-when-cross-origin",
   "X-Frame-Options: DENY",
-  "Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
 ];
 const [headers] = tryCatchSync(() => readFileSync(join(CLIENT, "_headers"), "utf8"));
 const rule = headers?.split(/^\/\*$/m)[1] ?? "";
@@ -118,6 +118,34 @@ const missingHeaders = HEADERS.filter(
 );
 if (headers === null || missingHeaders.length > 0) {
   problems.push(`_headers doesn't set ${missingHeaders.join(", ") || "anything"} for /*`);
+}
+
+// The Content-Security-Policy (scripts/write-csp.mts) allows every inline script
+// and style on every page, the SPA fallback included, by hash, and nothing else.
+const policy = /^\s*Content-Security-Policy: (.*)$/m.exec(rule)?.[1] ?? "";
+const allowed = new Set(policy.split(/[\s;]+/).filter((source) => source.startsWith("'sha256-")));
+const htmlFiles = readdirSync(CLIENT, { recursive: true, encoding: "utf8" }).filter((file) =>
+  file.endsWith(".html"),
+);
+const sources = htmlFiles.map((file) => inlineSources(readFileSync(join(CLIENT, file), "utf8")));
+for (const [index, file] of htmlFiles.entries()) {
+  const { scripts = [], styles = [], styleAttributes = 0 } = sources[index] ?? {};
+  const uncovered = [...scripts, ...styles].filter((text) => !allowed.has(sha256Source(text)));
+  if (uncovered.length > 0) {
+    problems.push(
+      `${file}: ${uncovered.length} inline script(s) or style(s) the CSP doesn't allow`,
+    );
+  }
+  if (styleAttributes > 0) {
+    problems.push(`${file}: ${styleAttributes} style attribute(s), which the CSP blocks`);
+  }
+}
+const expected = sitePolicy({
+  scripts: sources.flatMap(({ scripts }) => scripts),
+  styles: sources.flatMap(({ styles }) => styles),
+});
+if (policy !== expected) {
+  problems.push("_headers' Content-Security-Policy isn't the one the built pages need");
 }
 const fallback = readFileSync(join(CLIENT, "__spa-fallback.html"), "utf8");
 if (
@@ -131,4 +159,6 @@ if (problems.length > 0) {
   console.error(problems.join("\n"));
   process.exit(1);
 }
-console.log(`${pages.size} pages checked: titles, descriptions, links, anchors and ids`);
+console.log(
+  `${pages.size} pages checked: titles, descriptions, links, anchors, ids and the Content-Security-Policy`,
+);

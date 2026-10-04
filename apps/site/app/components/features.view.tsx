@@ -2,7 +2,7 @@
 import { Link } from "react-router";
 
 // import utils
-import { presetHex } from "../lib/presets.util.ts";
+import { presetClass } from "../lib/presets.util.ts";
 
 // import consts
 import { screenshotUrl } from "../lib/brand.assets.ts";
@@ -14,16 +14,16 @@ interface Feature {
   text: string;
   screenshot: string;
   /**
-   * A wide screenshot shown zoomed onto its point instead of whole: the image's
-   * width and left offset, as percentages of the card (website/0011).
+   * A wide screenshot shown zoomed onto its point instead of whole: the
+   * image's width and left offset as classes, relative to the card (website/0011).
    */
-  zoom?: { width: string; left: string };
+  zoom?: string;
   tag: string;
   docs: string;
 }
 
 /** The Command Center sits in the middle of its thin title-bar strip. */
-const COMMAND_CENTER_ZOOM = { width: "270%", left: "-82%" };
+const COMMAND_CENTER_ZOOM = "w-[270%] -ml-[82%]";
 
 const FEATURES: readonly Feature[] = [
   {
@@ -31,7 +31,7 @@ const FEATURES: readonly Feature[] = [
     text: "The search bar at the top takes the repo's color, with a readable text color worked out for you.",
     screenshot: "command-center.png",
     zoom: COMMAND_CENTER_ZOOM,
-    tag: presetHex("Tropical Pink"),
+    tag: presetClass("Tropical Pink"),
     docs: "/docs/colors",
   },
   {
@@ -39,29 +39,29 @@ const FEATURES: readonly Feature[] = [
     text: `A small glyph in the repo's color, from ${GLYPHS.length} hand-drawn shapes, sits next to the repo name.`,
     screenshot: "status-bar.png",
     // The status bar item's hover card, with its links, fills the left of the shot.
-    zoom: { width: "340%", left: "0%" },
-    tag: presetHex("Canopy Teal"),
+    zoom: "w-[340%] ml-0",
+    tag: presetClass("Canopy Teal"),
     docs: "/docs/glyphs",
   },
   {
     title: "Sidebar block",
     text: "Optionally fill the secondary sidebar with the color, full or muted. Toucan only closes a bar it opened.",
     screenshot: "sidebar-block.png",
-    tag: presetHex("Bill Amber"),
+    tag: presetClass("Bill Amber"),
     docs: "/docs/sidebar",
   },
   {
     title: `${BRAND_PRESETS.length} presets`,
     text: "A toucan-themed palette with a live preview, and a warning when a color is hard to see on the status bar.",
     screenshot: "preset-color.png",
-    tag: presetHex("Jungle Green"),
+    tag: presetClass("Jungle Green"),
     docs: "/docs/presets",
   },
   {
     title: "Glyph picker",
     text: "Shapes, Toucan's world, characters and fun & dev glyphs, previewed as you move through them.",
     screenshot: "set-glyph.png",
-    tag: presetHex("Orchid Purple"),
+    tag: presetClass("Orchid Purple"),
     docs: "/docs/glyphs",
   },
   {
@@ -69,7 +69,7 @@ const FEATURES: readonly Feature[] = [
     text: "Experimental: an emoji in the window title, so the repo shows in the Command Center even when it's not focused.",
     screenshot: "search-emoji.png",
     zoom: COMMAND_CENTER_ZOOM,
-    tag: presetHex("Beak Orange"),
+    tag: presetClass("Beak Orange"),
     docs: "/docs/search-emoji",
   },
 ];
@@ -88,8 +88,7 @@ export function Features() {
               <img
                 src={screenshotUrl(screenshot)}
                 alt=""
-                className="max-w-none"
-                style={{ width: zoom.width, marginLeft: zoom.left }}
+                className={`${zoom} max-w-none`}
                 loading="lazy"
               />
             </div>
@@ -104,8 +103,7 @@ export function Features() {
           <div className="px-5 pt-[18px] pb-[22px]">
             <h3 className="mb-1.5 text-xl font-bold tracking-tight">
               <span
-                className="mr-2 inline-block size-3 rounded-[3px] align-[-1px]"
-                style={{ background: tag }}
+                className={`${tag} mr-2 inline-block size-3 rounded-[3px] bg-(--preset) align-[-1px]`}
               />
               {title}
             </h3>

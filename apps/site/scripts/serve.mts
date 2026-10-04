@@ -1,0 +1,61 @@
+// The built site served on localhost as Netlify serves it: /path is
+// path/index.html, any other path gets the SPA fallback with a 404
+// (public/_redirects), and every response carries the headers of _headers'
+// `/*` rule, the Content-Security-Policy included. The screenshots script
+// checks the pages through it, as a local stand-in for a deploy.
+// import libraries
+import { readFileSync } from "node:fs";
+import { createServer } from "node:http";
+import { extname, join, normalize } from "node:path";
+
+// import utils
+import { tryCatchSync } from "../../extension/src/shared/async/tryCatch.util.ts";
+import { isRecord } from "../../extension/src/shared/records/records.util.ts";
+import { headersForAll } from "./csp.mts";
+
+const OK = 200;
+const NOT_FOUND = 404;
+
+const TYPES: Record<string, string> = {
+  ".html": "text/html",
+  ".css": "text/css",
+  ".js": "text/javascript",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".json": "application/json",
+};
+
+/** A running local server for the built site. */
+export interface BuildServer {
+  origin: string;
+  close: () => void;
+}
+
+/** Serves the build folder (absolute, ending in /) on a free localhost port. */
+export async function serveBuild(client: string): Promise<BuildServer> {
+  const headers = headersForAll(readFileSync(join(client, "_headers"), "utf8"));
+  const server = createServer((request, response) => {
+    const path = normalize(decodeURIComponent(new URL(request.url ?? "/", "http://x").pathname));
+    const candidates = [path, join(path, "index.html")].map((file) => join(client, file));
+    for (const file of candidates) {
+      const [body] = tryCatchSync(() => readFileSync(file));
+      if (body !== null && file.startsWith(client)) {
+        response.writeHead(OK, {
+          ...headers,
+          "content-type": TYPES[extname(file)] ?? "application/octet-stream",
+        });
+        response.end(body);
+        return;
+      }
+    }
+    response.writeHead(NOT_FOUND, { ...headers, "content-type": "text/html" });
+    response.end(readFileSync(join(client, "__spa-fallback.html")));
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  return {
+    origin: `http://127.0.0.1:${isRecord(address) ? String(address["port"]) : ""}`,
+    close: () => server.close(),
+  };
+}

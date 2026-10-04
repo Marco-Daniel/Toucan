@@ -2,7 +2,7 @@
 import { Link } from "react-router";
 
 // import utils
-import { presetHex } from "../lib/presets.util.ts";
+import { presetClass } from "../lib/presets.util.ts";
 import { sizedSvg } from "../lib/svg.util.ts";
 
 // import views
@@ -16,10 +16,10 @@ import { HERO_SVG } from "../lib/brand.assets.ts";
 import type { Glyph as GlyphName } from "@toucan/brand/glyphs.types.ts";
 
 /** Three repos as their status bar items, under the hero's sunset. */
-const STATUS_ROWS: readonly { repo: string; glyph: GlyphName; color: string }[] = [
-  { repo: "webshop", glyph: "heart", color: presetHex("Tropical Pink") },
-  { repo: "payments-api", glyph: "rocket", color: presetHex("Canopy Teal") },
-  { repo: "docs-site", glyph: "leaf", color: presetHex("Bill Amber") },
+const STATUS_ROWS: readonly { repo: string; glyph: GlyphName; preset: string }[] = [
+  { repo: "webshop", glyph: "heart", preset: presetClass("Tropical Pink") },
+  { repo: "payments-api", glyph: "rocket", preset: presetClass("Canopy Teal") },
+  { repo: "docs-site", glyph: "leaf", preset: presetClass("Bill Amber") },
 ];
 
 const buttonClass =
@@ -56,11 +56,10 @@ export function Hero() {
             html={sizedSvg({ svg: HERO_SVG, className: "block h-auto w-full" })}
           />
           <div className="relative w-full max-w-[400px] rounded-xl bg-code p-2.5 shadow-[0_20px_40px_rgb(0_0_0/0.3)]">
-            {STATUS_ROWS.map(({ repo, glyph, color }) => (
+            {STATUS_ROWS.map(({ repo, glyph, preset }) => (
               <div
                 key={repo}
-                className="flex h-[30px] items-center gap-2 border-b border-[#2a2a2a] px-3 font-mono text-[13px] last:border-0"
-                style={{ color }}
+                className={`${preset} flex h-[30px] items-center gap-2 border-b border-[#2a2a2a] px-3 font-mono text-[13px] text-(--preset) last:border-0`}
               >
                 <Glyph glyph={glyph} className="h-4 w-auto" />
                 {repo}

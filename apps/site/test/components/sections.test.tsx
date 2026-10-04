@@ -66,10 +66,17 @@ describe("the landing page sections", () => {
   it("puts three repos in the hero's status bar, each in its preset color", () => {
     const html = render(<Hero />);
     expect(
-      [...html.matchAll(/style="color:(#[\da-f]{6})"><svg[^>]*>.*?<\/svg>([\w-]+)</g)].map(
-        ([, color, repo]) => `${repo} ${color}`,
-      ),
-    ).toEqual(["webshop #e8579b", "payments-api #14939c", "docs-site #faa404"]);
+      [
+        ...html.matchAll(
+          /class="(preset-[a-z-]+) [^"]*text-\(--preset\)[^"]*"><svg[^>]*>.*?<\/svg>([\w-]+)</g,
+        ),
+      ].map(([, preset, repo]) => `${repo} ${preset}`),
+    ).toEqual([
+      "webshop preset-tropical-pink",
+      "payments-api preset-canopy-teal",
+      "docs-site preset-bill-amber",
+    ]);
+    expect(html).not.toContain("style=");
   });
 
   it("installs the latest release's VSIX and marks the stores as coming", () => {
