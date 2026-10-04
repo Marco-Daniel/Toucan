@@ -1,3 +1,6 @@
+// import utils
+import { presetClass } from "../lib/presets.util.ts";
+
 // import consts
 import { BRAND_PRESETS } from "@toucan/brand/presets.consts.ts";
 
@@ -8,8 +11,7 @@ export function Palette() {
       {BRAND_PRESETS.map(({ name, hex }) => (
         <li key={name} className="flex flex-col gap-1 text-xs">
           <span
-            className="block aspect-square rounded-xl border-2 border-ink"
-            style={{ background: hex }}
+            className={`${presetClass(name)} block aspect-square rounded-xl border-2 border-ink bg-(--preset)`}
           />
           <b className="text-[13px]">{name}</b>
           <code className="text-muted">{hex}</code>

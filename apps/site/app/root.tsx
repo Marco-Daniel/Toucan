@@ -9,7 +9,7 @@ import {
 } from "react-router";
 
 // import utils
-import { brandCssVariables } from "./lib/theme.util.ts";
+import { brandCssVariables, presetCssClasses } from "./lib/theme.util.ts";
 
 // import views
 import { NotFound } from "./components/notFound.view.tsx";
@@ -18,6 +18,7 @@ import { SiteNav } from "./components/siteNav.view.tsx";
 
 // import consts
 import { BRAND_COLORS } from "@toucan/brand/colors.consts.ts";
+import { BRAND_PRESETS } from "@toucan/brand/presets.consts.ts";
 import STYLES from "./app.css?url";
 
 /** The status a path nothing matches gets. */
@@ -36,7 +37,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content={BRAND_COLORS.jungleGreen} />
-        <style>{brandCssVariables(BRAND_COLORS)}</style>
+        <style>{brandCssVariables(BRAND_COLORS) + presetCssClasses(BRAND_PRESETS)}</style>
         <Meta />
         <Links />
       </head>

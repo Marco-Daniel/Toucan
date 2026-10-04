@@ -1,5 +1,5 @@
 // import utils
-import { presetHex } from "../lib/presets.util.ts";
+import { presetClass } from "../lib/presets.util.ts";
 
 // import views
 import { Glyph } from "./glyph.view.tsx";
@@ -7,14 +7,14 @@ import { Glyph } from "./glyph.view.tsx";
 // import consts
 import { GLYPH_GROUPS } from "@toucan/brand/glyphs.consts.ts";
 
-/** The colors the chips take in turn, as in the mockup. */
+/** The preset classes the chips take in turn, for their color, as in the mockup. */
 const CHIP_COLORS = [
   "Beak Orange",
   "Canopy Teal",
   "Tropical Pink",
   "Jungle Green",
   "Orchid Purple",
-].map(presetHex);
+].map(presetClass);
 
 /** Every glyph, in the groups Set Glyph shows. */
 export function GlyphShowcase() {
@@ -29,8 +29,7 @@ export function GlyphShowcase() {
             {glyphs.map((glyph, index) => (
               <li
                 key={glyph}
-                className="flex w-[72px] flex-col items-center gap-1.5 rounded-xl bg-chip pt-3 pb-2"
-                style={{ color: CHIP_COLORS[index % CHIP_COLORS.length] }}
+                className={`${CHIP_COLORS[index % CHIP_COLORS.length] ?? ""} flex w-[72px] flex-col items-center gap-1.5 rounded-xl bg-chip pt-3 pb-2 text-(--preset)`}
               >
                 <Glyph glyph={glyph} className="h-7 w-auto max-w-14" />
                 <span className="text-xs text-[#d8d2c2]">{glyph}</span>

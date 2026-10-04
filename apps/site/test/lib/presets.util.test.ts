@@ -2,15 +2,24 @@
 import { describe, expect, it } from "vitest";
 
 // import utils
-import { presetHex } from "../../app/lib/presets.util.ts";
+import { presetClass, presetSlug } from "../../app/lib/presets.util.ts";
 
-describe("presetHex", () => {
-  it("finds a preset's hex by its name", () => {
-    expect(presetHex("Canopy Teal")).toBe("#14939c");
-    expect(presetHex("Plumage Black")).toBe("#101316");
+describe("presetSlug", () => {
+  it.each([
+    ["Beak Red", "beak-red"],
+    ["Plumage Black", "plumage-black"],
+    ["Fun & dev", "fun-dev"],
+  ])("%j → %j", (name, slug) => {
+    expect(presetSlug(name)).toBe(slug);
+  });
+});
+
+describe("presetClass", () => {
+  it("names a preset's color class", () => {
+    expect(presetClass("Canopy Teal")).toBe("preset-canopy-teal");
   });
 
   it("throws on a name the brand doesn't have, so a renamed preset fails the build", () => {
-    expect(() => presetHex("Canopy Blue")).toThrow("No preset named Canopy Blue");
+    expect(() => presetClass("Canopy Blue")).toThrow("No preset named Canopy Blue");
   });
 });
