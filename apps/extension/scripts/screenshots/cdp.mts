@@ -40,6 +40,21 @@ interface Pending {
   reject: (error: Error) => void;
 }
 
+/**
+ * Code run in a target: a function's source, fixed text with nothing spliced
+ * in, and the values it's called with. DevTools passes the values as
+ * arguments, so no data ever becomes code.
+ */
+export interface FunctionCall {
+  fn: string;
+  args?: readonly unknown[];
+}
+
+interface CallArgs extends FunctionCall {
+  /** A fixed expression for the function's `this`: the page's global by default. */
+  on?: string;
+}
+
 export class DevToolsSession {
   private nextId = 1;
   private readonly pending = new Map<number, Pending>();
@@ -97,16 +112,30 @@ export class DevToolsSession {
     return result;
   }
 
-  /** A JavaScript expression's value in the target, awaited and returned by value. */
-  async evaluate(expression: string): Promise<unknown> {
-    const reply = await this.send("Runtime.evaluate", {
-      expression,
-      returnByValue: true,
-      awaitPromise: true,
+  /**
+   * The function's result in the target, awaited and returned by value. The
+   * function runs with `on`'s value as `this` and gets `args` as its arguments.
+   */
+  async call({ fn, args = [], on = "globalThis" }: CallArgs): Promise<unknown> {
+    const target = await this.send("Runtime.evaluate", {
+      expression: on,
       includeCommandLineAPI: true,
     });
+    const objectId =
+      isRecord(target) && isRecord(target["result"]) ? target["result"]["objectId"] : undefined;
+    if (typeof objectId !== "string") {
+      throw new Error(`No object for ${on}`);
+    }
+    const reply = await this.send("Runtime.callFunctionOn", {
+      functionDeclaration: fn,
+      objectId,
+      arguments: args.map((value) => ({ value })),
+      returnByValue: true,
+      awaitPromise: true,
+    });
+    await this.send("Runtime.releaseObject", { objectId });
     if (isRecord(reply) && isRecord(reply["exceptionDetails"])) {
-      throw new Error(`Evaluating failed: ${JSON.stringify(reply["exceptionDetails"])}`);
+      throw new Error(`Calling failed: ${JSON.stringify(reply["exceptionDetails"])}`);
     }
     return isRecord(reply) && isRecord(reply["result"]) ? reply["result"]["value"] : undefined;
   }
