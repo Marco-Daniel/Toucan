@@ -30,12 +30,12 @@ describe("inlineSources", () => {
     });
   });
 
-  it("finds tags in any letter case, and closing tags with a space", () => {
+  it("finds tags in any letter case, and closing tags with a space or attributes", () => {
     expect(
       inlineSources(
-        `<SCRIPT>${LOG}</SCRIPT ><Script SRC="/a.js"></Script><STYLE>${STYLE}</STYLE >`,
+        `<SCRIPT>${LOG}</SCRIPT ><Script SRC="/a.js"></Script><STYLE>${STYLE}</STYLE ><script>${STYLE}</script foo>`,
       ),
-    ).toEqual({ scripts: [LOG], styles: [STYLE], styleAttributes: 0 });
+    ).toEqual({ scripts: [LOG, STYLE], styles: [STYLE], styleAttributes: 0 });
   });
 
   it("finds nothing in a page without inline code", () => {

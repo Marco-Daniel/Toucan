@@ -14,10 +14,10 @@ export interface InlineSources {
 
 /** The inline scripts (no `src`) and `<style>` blocks of a page, in any letter case, and its style attributes. */
 export function inlineSources(html: string): InlineSources {
-  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\b[^>]*>/gi)]
     .filter(([, attributes = ""]) => !/\ssrc=/i.test(attributes))
     .map(([, , body = ""]) => body);
-  const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)].map(
+  const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\b[^>]*>/gi)].map(
     ([, body = ""]) => body,
   );
   const styleAttributes = [...html.matchAll(/<[a-z][^>]*\sstyle=/gi)].length;
