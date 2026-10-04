@@ -7,7 +7,7 @@ import { serveBuild } from "../../scripts/serve.mts";
 // import types
 import type { BuildServer } from "../../scripts/serve.mts";
 
-const BUILD = new URL("fixtures/build/", import.meta.url).pathname;
+const BUILD = new URL("fixtures/client/", import.meta.url).pathname;
 
 /** A request's status, body, content type, and the two headers the fixture's _headers sets. */
 async function get(server: BuildServer, path: string) {
