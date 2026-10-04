@@ -120,7 +120,6 @@ describe("what a mutate run leaves out", () => {
   });
 });
 
-/** Every Stryker config git tracks in the repo, so a new package's can't be missed. */
 /** The root's Stryker config and each workspace package's, found on disk (Stryker's sandbox has no git). */
 const STRYKER_CONFIGS = [".", ...packageFolders()]
   .map((folder) => join(folder, "stryker.config.json"))
