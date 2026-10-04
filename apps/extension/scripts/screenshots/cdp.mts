@@ -126,14 +126,19 @@ export class DevToolsSession {
     if (typeof objectId !== "string") {
       throw new Error(`No object for ${on}`);
     }
-    const reply = await this.send("Runtime.callFunctionOn", {
-      functionDeclaration: fn,
-      objectId,
-      arguments: args.map((value) => ({ value })),
-      returnByValue: true,
-      awaitPromise: true,
-    });
-    await this.send("Runtime.releaseObject", { objectId });
+    let reply: unknown;
+    try {
+      reply = await this.send("Runtime.callFunctionOn", {
+        functionDeclaration: fn,
+        objectId,
+        arguments: args.map((value) => ({ value })),
+        returnByValue: true,
+        awaitPromise: true,
+      });
+    } finally {
+      // Free the object even when the call fails.
+      await this.send("Runtime.releaseObject", { objectId });
+    }
     if (isRecord(reply) && isRecord(reply["exceptionDetails"])) {
       throw new Error(`Calling failed: ${JSON.stringify(reply["exceptionDetails"])}`);
     }
