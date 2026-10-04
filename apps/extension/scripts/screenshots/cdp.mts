@@ -2,7 +2,7 @@
 // one WebSocket session per target (a VS Code window, or Electron's main
 // process through --inspect), request and response by id.
 // import utils
-import { tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
+import { tryCatch, tryCatchSync } from "../../src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../../src/shared/records/records.util.ts";
 
 /** How long one DevTools request or connection attempt may take. */
@@ -136,8 +136,8 @@ export class DevToolsSession {
         awaitPromise: true,
       });
     } finally {
-      // Free the object even when the call fails.
-      await this.send("Runtime.releaseObject", { objectId });
+      // Free the object even when the call fails; a failed release mustn't hide that error.
+      await tryCatch(() => this.send("Runtime.releaseObject", { objectId }));
     }
     if (isRecord(reply) && isRecord(reply["exceptionDetails"])) {
       throw new Error(`Calling failed: ${JSON.stringify(reply["exceptionDetails"])}`);

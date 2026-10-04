@@ -21,27 +21,44 @@ const CONSTANT =
 /** One string or template literal, alone. */
 const SINGLE_LITERAL = /^(?:`[^`]*`|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')$/;
 
+/** A shorthand `{ fn }` or `{ on }`, which hides what it's given. */
+const SHORTHAND = /[{,]\s*(fn|on)\s*(?=[,}])/g;
+
 /** What makes the files' DevTools code anything but fixed text, one line per problem. */
 function codeProblems(files: Readonly<Record<string, string>>): string[] {
-  const constants = new Map(
-    Object.values(files).flatMap((source) =>
-      [...source.matchAll(CONSTANT)].map(({ 1: name = "", 2: value = "" }) => [name, value.trim()]),
-    ),
+  const definitions = Object.entries(files).flatMap(([file, source]) =>
+    [...source.matchAll(CONSTANT)].map(({ 1: name = "", 2: value = "" }) => ({
+      file,
+      name,
+      value: value.trim(),
+    })),
   );
+  const constants = new Map(definitions.map(({ name, value }) => [name, value]));
+  const definedIn = (name: string) =>
+    definitions.filter((definition) => definition.name === name).map(({ file }) => file);
   return Object.entries(files).flatMap(([file, source]) =>
-    [...source.matchAll(CODE_PROPERTY)].flatMap(({ 1: key, 2: given = "" }) => {
-      const name = given.trim();
-      if (!CONSTANT_NAME.test(name)) {
-        return [`${file}: ${key}: ${name} isn't an UPPER_SNAKE constant`];
-      }
-      const value = constants.get(name);
-      if (value === undefined) {
-        return [`${file}: ${key}: ${name} has no const in the screenshot scripts`];
-      }
-      return SINGLE_LITERAL.test(value) && !value.includes("${")
-        ? []
-        : [`${file}: ${key}: ${name} isn't one literal with nothing spliced in`];
-    }),
+    [...source.matchAll(SHORTHAND)]
+      .map(({ 1: key }) => `${file}: a shorthand ${key} hides what it's given`)
+      .concat(
+        [...source.matchAll(CODE_PROPERTY)].flatMap(({ 1: key, 2: given = "" }) => {
+          const name = given.trim();
+          if (!CONSTANT_NAME.test(name)) {
+            return [`${file}: ${key}: ${name} isn't an UPPER_SNAKE constant`];
+          }
+          const value = constants.get(name);
+          if (value === undefined) {
+            return [`${file}: ${key}: ${name} has no const in the screenshot scripts`];
+          }
+          if (definedIn(name).length > 1) {
+            return [
+              `${file}: ${key}: ${name} is defined more than once: ${definedIn(name).join(", ")}`,
+            ];
+          }
+          return SINGLE_LITERAL.test(value) && !value.includes("${")
+            ? []
+            : [`${file}: ${key}: ${name} isn't one literal with nothing spliced in`];
+        }),
+      ),
   );
 }
 
@@ -58,7 +75,7 @@ describe("codeProblems", () => {
     ).toEqual([]);
   });
 
-  it("catches code built from values, inline or in a constant, and a constant it can't find", () => {
+  it("catches code built from values, a shorthand, and a constant it can't find or finds twice", () => {
     expect(
       codeProblems({
         "a.mts": [
@@ -70,15 +87,24 @@ describe("codeProblems", () => {
           "await page.call({ fn: ADDED });",
           "await page.call({ fn: JOINED });",
           "await page.call({ fn: MISSING, on: target });",
+          "const fn = `function () { return ${x}; }`;",
+          "await page.call({ fn, args: [] });",
+          "await page.call({ args: [], on });",
+          "await page.call({ fn: DUP });",
         ].join("\n"),
+        "b.mts": "const DUP = `function () {}`;",
+        "c.mts": "const DUP = `function () { return ${x}; }`;",
       }),
     ).toEqual([
+      "a.mts: a shorthand fn hides what it's given",
+      "a.mts: a shorthand on hides what it's given",
       "a.mts: fn: `function () { return ${x}; }` isn't an UPPER_SNAKE constant",
       "a.mts: fn: SPLICED isn't one literal with nothing spliced in",
       "a.mts: fn: ADDED isn't one literal with nothing spliced in",
       "a.mts: fn: JOINED isn't one literal with nothing spliced in",
       "a.mts: fn: MISSING has no const in the screenshot scripts",
       "a.mts: on: target isn't an UPPER_SNAKE constant",
+      "a.mts: fn: DUP is defined more than once: b.mts, c.mts",
     ]);
   });
 });
@@ -98,13 +124,17 @@ describe("the screenshot scripts", () => {
     expect(codeProblems(files)).toEqual([]);
   });
 
-  it("send code to DevTools only from the session's call", () => {
+  it("send code to DevTools only from the session's call, once each way", () => {
     const session = readFileSync(join(SCRIPTS, SESSION), "utf8");
     expect([
-      session.match(/functionDeclaration:\s*\w+/g),
-      session.match(/expression:\s*\w+/g),
+      session.match(/Runtime\.(?:evaluate|callFunctionOn)/g),
+      session.match(/\b(?:functionDeclaration|expression):[^,\n]*/g),
       Object.values(files).filter((source) => /Runtime\.(?:evaluate|callFunctionOn)/.test(source))
         .length,
-    ]).toEqual([["functionDeclaration: fn"], ["expression: on"], 0]);
+    ]).toEqual([
+      ["Runtime.evaluate", "Runtime.callFunctionOn"],
+      ["expression: on", "functionDeclaration: fn"],
+      0,
+    ]);
   });
 });
