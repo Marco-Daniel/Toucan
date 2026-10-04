@@ -54,6 +54,12 @@ const HARD_TIMEOUT_MS = 10_000;
 
 /** Every process and folder a test made; the only targets anything here may touch. */
 const made = { pids: [] as number[], folders: [] as string[] };
+/**
+ * Folders tests made in /tmp, where the script puts its own (VS Code's socket
+ * path must stay short). They're outside the test run's temp folder, so its
+ * leftover check can't see them: afterAll checks them instead.
+ */
+const madeInSlashTmp: string[] = [];
 
 function isMine(target: number): boolean {
   return Number.isInteger(target) && Math.abs(target) > 1 && made.pids.includes(Math.abs(target));
@@ -97,6 +103,10 @@ afterAll(() => {
   // A normal end: afterEach removed every folder, so the watcher has nothing left to do.
   folderWatcher?.kill("SIGKILL");
   rmSync(WATCH_LIST, { force: true });
+  const left = madeInSlashTmp.filter((folder) => existsSync(folder));
+  if (left.length > 0) {
+    throw new Error(`Tests left folders in /tmp: ${left.join(", ")}`);
+  }
 });
 
 function isRunning(pid: number): boolean {
@@ -131,6 +141,9 @@ afterEach(() => {
       existsSync(folder)
     ) {
       rmSync(folder, { recursive: true, force: true });
+    }
+    if (parent === realpathSync("/tmp")) {
+      madeInSlashTmp.push(folder);
     }
   }
   made.pids.length = 0;
