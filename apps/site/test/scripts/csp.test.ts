@@ -38,6 +38,14 @@ describe("inlineSources", () => {
     ).toEqual({ scripts: [LOG, STYLE], styles: [STYLE], styleAttributes: 0 });
   });
 
+  it("reads attributes with spaces around the equals sign", () => {
+    expect(
+      inlineSources(
+        `<script src = "/a.js"></script><p style = "color:red">x</p><b style\n=x>y</b>`,
+      ),
+    ).toEqual({ scripts: [], styles: [], styleAttributes: 2 });
+  });
+
   it("finds nothing in a page without inline code", () => {
     expect(inlineSources('<html><script src="/a.js"></script></html>')).toEqual({
       scripts: [],
