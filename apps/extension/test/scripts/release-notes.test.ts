@@ -43,6 +43,15 @@ describe("releaseNotesProblems", () => {
     ).toEqual(["they have no ## Install section"]);
   });
 
+  it("refuses a bump PR link that's still the placeholder", () => {
+    expect(
+      releaseNotesProblems({
+        notes: `${NOTES}\nThe version bump is [#BUMP-PR](https://github.com/Marco-Daniel/Toucan/pulls).`,
+        version: "1.0.0",
+      }),
+    ).toEqual(["they still have the #BUMP-PR placeholder for the bump PR's link"]);
+  });
+
   it("refuses a placeholder outside the checksum line", () => {
     expect(
       releaseNotesProblems({
