@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 // import utils
 import {
+  commandOutput,
   EXTENSION_ID,
   galleryVersions,
   isVersion,
@@ -250,6 +251,7 @@ describe("parseCommand", () => {
   it.each([
     [["verify", "1.0.0"], { check: "verify", version: "1.0.0" }],
     [["published", "2.3.4"], { check: "published", version: "2.3.4" }],
+    [["open"], { check: "open" }],
   ])("reads %j", (args, expected) => {
     expect(parseCommand(args)).toEqual(expected);
   });
@@ -260,7 +262,52 @@ describe("parseCommand", () => {
     [["verify"]],
     [[]],
     [["1.0.0", "verify"]],
+    [["open", "https://example.test"]],
   ])("refuses %j", (args) => {
     expect(parseCommand(args)).toBeUndefined();
+  });
+});
+
+describe("commandOutput", () => {
+  it("returns the program's output when it succeeds", () => {
+    expect(
+      commandOutput({
+        program: "gh",
+        args: ["release", "view"],
+        outcome: { status: 0, stdout: "notes", stderr: "" },
+      }),
+    ).toBe("notes");
+  });
+
+  it("says the program couldn't run when it isn't installed", () => {
+    expect(() =>
+      commandOutput({
+        program: "gh",
+        args: ["release", "download", "v1.0.0"],
+        outcome: {
+          error: new Error("spawnSync gh ENOENT"),
+          status: null,
+          stdout: null,
+          stderr: null,
+        },
+      }),
+    ).toThrow("gh release download couldn't run: spawnSync gh ENOENT. Is gh installed?");
+  });
+
+  it("names the failed call with the program's own message, or its exit status without one", () => {
+    expect(() =>
+      commandOutput({
+        program: "gh",
+        args: ["release", "verify-asset", "v1.0.0"],
+        outcome: { status: 1, stdout: "", stderr: "  no attestations found\n" },
+      }),
+    ).toThrow("gh release verify-asset failed: no attestations found");
+    expect(() =>
+      commandOutput({
+        program: "open",
+        args: ["-na", "Firefox"],
+        outcome: { status: 2, stdout: null, stderr: null },
+      }),
+    ).toThrow("open -na Firefox failed: exit 2");
   });
 });

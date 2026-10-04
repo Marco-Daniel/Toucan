@@ -1,19 +1,25 @@
-// `node scripts/marketplace-upload.mts verify <version>` and
-// `node scripts/marketplace-upload.mts published <version>`: the /marketplace-upload
-// skill's two checks, while a person uploads Toucan to the Marketplace by hand
-// (ADR-0015). `verify` downloads a published release's VSIX and checks it as
-// publish.yml's verify job does; `published` asks the Marketplace's public
-// gallery, with no login, whether that version is live. It never signs in
-// anywhere and never opens a browser; gh uses whatever account its caller set.
+// `node scripts/marketplace-upload.mts verify|published <version>` and
+// `node scripts/marketplace-upload.mts open`: the /marketplace-upload skill's
+// steps, while a person uploads Toucan to the Marketplace by hand (ADR-0015).
+// `verify` downloads a published release's VSIX and checks it as publish.yml's
+// verify job does; `published` asks the Marketplace's public gallery, with no
+// login, whether that version is live; `open` opens the publisher page in a
+// private browser window. It never signs in anywhere, and never opens a browser
+// on its own: only a private window, and only when asked. gh uses whatever
+// account its caller set.
 // import libraries
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // import utils
-import { errorText, tryCatch } from "../apps/extension/src/shared/async/tryCatch.util.ts";
+import {
+  errorText,
+  tryCatch,
+  tryCatchSync,
+} from "../apps/extension/src/shared/async/tryCatch.util.ts";
 import { isRecord } from "../apps/extension/src/shared/records/records.util.ts";
 
 export const REPO = "Marco-Daniel/Toucan";
@@ -25,8 +31,8 @@ const BY_NAME = 7;
 const INCLUDE_VERSIONS = 1;
 /** One request's limit. */
 const REQUEST_TIMEOUT_MS = 20_000;
-/** gh's command and subcommand, e.g. `release download`, which name a failed call. */
-const GH_COMMAND_WORDS = 2;
+/** The first arguments, e.g. gh's `release download`, which name a failed call. */
+const CALL_WORDS = 2;
 /** After `node` and this script come the arguments. */
 const FIRST_ARGUMENT = 2;
 
@@ -88,25 +94,56 @@ export function galleryVersions(answer: unknown): string[] {
   );
 }
 
-/** The check to run and the version it's for, from the command line; undefined when they don't make one. */
-export function parseCommand(
-  args: readonly string[],
-): { check: "verify" | "published"; version: string } | undefined {
+/** What the command line asks for. */
+export type Command = { check: "verify" | "published"; version: string } | { check: "open" };
+
+/** The step the command line asks for, with its version; undefined when it doesn't name one. */
+export function parseCommand(args: readonly string[]): Command | undefined {
   const [check, version = ""] = args;
+  if (check === "open" && args.length === 1) {
+    return { check };
+  }
   return (check === "verify" || check === "published") && isVersion(version)
     ? { check, version }
     : undefined;
 }
 
-/** Runs gh with the caller's environment; throws with gh's own message when it fails. */
-function gh(args: readonly string[]): string {
-  const result = spawnSync("gh", args, { encoding: "utf8" });
-  if (result.status !== 0) {
+/** What spawnSync reports about a run. */
+export interface SpawnOutcome {
+  /** Set when the program couldn't be started at all (not installed, say). */
+  error?: Error | undefined;
+  status: number | null;
+  stdout: string | null;
+  stderr: string | null;
+}
+
+interface CommandOutputArgs {
+  program: string;
+  args: readonly string[];
+  outcome: SpawnOutcome;
+}
+
+/** A program's output, or an error that says which call failed and why. */
+export function commandOutput({ program, args, outcome }: CommandOutputArgs): string {
+  const call = [program, ...args.slice(0, CALL_WORDS)].join(" ");
+  if (outcome.error !== undefined) {
+    throw new Error(`${call} couldn't run: ${outcome.error.message}. Is ${program} installed?`);
+  }
+  if (outcome.status !== 0) {
     throw new Error(
-      `gh ${args.slice(0, GH_COMMAND_WORDS).join(" ")} failed: ${result.stderr.trim()}`,
+      `${call} failed: ${(outcome.stderr ?? "").trim() || `exit ${String(outcome.status)}`}`,
     );
   }
-  return result.stdout;
+  return outcome.stdout ?? "";
+}
+
+/** Runs gh with the caller's environment; throws when it can't run or fails. */
+function gh(args: readonly string[]): string {
+  return commandOutput({
+    program: "gh",
+    args,
+    outcome: spawnSync("gh", args, { encoding: "utf8" }),
+  });
 }
 
 /** What verifying a release needs from outside: gh, and reading the downloaded file. */
@@ -192,12 +229,30 @@ if (import.meta.main) {
   const command = parseCommand(process.argv.slice(FIRST_ARGUMENT));
   if (command === undefined) {
     console.error(
-      "Usage: node scripts/marketplace-upload.mts verify|published <version, e.g. 1.0.0>",
+      "Usage: node scripts/marketplace-upload.mts verify|published <version, e.g. 1.0.0> | open",
     );
     process.exit(1);
   }
-  const { check, version } = command;
   const [, error] = await tryCatch(async () => {
+    if (command.check === "open") {
+      // Only when asked, and only a private window: a normal one brings a signed-in work account.
+      const [apps] = tryCatchSync(() => readdirSync("/Applications"));
+      const open = privateWindowCommand({ url: PUBLISHER_URL, apps: apps ?? [] });
+      if (open === undefined) {
+        console.log(
+          `No Chrome or Firefox found: open ${PUBLISHER_URL} in a private window yourself.`,
+        );
+        return;
+      }
+      commandOutput({
+        program: open.command,
+        args: open.args,
+        outcome: spawnSync(open.command, open.args, { encoding: "utf8" }),
+      });
+      console.log(`Opened ${PUBLISHER_URL} in a private window.`);
+      return;
+    }
+    const { check, version } = command;
     if (check === "verify") {
       // A fresh folder of the script's own, by version, in the OS temp folder.
       const dir = join(tmpdir(), `toucan-upload-${version}`);

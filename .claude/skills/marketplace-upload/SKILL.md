@@ -38,12 +38,13 @@ When the checks pass, show Marco, in chat:
 - the publisher page's link: **https://marketplace.visualstudio.com/manage/publishers/marco-daniel**;
 - what to do there: for the first release, **New extension → Visual Studio Code** and choose the file; after that, the existing Toucan's **…** → **Update**, and choose the file.
 
-He must use a **private window**: a normal one brings his signed-in work account, which interferes. Don't open a normal browser window, ever. Offer once to open the link in a private window; only if he says yes, check which browsers are in `/Applications`, and open it with the first match:
+He must use a **private window**: a normal one brings his signed-in work account, which interferes. Never open a browser on your own. Offer once to open the link in a private window; only if he says yes, run:
 
-- Google Chrome: `open -na "Google Chrome" --args --incognito <link>`
-- Firefox: `open -na Firefox --args -private-window <link>`
+```sh
+node scripts/marketplace-upload.mts open
+```
 
-With neither (Safari can't be told to open a private window), just print the link. Then wait: Marco uploads the file himself and tells you when he's done.
+It opens the publisher page in Google Chrome's incognito window, or else Firefox's private window, and never anything else. With neither installed (Safari can't be told to open a private window) it says so, and the printed link is all he needs. Then wait: Marco uploads the file himself and tells you when he's done.
 
 ## 4. Check the Marketplace
 
