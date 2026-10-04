@@ -25,6 +25,16 @@ Marco wanted to publish Toucan "officially on the Microsoft store", once the web
 
 It also showed that trusted publishing isn't enabled yet. → 0002
 
+**DevOps' security review of the model.** Before building, DevOps tightened it:
+- vsce is installed from the lockfile before the Azure sign-in, never fetched afterwards;
+- the environment allows `v*` tags only;
+- the managed identity gets no Azure role;
+- the packaging workflow is split so the dependency-running job never holds `contents: write`;
+- the attestation check is pinned to the packaging workflow on main;
+- `v*` tag creation is restricted to Marco.
+
+The plan and 0002 were updated accordingly. → 0002, 0004, 0005
+
 **Changelog.** The Marketplace shows a Changelog section when the package has CHANGELOG.md. Marco: "we already keep track of it for releases", so it's generated from the release notes. → 0010
 
 ## Rejected without a decision file

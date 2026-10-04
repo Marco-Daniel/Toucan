@@ -13,26 +13,33 @@ Launch Toucan publicly on the Visual Studio Marketplace as **v1.0.0** (→ 0001)
 ## Approach
 
 **Publishing identity (Marco plus a one-off setup).** The setup steps:
-1. A free Azure subscription holds a user-assigned managed identity with the Reader role, scoped to its own resource group.
-2. Its federated credential trusts this repo's GitHub environment `marketplace`. The OIDC subject is copied from a test job's actual token, because repos created after 15 July 2026 use GitHub's immutable subject format.
+1. A free Azure subscription holds a user-assigned managed identity with **no Azure role**: `allow-no-subscriptions` signs in without one. A Reader role is added only if publishing proves to need it.
+2. Its one federated credential trusts only this repo's GitHub environment `marketplace`, in GitHub's immutable subject format. The value is confirmed from a test job's actual token. There are no branch or PR subjects.
 3. A one-off workflow run, signed in as the identity, calls `profiles/me` to get its Marketplace member id.
 4. Marco adds that id to the `marco-daniel` publisher as Contributor.
 
 The client and tenant ids live in the environment's variables. There are no secrets (→ 0002).
 
+The `marketplace` environment's deployment policy allows `v*` tags only, with admin bypass off. `main` is allowed only for the one-off identity check, then removed, and the check workflow is deleted. Creating a `v*` tag is restricted to Marco in the tag ruleset, so only he can reach the environment.
+
 **Release flow (→ 0004, 0005).**
-1. The packaging workflow runs every gate, builds the VSIX, generates CHANGELOG.md from the GitHub release notes (→ 0010) and attests the VSIX's provenance (→ 0005).
-2. It creates a **draft** release with the VSIX attached.
+1. The packaging workflow is split like the site deploy:
+   - job `build` has read-only contents plus `id-token`/`attestations` write. It runs every gate, builds the VSIX, generates CHANGELOG.md from the GitHub release notes (→ 0010), attests the VSIX (→ 0005) and uploads it as an artifact;
+   - job `release` has only `contents: write`, with no code checkout and no install. It downloads the artifact and creates the **draft** release with the VSIX attached.
 3. DevOps fills in the notes per ADR-0013 and publishes the draft under Marco's account.
 4. That fires `release: published`.
 
-**Publish job (→ 0003).** It runs on `release: published` in environment `marketplace`, with `id-token: write` and read-only contents:
+**Publish job (→ 0003).** It runs on `release: published` in environment `marketplace`, with `id-token: write`, read-only contents and no cache. The order matters, because `azure/login` leaves a session every later step could use:
 1. Download the release's VSIX.
-2. Verify it: `gh release verify-asset`, the SHA-256 in the notes, and `gh attestation verify` pinned to the packaging workflow.
-3. Sign in with `azure/login` (pinned, `allow-no-subscriptions`).
-4. Run `vsce publish --azure-credential --packagePath <vsix>`.
+2. Verify it:
+   - `gh release verify-asset`;
+   - the SHA-256 in the notes;
+   - `gh attestation verify --repo Marco-Daniel/Toucan --signer-workflow Marco-Daniel/Toucan/.github/workflows/package.yml --source-ref refs/heads/main`.
+3. Install vsce exactly as locked: frozen lockfile, filtered to vsce, scripts off. Never `npx` from the registry.
+4. Only then sign in with `azure/login` (pinned, `allow-no-subscriptions`).
+5. As the last step, run `vsce publish --azure-credential --packagePath <vsix>`.
 
-Nothing is rebuilt. `Azure/login` joins the actions allowlist, SHA-pinned.
+Nothing is rebuilt, and no repo code runs beyond what these steps need. `Azure/login` joins the actions allowlist, SHA-pinned.
 
 **Store page (→ 0006, 0007, 0008).** The manifest gets:
 - the new description;

@@ -34,7 +34,7 @@
   - vsce picks up the az CLI session through its credential chain.
 - **Trusted publishing:** vsce has a hidden `--oidc`, but the Marketplace endpoint answers "Trusted Publishing is not supported".
 - **GitHub OIDC:**
-  - environment subjects are `repo:OWNER/REPO:environment:NAME`, but repos created after 15 July 2026 use an immutable format with owner and repo ids. Toucan was created on 2026-10-01;
+  - environment subjects are `repo:OWNER/REPO:environment:NAME`, but repos created after 15 July 2026 use an immutable format with owner and repo ids. Toucan was created on 2026-10-01, and its sub prefix is `repo:Marco-Daniel@48966669/Toucan@1400615033` (from the repo's OIDC settings, to be confirmed by the identity check);
   - the job needs `id-token: write`.
 - **GITHUB_TOKEN** events don't trigger workflows; a release published by a user does.
 - **Immutable releases:** assets can't be added after publishing, so publish a draft with its assets already attached.
