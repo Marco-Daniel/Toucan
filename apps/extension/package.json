@@ -3,22 +3,32 @@
   "displayName": "Toucan",
   "version": "0.0.4",
   "private": true,
-  "description": "See at a glance which repository a VS Code window has open, without writing anything into the repo.",
+  "description": "Every repo gets its own color. Know which VS Code window you're in at a glance, without writing a thing into the repo.",
   "categories": [
-    "Other"
+    "Other",
+    "Visualization"
   ],
   "keywords": [
     "color",
     "command center",
+    "multi-root",
     "peacock",
     "repository",
+    "status bar",
+    "title bar",
+    "window",
     "workspace"
   ],
+  "homepage": "https://toucan-vscode.netlify.app",
+  "bugs": {
+    "url": "https://github.com/Marco-Daniel/Toucan/issues"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Marco-Daniel/Toucan.git"
   },
+  "qna": false,
   "publisher": "marco-daniel",
   "type": "module",
   "main": "./dist/extension.cjs",
@@ -32,6 +42,7 @@
     "package": "tsdown && vsce package --no-dependencies --baseContentUrl https://github.com/Marco-Daniel/Toucan/blob/HEAD/apps/extension --baseImagesUrl https://github.com/Marco-Daniel/Toucan/raw/HEAD/apps/extension",
     "font": "node scripts/build-font.mts",
     "icon": "node scripts/build-icon.mts",
+    "changelog": "node scripts/changelog.mts",
     "check:generated": "\"$npm_execpath\" gen && \"$npm_execpath\" font && \"$npm_execpath\" icon && git diff --exit-code src/generated README.md media ../../packages/brand/assets && test -z \"$(git status --porcelain src/generated README.md media ../../packages/brand/assets)\"",
     "check:bundle": "node scripts/check-bundle.mts",
     "check:vsix": "node scripts/check-vsix.mts",
@@ -45,6 +56,7 @@
   "devDependencies": {
     "@resvg/resvg-js": "catalog:",
     "@toucan/brand": "workspace:*",
+    "@toucan/releases": "workspace:*",
     "@toucan/ts-config": "workspace:*",
     "@toucan/vite-config": "workspace:*",
     "@types/culori": "^4.0.1",

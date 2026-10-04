@@ -1,0 +1,70 @@
+# Puts a published GitHub release's VSIX on the VS Code Marketplace: exactly
+# the file that was released, checked first, never rebuilt. It signs in to
+# Entra ID as a managed identity through OIDC: no secret exists. The
+# `marketplace` environment only admits v* tags, which only Marco can create.
+name: Publish to the Marketplace
+
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  publish:
+    if: startsWith(github.event.release.tag_name, 'v') && !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: marketplace
+    permissions:
+      contents: read
+      attestations: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.event.release.tag_name }}
+    # The order matters: once azure/login has signed in, every later step could
+    # use the session, so everything else comes first and the publish comes last.
+    steps:
+      - name: Download the release's VSIX
+        run: |
+          set -euo pipefail
+          vsix="toucan-${TAG#v}.vsix"
+          gh release download "$TAG" --pattern "$vsix" --dir "$RUNNER_TEMP/release"
+          echo "VSIX=$RUNNER_TEMP/release/$vsix" >> "$GITHUB_ENV"
+      - name: Check it's the released asset
+        run: gh release verify-asset "$TAG" "$VSIX"
+      - name: Check its SHA-256 against the release notes
+        run: |
+          set -euo pipefail
+          sha256=$(sha256sum "$VSIX" | cut -d ' ' -f 1)
+          if ! gh release view "$TAG" --json body --jq .body | grep -qF "SHA-256: \`$sha256\`"; then
+            echo "The release notes don't name SHA-256 $sha256" >&2
+            exit 1
+          fi
+      - name: Check package.yml built it from main
+        run: >-
+          gh attestation verify "$VSIX"
+          --repo Marco-Daniel/Toucan
+          --signer-workflow Marco-Daniel/Toucan/.github/workflows/package.yml
+          --source-ref refs/heads/main
+          --deny-self-hosted-runners
+      # vsce exactly as locked, for the extension only, with install scripts off.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      # No dependency cache: what publishes is installed from the lockfile alone.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: pnpm install --frozen-lockfile --filter toucan --ignore-scripts
+      - uses: Azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Publish to the Marketplace
+        run: pnpm -C apps/extension exec vsce publish --azure-credential --packagePath "$VSIX"

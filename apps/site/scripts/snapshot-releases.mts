@@ -5,7 +5,7 @@
 import { writeFileSync } from "node:fs";
 
 // import utils
-import { fetchGitHubReleases, parseReleases } from "../app/lib/releases.util.ts";
+import { fetchGitHubReleases, parseReleases } from "@toucan/releases/releases.util.ts";
 
 /** Indent of the written JSON. */
 const JSON_INDENT = 2;

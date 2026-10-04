@@ -1,12 +1,13 @@
 // The releases, fetched once per build and shared by every page that shows them.
 // import utils
-import { fetchGitHubReleases, loadReleases } from "./releases.util.ts";
+import { fetchGitHubReleases } from "@toucan/releases/releases.util.ts";
+import { loadReleases } from "./releases.util.ts";
 
 // import consts
 import SNAPSHOT from "../../content/releases.json";
 
 // import types
-import type { Release } from "./releases.util.ts";
+import type { Release } from "@toucan/releases/releases.util.ts";
 
 let releases: Promise<Release[]> | undefined;
 

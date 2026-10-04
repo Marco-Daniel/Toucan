@@ -73,6 +73,22 @@
       ],
       "outputs": []
     },
+    // The releases package imports the extension's shared helpers by path.
+    "@toucan/releases#lint": {
+      "dependsOn": ["^lint"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/extension/src/shared/**"],
+      "outputs": []
+    },
+    "@toucan/releases#typecheck": {
+      "dependsOn": ["^typecheck"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/extension/src/shared/**"],
+      "outputs": []
+    },
+    "@toucan/releases#test": {
+      "dependsOn": ["^test"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/extension/src/shared/**"],
+      "outputs": []
+    },
     // Regenerates files and compares them with git: never cached.
     "check:generated": {
       "cache": false
@@ -83,6 +99,16 @@
     },
     "check:vsix": {
       "dependsOn": ["build"],
+      "outputs": []
+    },
+    // The extension's CHANGELOG.md, from the GitHub releases: never cached, the
+    // releases change without the repo changing. The VSIX check lists it.
+    "toucan#changelog": {
+      "cache": false,
+      "outputs": ["CHANGELOG.md"]
+    },
+    "toucan#check:vsix": {
+      "dependsOn": ["build", "changelog"],
       "outputs": []
     },
     "check:pages": {

@@ -10,6 +10,7 @@ For what Toucan does and how to install it, see the [extension's README](apps/ex
 apps/extension/     toucan: the VS Code extension (src/, test/, scripts/, media/, its manifest and README)
 apps/site/          @toucan/site: the website, React Router pre-rendered to static pages (app/, content/, scripts/)
 packages/brand/     @toucan/brand: the presets, color tokens, glyph names, icon, logo and glyph SVGs
+packages/releases/  @toucan/releases: Toucan's GitHub releases, read for the site's changelog and the extension's CHANGELOG.md
 config/ts-config/   @toucan/ts-config: the shared TypeScript settings
 config/vite/        @toucan/vite-config: the shared Vite and Vitest settings
 docs/adr/           the architecture decisions: the system's rules and direction
@@ -53,6 +54,7 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 | `screenshots`     | Regenerate the README images in `media/readme/` from the packaged extension. macOS only; VS Code in `/Applications`, or pass `--app <VS Code.app>`; `--frames <dir>` also keeps the hero's frames |
 | `check:generated` | Run `gen`, `font` and `icon` (the generated meta and settings table, the glyph font and SVGs, the extension icon) and fail if anything changed (CI runs this)                                     |
 | `check:bundle`    | Load the built bundle in plain Node with a stub for `vscode`, so a dependency the bundler left unresolved fails CI instead of activation                                                          |
+| `changelog`       | Write `CHANGELOG.md`, which the VSIX ships, from the published GitHub releases; `--release` puts this version's `release-notes.md` first. Not committed                                           |
 | `check:vsix`      | Fail when the VSIX would ship anything other than its expected files                                                                                                                              |
 | `package`         | Build and package a VSIX                                                                                                                                                                          |
 | `mutate [file…]`  | StrykerJS mutation testing of the given files, or all of the extension; on demand                                                                                                                 |
@@ -60,6 +62,16 @@ The extension's own scripts run with `pnpm -C apps/extension <script>` from the 
 `pnpm install` also sets up a pre-push hook (husky) that runs `typecheck`, `lint`, `format:check` and `test` from the root. It's set up per checkout, so run `pnpm install` in a new worktree before pushing from it. `HUSKY=0` skips it; CI skips it and runs the full set itself.
 
 Every test run gets its own folder in the OS temp folder (`toucan-test-run-…`, from `config/vite/src/testRun.ts`), and every test worker and process a test starts uses it for its HOME, its qmd cache and its TMPDIR. When the run ends the folder is removed, and the run fails if a test left a temp folder behind, naming it: a test removes what it makes, in an `afterEach` or `afterAll`. A run that's killed (a timeout, or a mutant Stryker stops) leaves its one run folder; `find "${TMPDIR:-/tmp}" -maxdepth 1 -type d -name 'toucan-test-run-*' -user "$(id -un)" -mmin +1440` lists those older than a day, for removal. The one exception is `/tmp`, where the extension's screenshot script keeps VS Code's profile because its socket path must stay short: the tests that make folders there check that they're gone.
+
+### Releasing
+
+A release goes from GitHub to the VS Code Marketplace without a publishing secret ([ADR-0015](docs/adr/0015-release-through-drafts-and-publish-from-actions.md)):
+
+1. **The bump PR** sets the version in `apps/extension/package.json` and writes the release's notes in `apps/extension/release-notes.md`, with everything [ADR-0013](docs/adr/0013-release-notes-for-every-release.md) asks for. The VSIX's checksum isn't known yet, so its line reads ``SHA-256: `{{sha256}}` ``.
+2. **Run `Package VSIX`** (`package.yml`) on `main`. It runs every gate, writes `CHANGELOG.md` from these notes and every published release's, packages the VSIX, fills in its SHA-256, attests it, and creates a **draft** release with the VSIX and the notes.
+3. **Check the draft and publish it**, as Marco: publishing makes the `v*` tag, which only he can create.
+4. **`Publish to the Marketplace`** (`publish.yml`) then runs on its own. It checks the release's VSIX (the release asset, the SHA-256 in the notes, the attestation from `package.yml` on `main`) and publishes exactly that file. It signs in as a managed identity through the `marketplace` environment, whose client and tenant ids are its variables.
+5. Refresh the site's changelog snapshot (below).
 
 ### The website
 
@@ -71,7 +83,7 @@ Every test run gets its own folder in the OS temp folder (`toucan-test-run-…`,
 
 ### Mutation testing
 
-`mutate` runs StrykerJS on demand, not in CI or the pre-push hook: `pnpm mutate` at the root for the repo's own tooling, and `pnpm -C <package> mutate` for the extension, the brand and the site, each with its package's `stryker.config.json`. The site's mutates in place, because it imports from other packages, so commit your work before you run it. Pass the files you changed, relative to that package; it refuses files outside it. Read every survived mutant: kill it with a test, or say why it's equivalent. The qmd tooling in `scripts/qmd/` is never mutated: the root's config leaves it out and `mutate` refuses its files ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Every run is a full run for the files you pass (`incremental: false` in every config), so no result is reused from an earlier run and a weakened or deleted test shows at once. Reports land in the package's `reports/stryker/`.
+`mutate` runs StrykerJS on demand, not in CI or the pre-push hook: `pnpm mutate` at the root for the repo's own tooling, and `pnpm -C <package> mutate` for the extension, the brand, the releases package and the site, each with its package's `stryker.config.json`. The site's and the releases package's mutate in place, because they import from other packages, so commit your work before you run them. Pass the files you changed, relative to that package; it refuses files outside it. Read every survived mutant: kill it with a test, or say why it's equivalent. The qmd tooling in `scripts/qmd/` is never mutated: the root's config leaves it out and `mutate` refuses its files ([ADR-0012](docs/adr/0012-no-mutation-testing-for-scripts-qmd.md)). Every run is a full run for the files you pass (`incremental: false` in every config), so no result is reused from an earlier run and a weakened or deleted test shows at once. Reports land in the package's `reports/stryker/`.
 
 ### Docs search with qmd
 
