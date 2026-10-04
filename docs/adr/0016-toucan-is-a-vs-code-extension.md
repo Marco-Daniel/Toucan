@@ -5,7 +5,7 @@
 - Deciders: Marco
 - Kind: constraint
 - Area: distribution
-- Decided in: Marco's decision after the 1.0.0 launch, on research into the VS Code-based editors
+- Decided in: [marketplace-launch/0011](../plans/marketplace-launch/decisions/0011-target-vs-code-only.md)
 
 ## Context and Problem
 
