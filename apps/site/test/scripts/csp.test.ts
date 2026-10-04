@@ -55,7 +55,6 @@ describe("sitePolicy", () => {
         "img-src 'self'",
         "font-src 'self'",
         "connect-src 'self'",
-        "manifest-src 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "object-src 'none'",

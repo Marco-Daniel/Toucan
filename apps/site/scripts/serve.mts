@@ -47,10 +47,12 @@ export async function serveBuild(client: string): Promise<BuildServer> {
       return;
     }
     const path = normalize(decoded);
-    const candidates = [path, join(path, "index.html")].map((file) => join(client, file));
+    const candidates = [path, join(path, "index.html")]
+      .map((file) => join(client, file))
+      .filter((file) => file.startsWith(client));
     for (const file of candidates) {
       const [body] = tryCatchSync(() => readFileSync(file));
-      if (body !== null && file.startsWith(client)) {
+      if (body !== null) {
         response.writeHead(OK, {
           ...headers,
           "content-type": TYPES[extname(file)] ?? "application/octet-stream",
