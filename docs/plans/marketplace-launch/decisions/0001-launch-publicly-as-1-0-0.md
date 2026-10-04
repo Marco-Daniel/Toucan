@@ -16,6 +16,8 @@ Toucan has been distributed as a VSIX on GitHub releases (v0.0.1–v0.0.4). With
 
 ## Decision Outcome
 
+Open VSX as step 2 is dropped since: Toucan targets VS Code only ([ADR-0016](../../../adr/0016-toucan-is-a-vs-code-extension.md)).
+
 Chosen: **a public launch as v1.0.0**. README, website and extension come together at one version. The VS Code Marketplace comes first; Open VSX (Cursor, VSCodium, Windsurf) is step 2, a separate plan.
 
 ## Consequences

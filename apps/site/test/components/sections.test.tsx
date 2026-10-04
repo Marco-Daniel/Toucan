@@ -79,7 +79,7 @@ describe("the landing page sections", () => {
     expect(html).not.toContain("style=");
   });
 
-  it("installs from the Marketplace or the latest release's VSIX, and marks Open VSX as coming", () => {
+  it("installs from the Marketplace or the latest release's VSIX, and points other editors at the VSIX, best effort", () => {
     const html = render(<Install version="0.0.4" releaseUrl="https://example.test/v0.0.4" />);
     // It wraps only at the space before the file name, never inside either part.
     expect(html).toContain(
@@ -92,7 +92,10 @@ describe("the landing page sections", () => {
     expect(html).toContain(
       '<span class="whitespace-nowrap">code --install-extension</span> <span class="whitespace-nowrap">marco-daniel.toucan</span>',
     );
-    expect([...html.matchAll(/Coming soon\./g)]).toHaveLength(1);
+    expect(html).not.toContain("Coming soon");
+    expect(html).not.toContain("Open VSX");
+    expect(html).toContain('<h3 class="text-xl font-bold">Other editors</h3>');
+    expect(html).toContain("Support for them is best effort.");
     expect(html.indexOf("Visual Studio Marketplace")).toBeLessThan(html.indexOf("GitHub release"));
   });
 });

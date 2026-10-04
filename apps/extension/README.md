@@ -186,6 +186,8 @@ code --install-extension marco-daniel.toucan
 
 Each version's VSIX is also on its [GitHub release](https://github.com/Marco-Daniel/Toucan/releases), with its SHA-256 and a build attestation. To build or work on Toucan, see the [repository README](https://github.com/Marco-Daniel/Toucan#readme).
 
+Toucan is made for VS Code. Cursor, VSCodium and other editors built on VS Code can install that VSIX if their VS Code version is recent enough; support for them is best effort, and anything that also affects VS Code gets fixed ([ADR-0016](https://github.com/Marco-Daniel/Toucan/blob/main/docs/adr/0016-toucan-is-a-vs-code-extension.md)).
+
 ## License
 
 [MIT](https://github.com/Marco-Daniel/Toucan/blob/main/LICENSE)
