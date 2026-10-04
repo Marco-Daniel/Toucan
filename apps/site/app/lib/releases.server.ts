@@ -1,7 +1,6 @@
 // The releases, fetched once per build and shared by every page that shows them.
 // import utils
-import { fetchGitHubReleases } from "@toucan/releases/releases.util.ts";
-import { loadReleases } from "./releases.util.ts";
+import { fetchGitHubReleases, loadReleases } from "@toucan/releases/releases.util.ts";
 
 // import consts
 import SNAPSHOT from "../../content/releases.json";

@@ -1,16 +1,17 @@
 // `pnpm changelog`: writes CHANGELOG.md, which the VSIX ships and the
 // Marketplace shows, from Toucan's published GitHub releases. With --release
 // (the packaging workflow) it puts this version's notes from release-notes.md
-// first, and fails unless they're this version's. It never falls back to a
-// snapshot: a changelog that missed a release would ship in the VSIX for good.
+// first, and fails unless they're this version's, or when GitHub's releases
+// can't be read; without it, it falls back to the site's committed snapshot.
 // import libraries
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 // import utils
 import { changelogMarkdown } from "@toucan/releases/changelog.util.ts";
-import { fetchGitHubReleases, parseReleases } from "@toucan/releases/releases.util.ts";
+import { fetchGitHubReleases } from "@toucan/releases/releases.util.ts";
 import { isRecord } from "../src/shared/records/records.util.ts";
+import { changelogReleases } from "./changelog-releases.mts";
 import { releaseNotesProblems } from "./release-notes.mts";
 
 // import types
@@ -38,7 +39,13 @@ if (values.release) {
   }
   upcoming = { version, notes };
 }
-const releases = parseReleases(await fetchGitHubReleases());
+const releases = await changelogReleases({
+  isRelease: values.release,
+  fetchReleases: () => fetchGitHubReleases(),
+  readSnapshot: (): unknown =>
+    JSON.parse(readFileSync(new URL("../../site/content/releases.json", import.meta.url), "utf8")),
+  warn: (message) => console.warn(message),
+});
 writeFileSync(
   new URL("../CHANGELOG.md", import.meta.url),
   changelogMarkdown({ releases, upcoming }),

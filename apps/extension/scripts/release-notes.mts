@@ -41,5 +41,9 @@ export function filledReleaseNotes({ notes, sha256 }: FilledReleaseNotesArgs): s
   if (!/^[0-9a-f]{64}$/.test(sha256)) {
     throw new Error(`Not a SHA-256: ${JSON.stringify(sha256)}`);
   }
+  const placeholders = notes.split(SHA256_PLACEHOLDER).length - 1;
+  if (placeholders !== 1) {
+    throw new Error(`The notes have ${placeholders} ${SHA256_PLACEHOLDER} placeholders, not 1`);
+  }
   return notes.replace(SHA256_PLACEHOLDER, sha256);
 }

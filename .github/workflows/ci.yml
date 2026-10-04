@@ -32,9 +32,13 @@ jobs:
         run: pnpm turbo run check:generated
       - run: pnpm format:check
       # Every package's gates and the root's own tooling, in dependency order.
-      # The site's changelog asks GitHub without a token here (and falls back to
-      # its snapshot when that fails); only the deploy's build step passes one.
+      # The extension's CHANGELOG.md (which check:vsix lists) and the site's
+      # changelog both read GitHub's releases: the job's read-only token raises
+      # the rate limit. The extension's fails without them; the site falls back
+      # to its snapshot.
       - name: Lint, typecheck, test, build and check the bundle, VSIX and site pages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: >-
           pnpm turbo run lint lint:repo typecheck typecheck:repo test test:repo build
           check:bundle check:vsix check:pages

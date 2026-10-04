@@ -104,8 +104,7 @@
     // The extension's CHANGELOG.md, from the GitHub releases: never cached, the
     // releases change without the repo changing. The VSIX check lists it.
     "toucan#changelog": {
-      "cache": false,
-      "outputs": ["CHANGELOG.md"]
+      "cache": false
     },
     "toucan#check:vsix": {
       "dependsOn": ["build", "changelog"],

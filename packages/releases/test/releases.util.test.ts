@@ -2,7 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // import utils
-import { fetchGitHubReleases, parseReleases, RELEASES_API } from "../src/releases.util.ts";
+import {
+  fetchGitHubReleases,
+  loadReleases,
+  parseReleases,
+  RELEASES_API,
+} from "../src/releases.util.ts";
 
 const api = (overrides: Record<string, unknown>) => ({
   tag_name: "v0.0.1",
@@ -71,6 +76,46 @@ describe("parseReleases", () => {
   });
 });
 
+describe("loadReleases", () => {
+  const snapshot = [
+    { tag: "v0.0.1", name: "Snap", publishedAt: "2026-10-02T06:21:23Z", url: "s", body: "" },
+  ];
+
+  it("uses GitHub's answer when it has one", async () => {
+    const warnings: string[] = [];
+    expect(
+      await loadReleases({
+        fetchReleases: () => Promise.resolve([api({ tag_name: "v9" })]),
+        snapshot,
+        warn: (message) => warnings.push(message),
+      }),
+    ).toMatchObject({ source: "github", releases: [{ tag: "v9" }] });
+    expect(warnings).toEqual([]);
+  });
+
+  it("falls back to the snapshot, and says why, when GitHub fails or answers oddly", async () => {
+    const warnings: string[] = [];
+    const warn = (message: string) => warnings.push(message);
+    expect(
+      await loadReleases({
+        fetchReleases: () => Promise.reject(new Error("GitHub answered 403")),
+        snapshot,
+        warn,
+      }),
+    ).toEqual({ source: "snapshot", releases: snapshot });
+    expect(
+      await loadReleases({ fetchReleases: () => Promise.resolve({}), snapshot, warn }),
+    ).toEqual({
+      source: "snapshot",
+      releases: snapshot,
+    });
+    expect(warnings).toEqual([
+      "Changelog: using the committed snapshot, GitHub failed: Error: GitHub answered 403",
+      "Changelog: using the committed snapshot, GitHub failed: Error: Expected a list of releases",
+    ]);
+  });
+});
+
 function fakeFetch(response: Response) {
   const requests: { url: string; headers: Headers; signal: unknown }[] = [];
   const fetchFn = ((url: string, init: RequestInit) => {
@@ -98,10 +143,44 @@ describe("fetchGitHubReleases", () => {
         headers.get("accept"),
         headers.get("authorization"),
       ]),
-    ).toEqual([[RELEASES_API, "application/vnd.github+json", "Bearer t0k"]]);
+    ).toEqual([[`${RELEASES_API}&page=1`, "application/vnd.github+json", "Bearer t0k"]]);
     expect(RELEASES_API).toBe(
       "https://api.github.com/repos/Marco-Daniel/Toucan/releases?per_page=100",
     );
+  });
+
+  it("reads page after page until one isn't full, and joins them", async () => {
+    const pages = [Array.from({ length: 100 }, (_, n) => ({ n })), [{ n: 100 }]];
+    const urls: string[] = [];
+    const fetchFn = ((url: string) => {
+      urls.push(url);
+      return Promise.resolve(Response.json(pages[urls.length - 1]));
+    }) as typeof fetch;
+    const releases = await fetchGitHubReleases({ token: "", fetchFn });
+    expect([
+      Array.isArray(releases) && releases.length,
+      Array.isArray(releases) && releases.at(-1),
+    ]).toEqual([101, { n: 100 }]);
+    expect(urls).toEqual([`${RELEASES_API}&page=1`, `${RELEASES_API}&page=2`]);
+  });
+
+  it("gives up past 20 full pages", async () => {
+    let calls = 0;
+    const fetchFn = (() => {
+      calls++;
+      return Promise.resolve(Response.json(Array.from({ length: 100 }, () => ({}))));
+    }) as typeof fetch;
+    await expect(fetchGitHubReleases({ token: "", fetchFn })).rejects.toThrow(
+      "GitHub has more than 2000 releases",
+    );
+    expect(calls).toBe(20);
+  });
+
+  it("returns an answer that isn't a list as it is, for parseReleases to refuse", async () => {
+    const { fetchFn } = fakeFetch(Response.json({ message: "API rate limit exceeded" }));
+    expect(await fetchGitHubReleases({ token: "", fetchFn })).toEqual({
+      message: "API rate limit exceeded",
+    });
   });
 
   it("takes the token from GITHUB_TOKEN by default, as CI sets it", async () => {

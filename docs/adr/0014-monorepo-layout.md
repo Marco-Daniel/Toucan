@@ -23,7 +23,7 @@ Chosen: **a pnpm workspace run by Turborepo**:
 ```
 apps/extension/   the VS Code extension (package `toucan`): src/, test/, scripts/, media/, its manifest
 apps/site/        @toucan/site: the website, pre-rendered by React Router; its code is in app/, the framework's convention
-packages/<name>/  shared code, `@toucan/<name>`; packages/brand/ holds the brand both products use
+packages/<name>/  shared code, `@toucan/<name>`; packages/brand/ holds the brand both products use, packages/releases/ the GitHub releases both read
 config/ts-config/ @toucan/ts-config: the shared compiler options
 config/vite/      @toucan/vite-config: the shared Vite and Vitest settings
 docs/             ADRs and plans, for the whole repo

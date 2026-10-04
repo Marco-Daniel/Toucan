@@ -74,6 +74,15 @@ describe("filledReleaseNotes", () => {
     expect(filledReleaseNotes({ notes: NOTES, sha256: SHA })).toContain(`SHA-256: \`${SHA}\``);
   });
 
+  it.each([
+    [0, "No checksum yet."],
+    [2, `${SHA256_PLACEHOLDER} and ${SHA256_PLACEHOLDER}`],
+  ])("refuses notes with %i placeholders, filling in none", (count, notes) => {
+    expect(() => filledReleaseNotes({ notes, sha256: SHA })).toThrow(
+      `The notes have ${count} {{sha256}} placeholders, not 1`,
+    );
+  });
+
   it.each([["ABC"], [SHA.toUpperCase()], [`${SHA}0`], [""]])(
     "refuses %j, which isn't a lower-case SHA-256",
     (sha256) => {

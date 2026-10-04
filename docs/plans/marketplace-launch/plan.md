@@ -24,21 +24,22 @@ The client and tenant ids live in the environment's variables. There are no secr
 The `marketplace` environment's deployment policy allows `v*` tags only, with admin bypass off. `main` is allowed only for the one-off identity check, then removed, and the check workflow is deleted. Creating a `v*` tag is restricted to Marco in the tag ruleset, so only he can reach the environment.
 
 **Release flow (→ 0004, 0005).**
-1. The packaging workflow is split like the site deploy:
-   - job `build` has read-only contents plus `id-token`/`attestations` write. It runs every gate, builds the VSIX, generates CHANGELOG.md from the GitHub release notes (→ 0010), attests the VSIX (→ 0005) and uploads it as an artifact;
-   - job `release` has only `contents: write`, with no code checkout and no install. It downloads the artifact and creates the **draft** release with the VSIX attached.
+1. The packaging workflow is split like the site deploy, each job with only the rights it needs:
+   - `check` is read-only and runs every gate;
+   - `build` is read-only. It generates CHANGELOG.md from the release notes (→ 0010), builds the VSIX, fills in its SHA-256 and uploads both as an artifact;
+   - `attest` has only `id-token`/`attestations` write, with no checkout and no install: it downloads the artifact and attests the VSIX (→ 0005);
+   - `release` has only `contents: write`, with no checkout and no install. It refuses a version that already has a release or draft, then creates the **draft** release with the VSIX attached.
 2. DevOps reviews the draft's notes (written in the bump PR, → 0010) and publishes the draft under Marco's account.
 3. That fires `release: published`.
 
-**Publish job (→ 0003).** It runs on `release: published` in environment `marketplace`, with `id-token: write`, read-only contents and no cache. The order matters, because `azure/login` leaves a session every later step could use:
-1. Download the release's VSIX.
-2. Verify it:
+**Publish job (→ 0003).** It runs on `release: published`, with no cache, in two jobs:
+1. `verify` (read-only contents and attestations, **no `id-token`**) downloads the release's VSIX and checks it:
    - `gh release verify-asset`;
    - the SHA-256 in the notes;
-   - `gh attestation verify --repo Marco-Daniel/Toucan --signer-workflow Marco-Daniel/Toucan/.github/workflows/package.yml --source-ref refs/heads/main`.
-3. Install vsce exactly as locked: frozen lockfile, filtered to vsce, scripts off. Never `npx` from the registry.
-4. Only then sign in with `azure/login` (pinned, `allow-no-subscriptions`).
-5. As the last step, run `vsce publish --azure-credential --packagePath <vsix>`.
+   - `gh attestation verify --repo Marco-Daniel/Toucan --signer-workflow Marco-Daniel/Toucan/.github/workflows/package.yml --source-ref refs/heads/main --deny-self-hosted-runners`.
+
+   It also installs vsce and hands the VSIX and vsce on, with their SHA-256s.
+2. `publish` (environment `marketplace`, `id-token: write`) has no checkout and installs nothing. It checks the SHA-256s of the VSIX and of vsce (installed in `verify` exactly as locked, install scripts off, and packed as a tarball; never `npx`), signs in with `azure/login` (pinned, `allow-no-subscriptions`) and runs that vsce's `publish --azure-credential --packagePath <vsix> --skip-duplicate`.
 
 Nothing is rebuilt, and no repo code runs beyond what these steps need. `Azure/login` joins the actions allowlist, SHA-pinned.
 
