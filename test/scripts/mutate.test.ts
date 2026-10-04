@@ -1,10 +1,11 @@
 // import libraries
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 // import utils
 import { EXCLUSIONS, mutateRefusal } from "../../scripts/mutate.mts";
+import { packageFolders, ROOT as REPO_ROOT } from "../helpers/workspace.ts";
 
 const ROOT = "/repo";
 const EXTENSION = "/repo/apps/extension";
@@ -80,6 +81,17 @@ describe("mutateRefusal", () => {
     );
   });
 
+  it("names the mutate command each time it's passed, separated by commas", () => {
+    expect(
+      mutateRefusal({
+        files: ["scripts/mutate-cli.mts", "./scripts/mutate-cli.mts"],
+        cwd: ROOT,
+      }),
+    ).toBe(
+      "Not mutating scripts/mutate-cli.mts, ./scripts/mutate-cli.mts: the mutate command itself is never mutated, because a mutant there could start Stryker inside a test.",
+    );
+  });
+
   it("lets the root mutate the checks next to the command", () => {
     expect(
       mutateRefusal({ files: ["scripts/mutate.mts", "scripts/mutate-cli.mts.bak"], cwd: ROOT }),
@@ -109,16 +121,14 @@ describe("what a mutate run leaves out", () => {
 });
 
 /** Every Stryker config git tracks in the repo, so a new package's can't be missed. */
-const STRYKER_CONFIGS = spawnSync("git", ["ls-files", "*stryker.config.json"], {
-  cwd: new URL("../..", import.meta.url).pathname,
-  encoding: "utf8",
-})
-  .stdout.split("\n")
-  .filter((path) => path !== "")
+/** The root's Stryker config and each workspace package's, found on disk (Stryker's sandbox has no git). */
+const STRYKER_CONFIGS = [".", ...packageFolders()]
+  .map((folder) => join(folder, "stryker.config.json"))
+  .filter((path) => existsSync(join(REPO_ROOT, path)))
   .toSorted();
 
 describe("every package's Stryker config", () => {
-  it("is one of the four the repo has, found by git", () => {
+  it("are exactly the four the repo has, found on disk, so the checks below never run on an empty list", () => {
     expect(STRYKER_CONFIGS).toEqual([
       "apps/extension/stryker.config.json",
       "apps/site/stryker.config.json",
@@ -130,7 +140,7 @@ describe("every package's Stryker config", () => {
   it.each(STRYKER_CONFIGS)(
     "%s runs in full every time, with no incremental cache (#16)",
     (path) => {
-      const config = JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8"));
+      const config = JSON.parse(readFileSync(join(REPO_ROOT, path), "utf8"));
       expect({ incremental: config.incremental, incrementalFile: config.incrementalFile }).toEqual({
         incremental: false,
         incrementalFile: undefined,
