@@ -1,0 +1,69 @@
+# Temporary, for the Marketplace launch's one-off setup
+# (docs/plans/marketplace-launch): delete this workflow once the publisher
+# has the identity as a member, and take `main` out of the `marketplace`
+# environment's deployment policy again.
+#
+# - subject: prints the OIDC token's subject, issuer and audience, so the
+#   federated credential trusts exactly that subject. Never the token.
+# - member-id: signs in as the managed identity and prints the Marketplace
+#   member id that `profiles/me` returns, for the publisher's Contributor role.
+name: Marketplace identity check
+
+on:
+  workflow_dispatch:
+    inputs:
+      step:
+        description: What to check
+        type: choice
+        options:
+          - subject
+          - member-id
+
+permissions: {}
+
+jobs:
+  subject:
+    if: inputs.step == 'subject'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: marketplace
+    permissions:
+      id-token: write
+    steps:
+      # The token goes straight from the request into the decoder, which
+      # prints three claims; it's never echoed, stored or written to a file.
+      - name: Print the OIDC subject, issuer and audience
+        run: |
+          set -euo pipefail
+          curl --silent --show-error --fail \
+            --header "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=api://AzureADTokenExchange" |
+            node --input-type=module --eval '
+              let input = "";
+              for await (const chunk of process.stdin) input += chunk;
+              const payload = JSON.parse(input).value.split(".")[1];
+              const { sub, iss, aud } = JSON.parse(Buffer.from(payload, "base64url").toString());
+              console.log(JSON.stringify({ sub, iss, aud }, null, 2));
+            '
+
+  member-id:
+    if: inputs.step == 'member-id'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: marketplace
+    permissions:
+      id-token: write
+    steps:
+      - uses: Azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      # The Marketplace's resource id; az rest gets and uses the token itself.
+      - name: Print the Marketplace member id
+        run: |
+          set -euo pipefail
+          az rest --method get \
+            --resource 499b84ac-1321-427f-aa17-267ca6975798 \
+            --url "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.1-preview.3" \
+            --query id --output tsv
