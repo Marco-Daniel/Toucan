@@ -7,6 +7,9 @@
 #   federated credential trusts exactly that subject. Never the token.
 # - member-id: signs in as the managed identity and prints the Marketplace
 #   member id that `profiles/me` returns, for the publisher's Contributor role.
+#
+# Both run only from main, the one branch the environment allows during the
+# check. The run logs are public: delete them once the values are copied.
 name: Marketplace identity check
 
 on:
@@ -23,7 +26,7 @@ permissions: {}
 
 jobs:
   subject:
-    if: inputs.step == 'subject'
+    if: github.ref == 'refs/heads/main' && inputs.step == 'subject'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: marketplace
@@ -41,13 +44,21 @@ jobs:
             node --input-type=module --eval '
               let input = "";
               for await (const chunk of process.stdin) input += chunk;
-              const payload = JSON.parse(input).value.split(".")[1];
-              const { sub, iss, aud } = JSON.parse(Buffer.from(payload, "base64url").toString());
+              let claims;
+              try {
+                const payload = JSON.parse(input).value.split(".")[1];
+                claims = JSON.parse(Buffer.from(payload, "base64url").toString());
+              } catch {
+                // A fixed message: a parse error would quote the input, which may hold the token.
+                console.error("The token response could not be read.");
+                process.exit(1);
+              }
+              const { sub, iss, aud } = claims;
               console.log(JSON.stringify({ sub, iss, aud }, null, 2));
             '
 
   member-id:
-    if: inputs.step == 'member-id'
+    if: github.ref == 'refs/heads/main' && inputs.step == 'member-id'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: marketplace
