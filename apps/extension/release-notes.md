@@ -9,7 +9,7 @@ Toucan 1.0.0 is on the Visual Studio Marketplace. It works as 0.0.4 did; from no
 
 ### Behind the scenes
 
-- **Releases are built, signed and published by GitHub Actions.** Each release's VSIX comes with a build attestation, and the Marketplace gets that same file, checked first; publishing needs no stored secret. ([#31](https://github.com/Marco-Daniel/Toucan/pull/31))
+- **Releases are built and signed by GitHub Actions.** Each release's VSIX comes with a build attestation, and the Marketplace gets that same file, verified first. ([#31](https://github.com/Marco-Daniel/Toucan/pull/31), [#32](https://github.com/Marco-Daniel/Toucan/pull/32))
 - **A security policy** says how to report a vulnerability privately. ([#17](https://github.com/Marco-Daniel/Toucan/pull/17))
 
 The version bump is [#BUMP-PR](https://github.com/Marco-Daniel/Toucan/pulls).
