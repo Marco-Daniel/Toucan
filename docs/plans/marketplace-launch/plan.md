@@ -6,7 +6,7 @@ Launch Toucan publicly on the Visual Studio Marketplace as **v1.0.0** (→ 0001)
 
 ## Non-goals
 
-- Open VSX: step 2, in a separate plan (→ 0001).
+- Open VSX: step 2, in a separate plan (→ 0001). Dropped since: Toucan targets VS Code only ([ADR-0016](../../adr/0016-toucan-is-a-vs-code-extension.md)).
 - Trusted publishing (`vsce --oidc`): the Marketplace doesn't support it yet; adopt it later (→ 0002).
 - Changes to the extension's behaviour.
 

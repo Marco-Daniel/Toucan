@@ -12,7 +12,7 @@ const cardClass = "flex min-w-0 flex-col rounded-2xl border-2 border-ink bg-whit
 /** The command never clips: it wraps only at the space before the file name. */
 const codeClass = "mt-3 block rounded-lg bg-ink px-3 py-2.5 text-[13px] text-cream";
 
-/** Where to get Toucan: the Marketplace (marketplace-launch/0009) or the GitHub release; Open VSX is coming. */
+/** Where to get Toucan: the Marketplace (marketplace-launch/0009) or the GitHub release; other editors get the VSIX, best effort (ADR-0016). */
 export function Install({ version, releaseUrl }: InstallProps) {
   return (
     <div className="grid gap-[18px] lg:grid-cols-3">
@@ -48,8 +48,12 @@ export function Install({ version, releaseUrl }: InstallProps) {
         </code>
       </div>
       <div className={`${cardClass} opacity-70`}>
-        <h3 className="text-xl font-bold">Open VSX</h3>
-        <p className="mt-1 text-muted">For Cursor, VSCodium and Windsurf. Coming soon.</p>
+        <h3 className="text-xl font-bold">Other editors</h3>
+        <p className="mt-1 text-muted">
+          Toucan is made for VS Code. Cursor, VSCodium and other editors built on VS Code can
+          install the VSIX from the GitHub release, if their VS Code version is recent enough.
+          Support for them is best effort.
+        </p>
       </div>
       <p className="text-sm text-muted lg:col-span-3">
         Older versions are on the{" "}
