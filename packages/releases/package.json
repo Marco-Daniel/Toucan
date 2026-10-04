@@ -1,0 +1,26 @@
+{
+  "name": "@toucan/releases",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Toucan's GitHub releases, read and shaped: shared by the site's changelog and the extension's CHANGELOG.md.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "lint": "oxlint -c ../../.oxlintrc.json --type-aware --deny-warnings --report-unused-disable-directives",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "mutate": "node ../../scripts/mutate-cli.mts"
+  },
+  "devDependencies": {
+    "@toucan/ts-config": "workspace:*",
+    "@toucan/vite-config": "workspace:*",
+    "@types/node": "catalog:",
+    "oxlint": "catalog:",
+    "oxlint-tsgolint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

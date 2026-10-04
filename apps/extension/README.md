@@ -1,6 +1,6 @@
 # Toucan
 
-See at a glance which repository a VS Code window has open, in the spirit of Peacock and Kingfisher. Colors are configured once, by repository name, in your own user settings. Toucan never writes anything into the opened repository.
+Color-code your VS Code windows by repository, and see at a glance which one you're in. In the spirit of Peacock and Kingfisher, colors are configured once, by repository name, in your own user settings. Toucan never writes anything into the opened repository.
 
 ![Three VS Code windows, each shown as its title bar and status bar: as focus moves, the Command Center takes the focused repository's color while each status bar keeps its own; then Set Color previews a new color and saves it](media/readme/hero.gif)
 

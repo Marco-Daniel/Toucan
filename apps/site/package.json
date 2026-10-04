@@ -32,6 +32,7 @@
     "@resvg/resvg-js": "catalog:",
     "@tailwindcss/vite": "^4.3.3",
     "@toucan/brand": "workspace:*",
+    "@toucan/releases": "workspace:*",
     "@toucan/ts-config": "workspace:*",
     "@toucan/vite-config": "workspace:*",
     "@types/node": "catalog:",

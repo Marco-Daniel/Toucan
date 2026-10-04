@@ -154,6 +154,8 @@ describe("the ADR log", () => {
       "config/vite/test",
       "packages/brand/src",
       "packages/brand/test",
+      "packages/releases/src",
+      "packages/releases/test",
       "scripts",
       "test",
       ".claude/CLAUDE.md",

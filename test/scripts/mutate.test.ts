@@ -127,11 +127,12 @@ const STRYKER_CONFIGS = [".", ...packageFolders()]
   .toSorted();
 
 describe("every package's Stryker config", () => {
-  it("are exactly the four the repo has, found on disk, so the checks below never run on an empty list", () => {
+  it("are exactly the five the repo has, found on disk, so the checks below never run on an empty list", () => {
     expect(STRYKER_CONFIGS).toEqual([
       "apps/extension/stryker.config.json",
       "apps/site/stryker.config.json",
       "packages/brand/stryker.config.json",
+      "packages/releases/stryker.config.json",
       "stryker.config.json",
     ]);
   });

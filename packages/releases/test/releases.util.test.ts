@@ -7,7 +7,7 @@ import {
   loadReleases,
   parseReleases,
   RELEASES_API,
-} from "../../app/lib/releases.util.ts";
+} from "../src/releases.util.ts";
 
 const api = (overrides: Record<string, unknown>) => ({
   tag_name: "v0.0.1",
@@ -143,10 +143,44 @@ describe("fetchGitHubReleases", () => {
         headers.get("accept"),
         headers.get("authorization"),
       ]),
-    ).toEqual([[RELEASES_API, "application/vnd.github+json", "Bearer t0k"]]);
+    ).toEqual([[`${RELEASES_API}&page=1`, "application/vnd.github+json", "Bearer t0k"]]);
     expect(RELEASES_API).toBe(
       "https://api.github.com/repos/Marco-Daniel/Toucan/releases?per_page=100",
     );
+  });
+
+  it("reads page after page until one isn't full, and joins them", async () => {
+    const pages = [Array.from({ length: 100 }, (_, n) => ({ n })), [{ n: 100 }]];
+    const urls: string[] = [];
+    const fetchFn = ((url: string) => {
+      urls.push(url);
+      return Promise.resolve(Response.json(pages[urls.length - 1]));
+    }) as typeof fetch;
+    const releases = await fetchGitHubReleases({ token: "", fetchFn });
+    expect([
+      Array.isArray(releases) && releases.length,
+      Array.isArray(releases) && releases.at(-1),
+    ]).toEqual([101, { n: 100 }]);
+    expect(urls).toEqual([`${RELEASES_API}&page=1`, `${RELEASES_API}&page=2`]);
+  });
+
+  it("gives up past 20 full pages", async () => {
+    let calls = 0;
+    const fetchFn = (() => {
+      calls++;
+      return Promise.resolve(Response.json(Array.from({ length: 100 }, () => ({}))));
+    }) as typeof fetch;
+    await expect(fetchGitHubReleases({ token: "", fetchFn })).rejects.toThrow(
+      "GitHub has more than 2000 releases",
+    );
+    expect(calls).toBe(20);
+  });
+
+  it("returns an answer that isn't a list as it is, for parseReleases to refuse", async () => {
+    const { fetchFn } = fakeFetch(Response.json({ message: "API rate limit exceeded" }));
+    expect(await fetchGitHubReleases({ token: "", fetchFn })).toEqual({
+      message: "API rate limit exceeded",
+    });
   });
 
   it("takes the token from GITHUB_TOKEN by default, as CI sets it", async () => {

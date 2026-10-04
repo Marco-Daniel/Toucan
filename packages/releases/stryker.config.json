@@ -1,0 +1,19 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node node_modules/vitest/vitest.mjs run"
+  },
+  "coverageAnalysis": "off",
+  "mutate": ["src/**/*.ts"],
+  "incremental": false,
+  "reporters": ["clear-text", "html", "progress"],
+  "htmlReporter": {
+    "fileName": "reports/stryker/mutation.html"
+  },
+  "tempDirName": ".stryker-tmp",
+  "tsconfigFile": "no-tsconfig-rewrite.json",
+  "concurrency": 4,
+  "timeoutMS": 30000,
+  "inPlace": true
+}

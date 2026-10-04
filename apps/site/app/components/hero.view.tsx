@@ -37,8 +37,8 @@ export function Hero() {
             Every repo gets its <em className="text-amber not-italic">own color</em>.
           </h1>
           <p className="mb-7 max-w-[30em] text-[19px] opacity-95">
-            Toucan tints the Command Center, marks the status bar with a glyph and can fill the
-            sidebar, so you always know which window you're typing in.
+            Color-code your VS Code windows. Toucan tints the Command Center, marks the status bar
+            with a glyph and can fill the sidebar, so you always know which window you're typing in.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link to="/#install" className={`${buttonClass} bg-cream text-ink`}>

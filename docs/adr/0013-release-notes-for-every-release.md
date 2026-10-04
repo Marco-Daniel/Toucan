@@ -28,6 +28,8 @@ Chosen: **GitHub release notes for every release**. Every release's notes have:
 
 and they are scrubbed for the public repo (no other projects, local paths or session names) and signed: the notes end with the project's sign-off line.
 
+How the notes are written and published (in the bump PR, as `apps/extension/release-notes.md`, then into a draft release) is [ADR-0015](0015-release-through-drafts-and-publish-from-actions.md).
+
 ## Consequences
 
 - Good: one place to read what each version changed, and each release can be checked against the list above.
