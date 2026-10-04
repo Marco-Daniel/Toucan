@@ -1,4 +1,5 @@
 // import libraries
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -107,17 +108,33 @@ describe("what a mutate run leaves out", () => {
   });
 });
 
+/** Every Stryker config git tracks in the repo, so a new package's can't be missed. */
+const STRYKER_CONFIGS = spawnSync("git", ["ls-files", "*stryker.config.json"], {
+  cwd: new URL("../..", import.meta.url).pathname,
+  encoding: "utf8",
+})
+  .stdout.split("\n")
+  .filter((path) => path !== "")
+  .toSorted();
+
 describe("every package's Stryker config", () => {
-  it.each([
-    ["stryker.config.json"],
-    ["apps/extension/stryker.config.json"],
-    ["packages/brand/stryker.config.json"],
-    ["apps/site/stryker.config.json"],
-  ])("%s runs in full every time, with no incremental cache (#16)", (path) => {
-    const config = JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8"));
-    expect({ incremental: config.incremental, incrementalFile: config.incrementalFile }).toEqual({
-      incremental: false,
-      incrementalFile: undefined,
-    });
+  it("is one of the four the repo has, found by git", () => {
+    expect(STRYKER_CONFIGS).toEqual([
+      "apps/extension/stryker.config.json",
+      "apps/site/stryker.config.json",
+      "packages/brand/stryker.config.json",
+      "stryker.config.json",
+    ]);
   });
+
+  it.each(STRYKER_CONFIGS)(
+    "%s runs in full every time, with no incremental cache (#16)",
+    (path) => {
+      const config = JSON.parse(readFileSync(new URL(`../../${path}`, import.meta.url), "utf8"));
+      expect({ incremental: config.incremental, incrementalFile: config.incrementalFile }).toEqual({
+        incremental: false,
+        incrementalFile: undefined,
+      });
+    },
+  );
 });
