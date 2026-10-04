@@ -32,7 +32,15 @@ export function leftoversError(names: readonly string[]): Error | undefined {
       );
 }
 
-export default function setup(): () => void {
+/** A started run: its folder, its temp folder (TMPDIR), and its teardown. */
+export interface Run {
+  run: string;
+  temp: string;
+  teardown: () => void;
+}
+
+/** Starts a run in the current temp folder and points this process's HOME, cache and TMPDIR at it. */
+export function startRun(): Run {
   const run = mkdtempSync(join(tmpdir(), RUN_PREFIX));
   const home = join(run, "home");
   const temp = join(run, "tmp");
@@ -41,7 +49,7 @@ export default function setup(): () => void {
   process.env["HOME"] = home;
   process.env["XDG_CACHE_HOME"] = home;
   process.env["TMPDIR"] = temp;
-  return () => {
+  const teardown = () => {
     try {
       // A test that removed the temp folder itself counts as a leftover too; one
       // that replaced it with a file makes the read throw, which fails the run as well.
@@ -55,4 +63,9 @@ export default function setup(): () => void {
       rmSync(run, { recursive: true, force: true });
     }
   };
+  return { run, temp, teardown };
+}
+
+export default function setup(): () => void {
+  return startRun().teardown;
 }
