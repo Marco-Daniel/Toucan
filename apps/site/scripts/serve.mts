@@ -17,14 +17,13 @@ const OK = 200;
 const BAD_REQUEST = 400;
 const NOT_FOUND = 404;
 
+/** The content type of each kind of file the build holds; nosniff makes the browser trust it. */
 const TYPES: Record<string, string> = {
   ".html": "text/html",
   ".css": "text/css",
   ".js": "text/javascript",
   ".png": "image/png",
   ".gif": "image/gif",
-  ".svg": "image/svg+xml",
-  ".json": "application/json",
 };
 
 /** A running local server for the built site. */
@@ -67,7 +66,10 @@ export async function serveBuild(client: string): Promise<BuildServer> {
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const address = server.address();
   return {
-    origin: `http://127.0.0.1:${isRecord(address) ? String(address["port"]) : ""}`,
+    // From the address it bound, so a server listening beyond localhost shows.
+    origin: isRecord(address)
+      ? `http://${String(address["address"])}:${String(address["port"])}`
+      : "",
     close: () => server.close(),
   };
 }
