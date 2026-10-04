@@ -11,8 +11,6 @@ _The Command Center follows the focused window; the status bar always shows each
 - Opt-in extras: a color block in the secondary sidebar, and an experimental colored emoji in the search bar.
 - One setting for every repository you open, set through commands with a live preview, or by hand.
 
-> Status: in development. Not on the Marketplace yet; install it from a local VSIX (see [Install](#install)).
-
 ## Features
 
 VS Code has no per-window color API, so Toucan layers a few signals. Repositories without a Toucan color get none of them.
@@ -180,15 +178,13 @@ If a window crashes while focused and you uninstall Toucan before opening VS Cod
 
 ## Install
 
-Build the VSIX from a clone of the repository, then install it:
+Install Toucan from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=marco-daniel.toucan): in VS Code, open the Extensions view and search for **Toucan**, or run:
 
 ```sh
-corepack pnpm install
-corepack pnpm -C apps/extension package
-code --install-extension apps/extension/toucan-*.vsix
+code --install-extension marco-daniel.toucan
 ```
 
-To build or work on Toucan, see the [repository README](https://github.com/Marco-Daniel/Toucan#readme).
+Each version's VSIX is also on its [GitHub release](https://github.com/Marco-Daniel/Toucan/releases), with its SHA-256 and a build attestation. To build or work on Toucan, see the [repository README](https://github.com/Marco-Daniel/Toucan#readme).
 
 ## License
 

@@ -4,7 +4,7 @@
 // Meta info
 export const publisher = "marco-daniel"
 export const name = "toucan"
-export const version = "0.0.4"
+export const version = "1.0.0"
 export const displayName = "Toucan"
 export const description = "Every repo gets its own color. Know which VS Code window you're in at a glance, without writing a thing into the repo."
 export const extensionId = `${publisher}.${name}`
