@@ -42,9 +42,10 @@ export default function setup(): () => void {
   process.env["XDG_CACHE_HOME"] = home;
   process.env["TMPDIR"] = temp;
   return () => {
-    // A test that removed the temp folder itself counts as a leftover too.
-    const names = existsSync(temp) ? readdirSync(temp) : ["tmp/ itself, which a test removed"];
     try {
+      // A test that removed the temp folder itself counts as a leftover too; one
+      // that replaced it with a file makes the read throw, which fails the run as well.
+      const names = existsSync(temp) ? readdirSync(temp) : ["tmp/ itself, which a test removed"];
       const error = leftoversError(names);
       if (error !== undefined) {
         throw error;
