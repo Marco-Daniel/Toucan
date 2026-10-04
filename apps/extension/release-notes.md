@@ -13,7 +13,7 @@ For contributors; the extension works the same.
 
 **Releases and security**
 
-- **Releases are built and signed by GitHub Actions.** Each release's VSIX comes with a build attestation, and the Marketplace gets that same file, verified first. A one-off check set up the publishing identity on the way. ([#30](https://github.com/Marco-Daniel/Toucan/pull/30), [#31](https://github.com/Marco-Daniel/Toucan/pull/31), [#32](https://github.com/Marco-Daniel/Toucan/pull/32))
+- **Releases are built and signed by GitHub Actions.** Each release's VSIX comes with a build attestation, and the Marketplace gets that same file, verified first. A one-off check confirmed the identity GitHub would present for automatic publishing, for when that's switched on. ([#30](https://github.com/Marco-Daniel/Toucan/pull/30), [#31](https://github.com/Marco-Daniel/Toucan/pull/31), [#32](https://github.com/Marco-Daniel/Toucan/pull/32))
 - **A security policy** says how to report a vulnerability privately. ([#17](https://github.com/Marco-Daniel/Toucan/pull/17))
 - **Dependencies are watched.** A weekly audit checks the npm dependencies for known vulnerabilities, and pnpm's supply-chain checks refuse a package version published with less trust than its earlier ones, a version younger than a day, and an indirect dependency from git or a tarball. ([#18](https://github.com/Marco-Daniel/Toucan/pull/18), [#22](https://github.com/Marco-Daniel/Toucan/pull/22))
 - **A code-scanning warning is fixed at its source:** the README screenshot script passes values to VS Code as arguments, never as part of the code it runs. ([#27](https://github.com/Marco-Daniel/Toucan/pull/27))
