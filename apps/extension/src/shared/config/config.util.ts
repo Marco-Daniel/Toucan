@@ -29,7 +29,7 @@ export interface RepoConfig {
   /** User-set colors as hex; missing keys are derived. */
   overrides: ColorOverrides;
   glyph: Glyph;
-  /** Per-repo override of `toucan.sidebarBlock.visibility`. */
+  /** Deprecated and ignored: the old per-repo override of `toucan.sidebarBlock.visibility` (sidebar-explorer/0002). */
   sidebarBlock?: SidebarVisibility;
 }
 
