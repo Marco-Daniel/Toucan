@@ -1,7 +1,7 @@
 {
   "name": "toucan",
   "displayName": "Toucan",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Every repo gets its own color. Know which VS Code window you're in at a glance, without writing a thing into the repo.",
   "categories": [

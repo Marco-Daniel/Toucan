@@ -36,3 +36,8 @@
 - Both round 1 threads answered and resolved.
 - Next: Marco's OK on the screenshots, then the bump PR (0005).
 
+## 2026-10-05, implementer, the bump PR
+
+- Did: #37 merged (87eeecf) after three review rounds and Marco's OK on the screenshots ("then lets go for v1.1.0"). The bump branch `release-1.1.0` takes `apps/extension/package.json` to 1.1.0 (and the generated `meta.ts`) and writes `apps/extension/release-notes.md` per ADR-0013: the block in the Explorer and how it opens, Hide and Toggle, `unfocused` gone and its settings deprecated, an "After updating" note about the empty secondary sidebar (close it once with the bar's ×) and about an old close showing again, the contributor changes since 1.0.0 (#34 to #36), install steps, the `{{sha256}}` line, the attestation check.
+- Next (decision 0005): DevOps opens the bump PR (the notes name it as #38; fix the number if it differs) and runs a review round, then the draft release, Marco's per-release OK, `/marketplace-upload 1.1.0` and Marco's hand upload, then the site's releases.json snapshot.
+
