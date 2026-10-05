@@ -105,7 +105,7 @@ export const configs = {
     default: {},
   } as ConfigItem<"toucan.repos">,
   /**
-   * Show a block in the repository color in the secondary sidebar.
+   * Show a block in the repository color in the Explorer.
    * @key `toucan.sidebarBlock.enabled`
    * @default `false`
    * @type `boolean`
@@ -125,7 +125,7 @@ export const configs = {
     default: "full",
   } as ConfigItem<"toucan.sidebarBlock.style">,
   /**
-   * When the sidebar block is shown. Each repository can override this in `toucan.repos`.
+   * Deprecated and ignored: the sidebar block no longer has an unfocused mode.
    * @key `toucan.sidebarBlock.visibility`
    * @default `"always"`
    * @type `string`

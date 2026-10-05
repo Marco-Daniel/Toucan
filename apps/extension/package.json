@@ -161,7 +161,8 @@
                       "always",
                       "unfocused"
                     ],
-                    "description": "Overrides `toucan.sidebarBlock.visibility` for this repository."
+                    "description": "Deprecated and ignored: the sidebar block no longer has an unfocused mode.",
+                    "deprecationMessage": "The sidebar block no longer has an unfocused mode; this field is ignored and will be removed."
                   }
                 }
               }
@@ -172,7 +173,7 @@
           "type": "boolean",
           "scope": "application",
           "default": false,
-          "description": "Show a block in the repository color in the secondary sidebar."
+          "description": "Show a block in the repository color in the Explorer."
         },
         "toucan.sidebarBlock.style": {
           "type": "string",
@@ -197,10 +198,11 @@
             "unfocused"
           ],
           "enumDescriptions": [
-            "Reveal the block on startup. Once you close it, or switch the secondary sidebar to another view, it stays closed in this workspace until you open it again with Toucan: Toggle Sidebar Block.",
-            "Reveal the block when the window loses focus and close the secondary sidebar again on focus if Toucan opened it. If another view such as Chat was open in the secondary sidebar, it is closed too."
+            "The block is shown while it is on, until you hide it.",
+            "Treated like Always: the unfocused mode was removed."
           ],
-          "description": "When the sidebar block is shown. Each repository can override this in `toucan.repos`."
+          "description": "Deprecated and ignored: the sidebar block no longer has an unfocused mode.",
+          "deprecationMessage": "The sidebar block no longer has an unfocused mode; this setting is ignored and will be removed."
         },
         "toucan.experimental.searchEmoji": {
           "type": "boolean",
@@ -382,22 +384,13 @@
         }
       ]
     },
-    "viewsContainers": {
-      "secondarySidebar": [
-        {
-          "id": "toucan",
-          "title": "Toucan",
-          "icon": "$(symbol-color)"
-        }
-      ]
-    },
     "views": {
-      "toucan": [
+      "explorer": [
         {
           "type": "webview",
           "id": "toucan.block",
           "name": "Toucan",
-          "when": "toucan.sidebarBlockAvailable"
+          "when": "toucan.sidebarBlockAvailable && toucan.sidebarBlockShown"
         }
       ]
     }

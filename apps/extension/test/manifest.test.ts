@@ -11,7 +11,7 @@ import { BRAND_COLORS } from "@toucan/brand/colors.consts.ts";
 import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
 import {
   SIDEBAR_AVAILABLE_CONTEXT,
-  SIDEBAR_CONTAINER_ID,
+  SIDEBAR_SHOWN_CONTEXT,
   SIDEBAR_VIEW_ID,
 } from "../src/core/ids.consts.ts";
 import { COMMAND_CENTER_KEYS, SIDEBAR_VISIBILITIES } from "../src/shared/model/model.consts.ts";
@@ -64,13 +64,26 @@ describe("package.json icon contributions", () => {
 });
 
 describe("package.json sidebar block", () => {
-  it("declares the container, view and when clause the code uses", () => {
-    expect(manifest.contributes.viewsContainers.secondarySidebar).toEqual([
-      { id: SIDEBAR_CONTAINER_ID, title: "Toucan", icon: "$(symbol-color)" },
-    ]);
-    expect(manifest.contributes.views[SIDEBAR_CONTAINER_ID]).toEqual([
-      { type: "webview", id: SIDEBAR_VIEW_ID, name: "Toucan", when: SIDEBAR_AVAILABLE_CONTEXT },
-    ]);
+  it("contributes the view to the Explorer with the when clause the code feeds", () => {
+    expect(manifest.contributes.views).toEqual({
+      explorer: [
+        {
+          type: "webview",
+          id: SIDEBAR_VIEW_ID,
+          name: "Toucan",
+          when: `${SIDEBAR_AVAILABLE_CONTEXT} && ${SIDEBAR_SHOWN_CONTEXT}`,
+        },
+      ],
+    });
+  });
+
+  it("no longer declares a view container, so the block has no Activity Bar icon or own bar", () => {
+    expect(manifest.contributes).not.toHaveProperty("viewsContainers");
+  });
+
+  it("keeps the visibility setting and the per-repo field, both deprecated", () => {
+    expect(properties["toucan.sidebarBlock.visibility"].deprecationMessage).toContain("ignored");
+    expect(entrySchema.properties.sidebarBlock.deprecationMessage).toContain("ignored");
   });
 });
 

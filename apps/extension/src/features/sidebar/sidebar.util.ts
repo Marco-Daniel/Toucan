@@ -5,51 +5,49 @@ import { createTimer } from "../../shared/async/timer.util.ts";
 import { logFailure } from "../../shared/async/logFailure.util.ts";
 
 // import consts
-import { SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "../../shared/model/model.consts.ts";
+import { SIDEBAR_STYLES } from "../../shared/model/model.consts.ts";
 
 // import types
-import type { SidebarStyle, SidebarVisibility } from "../../shared/model/model.types.ts";
+import type { SidebarStyle } from "../../shared/model/model.types.ts";
 
-/** How long a user close must last before it's remembered (see `visibilityChanged`). */
+/** How long a disposed view must stay gone before it counts as a Hide (sidebar-explorer/0006). */
 export const REMEMBER_CLOSE_DELAY_MS = 1500;
 
 export interface SidebarSettings {
   enabled: boolean;
-  /** The repo's override, or else the general setting (toucan-v1/0013). */
-  visibility: SidebarVisibility;
 }
 
 interface ResolveSidebarSettingsArgs {
   enabled: unknown;
   style: unknown;
-  visibility: unknown;
-  repo: { sidebarBlock?: SidebarVisibility } | undefined;
+  repo: object | undefined;
 }
 
 /**
- * The block's effective settings from the raw setting values (toucan-v1/0013): enabled
- * only for a repo with a color; the repo's own visibility override wins over
- * the general one; anything unexpected falls back to the defaults.
+ * The block's effective settings from the raw setting values: enabled only for
+ * a repo with a color; an unexpected style falls back to the default. The
+ * deprecated visibility settings are no longer read (sidebar-explorer/0002).
  */
 export function resolveSidebarSettings(
   input: ResolveSidebarSettingsArgs,
 ): SidebarSettings & { style: SidebarStyle } {
-  const general = isOneOf(SIDEBAR_VISIBILITIES, input.visibility) ? input.visibility : "always";
   return {
     enabled: input.repo !== undefined && input.enabled === true,
-    visibility: input.repo?.sidebarBlock ?? general,
     style: isOneOf(SIDEBAR_STYLES, input.style) ? input.style : "full",
   };
 }
 
 export interface SidebarPorts {
-  /** Reveals the block with `preserveFocus`, never switching other views. */
+  /** Reveals the block with `preserveFocus`, expanding it and never switching other views. */
   reveal(): Promise<void>;
-  /** Closes the secondary sidebar. */
-  closeBar(): Promise<void>;
-  /** Whether the user closed the block in this workspace (`always` mode, toucan-v1/0013). */
+  /** Sets the view's `when` key: `false` hides the block, `true` lets VS Code show it. */
+  setShown(shown: boolean): Promise<void>;
+  /** Whether the block is remembered as closed in this workspace. */
   readClosed(): boolean;
   writeClosed(closed: boolean): Promise<void>;
+  /** Whether Toucan has revealed the block in this workspace once already. */
+  readRevealed(): boolean;
+  writeRevealed(revealed: boolean): Promise<void>;
   warn(message: string): void;
   debug(message: string): void;
 }
@@ -67,28 +65,29 @@ interface SidebarControllerArgs {
 }
 
 /**
- * Shows and hides the opt-in sidebar block (toucan-v1/0006, toucan-v1/0013).
+ * Shows and hides the opt-in sidebar block in the Explorer (sidebar-explorer/0001,
+ * sidebar-explorer/0006).
  *
- * `always`: revealed on startup unless the user closed it in this workspace.
- * A close counts when the block stops being visible while the window is
- * focused and Toucan didn't cause it, which includes switching the secondary
- * sidebar to another view. It's remembered after a delay, so a reload or
- * shutdown (which ends the extension host first) never records one. Toucan
- * never closes the bar on startup; VS Code restores the user's layout.
+ * The block is revealed once per workspace, when it becomes available: at the
+ * first start (an upgrade included), when the setting goes on, when the repo
+ * gets a color. Never on every startup: VS Code remembers collapse, hide and
+ * position, and a reveal would expand a block the user collapsed.
  *
- * `unfocused`: revealed on blur. On focus the bar is closed again, but only if
- * Toucan opened it.
+ * Collapsing it, showing another view or hiding the sidebar are not closes. A
+ * close is the user's Hide from the Explorer's "..." menu, or Toggle Sidebar
+ * Block. A Hide arrives as a dispose while the block should be shown; it is
+ * remembered only if the view isn't resolved again within the delay (a move
+ * disposes and resolves it again), and a reload or shutdown never records one,
+ * because dispose cancels the timer.
  */
 export class SidebarController {
   private started = false;
   /** After dispose nothing may change state: VS Code can still dispose a view and fire its events. */
   private disposed = false;
   private revealing = false;
-  private focused = false;
+  private available = false;
   private visible = false;
-  private openedByToucan = false;
-  private closingByToucan = false;
-  private readonly rememberTimer = createTimer();
+  private readonly hideTimer = createTimer();
 
   private readonly ports: SidebarPorts;
   private readonly settings: () => SidebarSettings;
@@ -98,152 +97,113 @@ export class SidebarController {
     this.settings = settings;
   }
 
-  /** Call once at activation, after the repo is resolved. */
-  start(focused: boolean): void {
+  /** Call once at activation, after the view's context keys are set. */
+  start(): void {
     this.started = true;
-    this.focused = focused;
-    const { enabled, visibility } = this.settings();
-    if (!enabled) {
-      return;
-    }
-    if (visibility === "always" ? !this.ports.readClosed() : !focused) {
-      this.post({
-        what: "Revealing the block",
-        task: () => this.reveal(visibility === "unfocused"),
-      });
-    }
+    this.available = this.settings().enabled;
+    this.revealIfDue();
   }
 
-  setFocused(focused: boolean): void {
-    if (this.disposed || focused === this.focused) {
+  /** After a settings or repo change, once the context keys are set. */
+  settingsChanged(): void {
+    if (this.disposed || !this.started) {
       return;
     }
-    this.focused = focused;
-    this.ports.debug(focused ? "focused" : "blurred");
-    // A close Toucan asked for that produced no visibility event mustn't
-    // swallow the user's next real close.
-    this.closingByToucan = false;
-    const { enabled, visibility } = this.settings();
-    if (!enabled || visibility !== "unfocused") {
-      return;
-    }
-    if (!focused) {
-      // Leave a block the user already has open alone, and don't close it later.
-      if (this.visible) {
-        this.openedByToucan = false;
-      } else {
-        this.post({ what: "Revealing the block", task: () => this.reveal(true) });
-      }
-    } else if (this.openedByToucan && this.visible) {
-      this.openedByToucan = false;
-      this.closingByToucan = true; // cleared by its visibility event or the next focus change
-      this.ports.debug("closing the bar Toucan opened");
-      this.post({ what: "Closing the bar", task: () => this.ports.closeBar() });
-    } else {
-      this.openedByToucan = false;
-    }
+    const { enabled } = this.settings();
+    const becameAvailable = enabled && !this.available;
+    this.available = enabled;
+    this.revealIfDue(becameAvailable);
   }
 
-  /** Feed the block's `onDidChangeVisibility`; `false` also on dispose. */
+  /** The view was (re)resolved; `visible` is its state then. */
+  viewResolved(visible: boolean): void {
+    if (this.disposed) {
+      return;
+    }
+    this.hideTimer.cancel();
+    this.visible = visible;
+  }
+
+  /** Feed the block's `onDidChangeVisibility`; collapse and other views also report `false`, none of it is a close. */
   visibilityChanged(visible: boolean): void {
     if (this.disposed) {
       return;
     }
-    this.ports.debug(
-      `visible=${visible} focused=${this.focused} closingByToucan=${this.closingByToucan}`,
-    );
+    this.ports.debug(`visible=${visible}`);
     this.visible = visible;
-    if (visible) {
-      this.rememberTimer.cancel();
-      // Only the user's own open forgets their close, not Toucan's reveal.
-      if (!this.revealing && this.ports.readClosed()) {
-        this.ports.debug("block opened; forgetting the remembered close");
-        this.post({ what: "Forgetting the close", task: () => this.ports.writeClosed(false) });
-      }
-      return;
-    }
-    if (this.closingByToucan) {
-      this.closingByToucan = false;
-      return;
-    }
-    const { enabled, visibility } = this.settings();
-    if (enabled && visibility === "always" && this.focused) {
-      // Keeps running across a blur (close, then Cmd-Tab away); a reload or
-      // shutdown still never records one, because dispose cancels it.
-      this.rememberTimer.start({
-        ms: REMEMBER_CLOSE_DELAY_MS,
-        run: () => {
-          if (!this.visible) {
-            this.ports.debug("user closed the block; remembering");
-            this.post({ what: "Remembering the close", task: () => this.ports.writeClosed(true) });
-          }
-        },
-      });
-    }
   }
 
   /**
-   * After a settings change: shows the block if it now should be, or closes the
-   * bar Toucan opened for a block that went off. Call it before the block's view
-   * is hidden, so a block that goes off is still seen as visible.
+   * Feed the block's `onDidDispose`. While the block should be shown and Toucan
+   * didn't hide it, that is the user's Hide, remembered after the delay unless
+   * the view comes back first.
    */
-  settingsChanged(): void {
-    const { enabled, visibility } = this.settings();
-    if (this.disposed || !this.started) {
+  viewDisposed(): void {
+    if (this.disposed) {
       return;
     }
-    if (!enabled) {
-      // The repo lost its color, or the setting went off. Like the focus path,
-      // close only a bar Toucan opened: one the user opened may hold Chat or
-      // other views, so it stays, even if the block was all it showed. Only
-      // `unfocused` mode opens the bar for Toucan, so `always` never closes it.
-      if (this.openedByToucan && this.visible) {
-        this.openedByToucan = false;
-        this.closingByToucan = true; // cleared by its visibility event or the next focus change
-        this.ports.debug("closing the bar Toucan opened: the block is off");
-        this.post({ what: "Closing the bar", task: () => this.ports.closeBar() });
-      }
+    this.visible = false;
+    if (!this.started || !this.settings().enabled || this.ports.readClosed()) {
       return;
     }
-    if (this.visible) {
-      return;
-    }
-    if (visibility === "always" ? !this.ports.readClosed() : !this.focused) {
-      this.post({
-        what: "Revealing the block",
-        task: () => this.reveal(visibility === "unfocused"),
-      });
-    }
+    this.hideTimer.start({
+      ms: REMEMBER_CLOSE_DELAY_MS,
+      run: () => {
+        this.ports.debug("user hid the block; remembering");
+        this.post({ what: "Remembering the hide", task: () => this.remember() });
+      },
+    });
   }
 
-  /** Toggle Sidebar Block: a user action, so closing it is remembered like any close. */
+  /**
+   * Toggle Sidebar Block: hides a shown block, otherwise shows it (a hidden or
+   * collapsed one is revealed and expanded).
+   */
   async toggle(): Promise<void> {
+    this.hideTimer.cancel();
     if (this.visible) {
-      await this.ports.closeBar();
-    } else {
-      this.openedByToucan = false;
-      await this.ports.writeClosed(false);
-      await this.ports.reveal();
+      await this.remember();
+      return;
     }
+    await this.ports.writeClosed(false);
+    await this.ports.setShown(true);
+    await this.ports.reveal();
+    await this.ports.writeRevealed(true);
   }
 
   dispose(): void {
     this.disposed = true;
-    this.rememberTimer.cancel();
+    this.hideTimer.cancel();
   }
 
-  private async reveal(byToucan: boolean): Promise<void> {
+  /** Writes the close before hiding the view, so the dispose it causes isn't taken for a Hide. */
+  private async remember(): Promise<void> {
+    await this.ports.writeClosed(true);
+    await this.ports.setShown(false);
+  }
+
+  private revealIfDue(becameAvailable = false): void {
+    const { enabled } = this.settings();
+    if (!enabled || this.ports.readClosed()) {
+      return;
+    }
+    if (becameAvailable || !this.ports.readRevealed()) {
+      this.post({ what: "Revealing the block", task: () => this.reveal() });
+    }
+  }
+
+  private async reveal(): Promise<void> {
     if (this.revealing) {
       return;
     }
     this.revealing = true;
     this.ports.debug("revealing the block");
-    this.openedByToucan = byToucan;
-    try {
-      await this.ports.reveal();
-    } finally {
-      this.revealing = false;
+    const [, error] = await tryCatch(() => this.ports.reveal());
+    this.revealing = false;
+    if (error !== null) {
+      throw error;
     }
+    await this.ports.writeRevealed(true);
   }
 
   /**

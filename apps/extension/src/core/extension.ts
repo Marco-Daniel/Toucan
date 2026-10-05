@@ -86,7 +86,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
     // The one window-state listener; each part reacts to focus changes.
     window.onDidChangeWindowState(({ focused }) => {
       focus.setFocused(focused);
-      sidebar.controller.setFocused(focused);
       offerAgentsControl(focused);
       background({ what: "Search emoji refresh", task: searchEmoji.focusChanged(focused) });
     }),
@@ -103,11 +102,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
       if (affects(configs.repos.key)) {
         refresh();
       }
-      if (
-        affects(configs.sidebarBlockEnabled.key) ||
-        affects(configs.sidebarBlockStyle.key) ||
-        affects(configs.sidebarBlockVisibility.key)
-      ) {
+      if (affects(configs.sidebarBlockEnabled.key) || affects(configs.sidebarBlockStyle.key)) {
         background({ what: "Sidebar block refresh", task: sidebar.refresh() });
       }
       if (affects(configs.experimentalSearchEmoji.key)) {
@@ -130,7 +125,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
     // Keep the rest of Toucan running if the sidebar's context key fails.
     logFailure({ log, what: "Sidebar block setup", error: sidebarError });
   }
-  sidebar.controller.start(window.state.focused);
+  sidebar.controller.start();
   offerAgentsControl(window.state.focused);
 }
 

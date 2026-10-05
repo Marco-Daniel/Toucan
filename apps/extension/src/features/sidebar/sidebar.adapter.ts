@@ -14,17 +14,22 @@ import { sidebarBlockHtml } from "./sidebar.view.ts";
 
 // import consts
 import { configs } from "../../generated/meta.ts";
-import { SIDEBAR_AVAILABLE_CONTEXT, SIDEBAR_VIEW_ID } from "../../core/ids.consts.ts";
+import {
+  SIDEBAR_AVAILABLE_CONTEXT,
+  SIDEBAR_SHOWN_CONTEXT,
+  SIDEBAR_VIEW_ID,
+} from "../../core/ids.consts.ts";
 
 // import types
 import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
 import type { Log } from "../../core/log.adapter.ts";
-import type { SidebarSettings } from "./sidebar.util.ts";
 import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
-/** workspaceState key for "the user closed the block here" (toucan-v1/0013). */
+/** workspaceState key for "the user closed the block here" (toucan-v1/0013, sidebar-explorer/0006). */
 const CLOSED_KEY = "sidebarBlock.closed";
+/** workspaceState key for "Toucan revealed the block here once" (sidebar-explorer/0006). */
+const REVEALED_KEY = "sidebarBlock.revealed";
 
 interface SidebarBlockArgs {
   context: ExtensionContext;
@@ -34,8 +39,9 @@ interface SidebarBlockArgs {
 }
 
 /**
- * The opt-in sidebar block (toucan-v1/0006, toucan-v1/0013): renders the repo color in a webview
- * without scripts and lets `SidebarController` decide when it's shown.
+ * The opt-in sidebar block in the Explorer (sidebar-explorer/0001, sidebar-explorer/0006):
+ * renders the repo color in a webview without scripts and lets `SidebarController`
+ * decide when it's shown.
  */
 export class SidebarBlock implements WebviewViewProvider, Disposable {
   readonly controller: SidebarController;
@@ -55,12 +61,16 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         reveal: async () => {
           await vscodeCommands.executeCommand(`${SIDEBAR_VIEW_ID}.focus`, { preserveFocus: true });
         },
-        closeBar: async () => {
-          await vscodeCommands.executeCommand("workbench.action.closeAuxiliaryBar");
+        setShown: async (shown) => {
+          await vscodeCommands.executeCommand("setContext", SIDEBAR_SHOWN_CONTEXT, shown);
         },
         readClosed: () => context.workspaceState.get<boolean>(CLOSED_KEY, false),
         writeClosed: async (closed) => {
           await context.workspaceState.update(CLOSED_KEY, closed || undefined);
+        },
+        readRevealed: () => context.workspaceState.get<boolean>(REVEALED_KEY, false),
+        writeRevealed: async (revealed) => {
+          await context.workspaceState.update(REVEALED_KEY, revealed || undefined);
         },
         warn: (message) => log.warn(`[sidebar] ${message}`),
         debug: (message) => log.debug(`[sidebar] ${message}`),
@@ -74,7 +84,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
     this.view = view;
     view.webview.options = { enableScripts: false, localResourceRoots: [] };
     this.render();
-    // VS Code can resolve the view again (after a close, a move); these
+    // VS Code can resolve the view again (after a Hide, a move); these
     // listeners live and die with this instance of it.
     const listeners = [
       view.onDidChangeVisibility(() => this.controller.visibilityChanged(view.visible)),
@@ -87,27 +97,27 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         if (this.view === view) {
           this.view = undefined;
         }
-        this.controller.visibilityChanged(false);
+        this.controller.viewDisposed();
       }),
     );
-    this.controller.visibilityChanged(view.visible);
+    this.controller.viewResolved(view.visible);
   }
 
   /**
-   * After the repo or a setting changed. A block that goes off is told before
-   * the context key hides it, so the controller still sees it visible and closes
-   * the bar; one that comes on only after, so its view exists to be revealed.
+   * After the repo or a setting changed: sets the context keys of the view's
+   * `when` clause, then lets the controller reveal a block that just became
+   * available (its view exists by then).
    */
   async refresh(): Promise<void> {
     const { enabled } = this.settings();
-    if (!enabled) {
-      this.controller.settingsChanged();
-    }
     await vscodeCommands.executeCommand("setContext", SIDEBAR_AVAILABLE_CONTEXT, enabled);
+    await vscodeCommands.executeCommand(
+      "setContext",
+      SIDEBAR_SHOWN_CONTEXT,
+      !this.context.workspaceState.get<boolean>(CLOSED_KEY, false),
+    );
     this.render();
-    if (enabled) {
-      this.controller.settingsChanged();
-    }
+    this.controller.settingsChanged();
   }
 
   dispose(): void {
@@ -134,12 +144,11 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   }
 
   /** Enabled means: the setting is on and this repo has a color. */
-  private settings(): SidebarSettings & { style: SidebarStyle } {
+  private settings(): { enabled: boolean; style: SidebarStyle } {
     const configuration = workspace.getConfiguration();
     return resolveSidebarSettings({
       enabled: configuration.get(configs.sidebarBlockEnabled.key),
       style: configuration.get(configs.sidebarBlockStyle.key),
-      visibility: configuration.get(configs.sidebarBlockVisibility.key),
       repo: this.repo()?.config,
     });
   }
