@@ -390,7 +390,6 @@
           "type": "webview",
           "id": "toucan.block",
           "name": "Toucan",
-          "visibility": "visible",
           "when": "toucan.sidebarBlockAvailable && toucan.sidebarBlockShown"
         }
       ]

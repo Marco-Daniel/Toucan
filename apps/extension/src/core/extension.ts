@@ -103,7 +103,7 @@ export async function activate(context: ExtensionContext): Promise<void> {
         refresh();
       }
       if (affects(configs.sidebarBlockEnabled.key) || affects(configs.sidebarBlockStyle.key)) {
-        background({ what: "Sidebar block refresh", task: sidebar.refresh() });
+        background({ what: "Sidebar block refresh", task: sidebar.settingsChanged() });
       }
       if (affects(configs.experimentalSearchEmoji.key)) {
         background({ what: "Search emoji refresh", task: searchEmoji.refresh() });

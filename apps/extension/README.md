@@ -35,7 +35,7 @@ An opt-in block in the Explorer shows the repository's glyph large, with its nam
 
 VS Code places the block among the Explorer's sections, below the folder tree by default. Drag it where you like (to the top, say) and VS Code remembers the place.
 
-VS Code shows the block, expanded, where it first appears: when the setting goes on or the repository gets a color. Toucan never switches the Explorer's view for it, and never expands a block you collapsed. Collapsing it, showing another view such as Search, or hiding the sidebar don't hide it for good. **Hide** from the block's `…` menu does: the block then stays hidden in this workspace until you run [Toggle Sidebar Block](#toggle-sidebar-block).
+VS Code adds the block to the Explorer collapsed, so in a workspace where it was already on it first shows as a "Toucan" header at the bottom; open it once and VS Code remembers. When you turn the setting on while the window runs, Toucan expands it for you once (switching the sidebar to the Explorer if it showed another view). Otherwise Toucan never switches the sidebar's view, and never expands a block you collapsed. Collapsing it, showing another view such as Search, or hiding the sidebar don't hide it for good. **Hide** from the block's `…` menu does: the block then stays hidden in this workspace until you run [Toggle Sidebar Block](#toggle-sidebar-block).
 
 The old `unfocused` mode is gone. [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility) and the per-repository `sidebarBlock` field are deprecated and ignored.
 

@@ -17,13 +17,14 @@ import {
 function setup(
   initial: {
     enabled?: boolean;
+    settingOn?: boolean;
     closed?: boolean;
     failReveals?: boolean;
     failWrites?: boolean;
   } = {},
 ) {
-  const { closed, failReveals, failWrites, enabled } = initial;
-  const settings = { enabled: enabled ?? true };
+  const { closed, failReveals, failWrites, enabled, settingOn } = initial;
+  const settings = { enabled: enabled ?? true, settingOn: settingOn ?? enabled ?? true };
   const state = {
     closed: closed ?? false,
     calls: [] as string[],
@@ -63,9 +64,89 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("SidebarController, no reveal of its own", () => {
-  it("never reveals when the view resolves or the settings are read, so another primary view isn't switched away", async () => {
-    // A reveal runs `.focus`, which switches Search or Source Control to the Explorer.
+describe("SidebarController, reveal on the setting going on", () => {
+  it("reveals once when the setting goes from off to on while the window runs", async () => {
+    const { controller, settings, state } = setup({ enabled: false, settingOn: false });
+    settings.enabled = true;
+    settings.settingOn = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual(["reveal"]);
+  });
+
+  it("doesn't reveal on startup with the setting already on", async () => {
+    const { controller, state } = setup();
+    controller.viewResolved(true);
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(10 * REMEMBER_CLOSE_DELAY_MS);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("doesn't reveal when a repo gets a color with the setting already on", async () => {
+    const { controller, settings, state } = setup({ enabled: false, settingOn: true });
+    settings.enabled = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("doesn't reveal for a setting turned on in a repo without a color, nor when it gets one later", async () => {
+    const { controller, settings, state } = setup({ enabled: false, settingOn: false });
+    settings.settingOn = true;
+    controller.settingsChanged();
+    settings.enabled = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("doesn't reveal a block remembered as hidden, which stays hidden until Toggle", async () => {
+    const { controller, settings, state } = setup({
+      enabled: false,
+      settingOn: false,
+      closed: true,
+    });
+    settings.enabled = true;
+    settings.settingOn = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("doesn't reveal on a change that leaves the setting on, such as a style change", async () => {
+    const { controller, state } = setup();
+    controller.settingsChanged();
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("reveals again each time the setting goes off and on", async () => {
+    const { controller, settings, state } = setup();
+    for (const settingOn of [false, true, false, true]) {
+      settings.settingOn = settingOn;
+      settings.enabled = settingOn;
+      controller.settingsChanged();
+    }
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual(["reveal", "reveal"]);
+  });
+
+  it("logs a failed reveal instead of leaving it unhandled", async () => {
+    const { controller, settings, state } = setup({
+      enabled: false,
+      settingOn: false,
+      failReveals: true,
+    });
+    settings.enabled = true;
+    settings.settingOn = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.warnings).toEqual(["Revealing the block failed: Error: view not registered"]);
+  });
+
+  it("doesn't reveal when the view resolves or goes invisible", async () => {
+    // A reveal switches the primary sidebar: nothing but the user's own action may run it.
     const { controller, state } = setup();
     controller.viewResolved(true);
     controller.visibilityChanged(false);
@@ -221,6 +302,13 @@ describe("resolveSidebarSettings", () => {
     );
     expect(resolveSidebarSettings({ enabled: false, style: "full", repo: {} }).enabled).toBe(false);
     expect(resolveSidebarSettings({ enabled: "yes", style: "full", repo: {} }).enabled).toBe(false);
+    // The setting alone is on even without a repo color: the reveal keys off it.
+    expect(
+      resolveSidebarSettings({ enabled: true, style: "full", repo: undefined }).settingOn,
+    ).toBe(true);
+    expect(resolveSidebarSettings({ enabled: "yes", style: "full", repo: {} }).settingOn).toBe(
+      false,
+    );
     expect(resolveSidebarSettings({ enabled: true, style: "full", repo: {} }).enabled).toBe(true);
   });
 

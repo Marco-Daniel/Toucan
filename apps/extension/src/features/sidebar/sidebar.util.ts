@@ -14,7 +14,10 @@ import type { SidebarStyle } from "../../shared/model/model.types.ts";
 export const REMEMBER_CLOSE_DELAY_MS = 1500;
 
 export interface SidebarSettings {
+  /** The setting is on and the repo has a color: the block can be shown. */
   enabled: boolean;
+  /** The setting alone, whatever the repo has. */
+  settingOn: boolean;
 }
 
 interface ResolveSidebarSettingsArgs {
@@ -33,12 +36,13 @@ export function resolveSidebarSettings(
 ): SidebarSettings & { style: SidebarStyle } {
   return {
     enabled: input.repo !== undefined && input.enabled === true,
+    settingOn: input.enabled === true,
     style: isOneOf(SIDEBAR_STYLES, input.style) ? input.style : "full",
   };
 }
 
 export interface SidebarPorts {
-  /** Reveals the block with `preserveFocus`, expanding it. Only Toggle uses it: it switches the primary sidebar to the Explorer. */
+  /** Reveals the block with `preserveFocus`, expanding it. It switches the primary sidebar to the Explorer, so only a user's own action may run it. */
   reveal(): Promise<void>;
   /** Sets the view's `when` key: `false` hides the block, `true` lets VS Code show it. */
   setShown(shown: boolean): Promise<void>;
@@ -65,11 +69,12 @@ interface SidebarControllerArgs {
  * Shows and hides the opt-in sidebar block in the Explorer (sidebar-explorer/0001,
  * sidebar-explorer/0006).
  *
- * Toucan never reveals the block by itself: the manifest declares it visible,
- * so VS Code shows it expanded where it first appears, whenever the setting goes
- * on or the repo gets a color, without switching the user's primary sidebar view
- * (a `.focus` reveal would switch Search or Source Control to the Explorer).
- * Only Toggle Sidebar Block reveals it.
+ * VS Code starts every extension view in the Explorer collapsed, whatever the
+ * manifest says, and a reveal (`.focus`) switches the primary sidebar to the
+ * Explorer. So Toucan reveals the block only on the user's own action: Toggle
+ * Sidebar Block (show), and the setting going from off to on while the window
+ * runs, by any route. Never on startup, never when a repo gets a color, never
+ * on a reload where the setting was already on (sidebar-explorer/0008).
  *
  * Collapsing it, showing another view or hiding the sidebar are not closes. A
  * close is the user's Hide from the Explorer's "..." menu, or Toggle Sidebar
@@ -82,6 +87,8 @@ export class SidebarController {
   /** After dispose nothing may change state: VS Code can still dispose a view and fire its events. */
   private disposed = false;
   private visible = false;
+  /** The setting's value at the last change, to tell it going on from anything else. */
+  private settingWasOn: boolean;
   private readonly hideTimer = createTimer();
 
   private readonly ports: SidebarPorts;
@@ -90,6 +97,21 @@ export class SidebarController {
   constructor({ ports, settings }: SidebarControllerArgs) {
     this.ports = ports;
     this.settings = settings;
+    this.settingWasOn = settings().settingOn;
+  }
+
+  /** After a change to the enabled setting or the style, once the context keys are set. */
+  settingsChanged(): void {
+    if (this.disposed) {
+      return;
+    }
+    const { enabled, settingOn } = this.settings();
+    const turnedOn = settingOn && !this.settingWasOn;
+    this.settingWasOn = settingOn;
+    // A block remembered as hidden stays hidden: the user brings it back with Toggle.
+    if (turnedOn && enabled && !this.ports.readClosed()) {
+      this.post({ what: "Revealing the block", task: () => this.ports.reveal() });
+    }
   }
 
   /** The view was (re)resolved; `visible` is its state then. */

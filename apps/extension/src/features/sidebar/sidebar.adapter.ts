@@ -23,6 +23,7 @@ import {
 // import types
 import type { Disposable, ExtensionContext, WebviewView, WebviewViewProvider } from "vscode";
 import type { Log } from "../../core/log.adapter.ts";
+import type { SidebarSettings } from "./sidebar.util.ts";
 import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
@@ -116,6 +117,15 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
     this.render();
   }
 
+  /**
+   * After a change to the enabled setting or the style: the context keys first,
+   * so the view exists when the controller reveals a block that was turned on.
+   */
+  async settingsChanged(): Promise<void> {
+    await this.refresh();
+    this.controller.settingsChanged();
+  }
+
   dispose(): void {
     this.controller.dispose();
     for (const disposable of this.disposables) {
@@ -140,7 +150,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
   }
 
   /** Enabled means: the setting is on and this repo has a color. */
-  private settings(): { enabled: boolean; style: SidebarStyle } {
+  private settings(): SidebarSettings & { style: SidebarStyle } {
     const configuration = workspace.getConfiguration();
     return resolveSidebarSettings({
       enabled: configuration.get(configs.sidebarBlockEnabled.key),

@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-10-05
 - Deciders: Marco, the lead
+- Amended by [0008](0008-reveal-once-when-the-user-turns-the-block-on.md): `visibility` turned out to do nothing, and the reveal on the setting going on came back; the new key stands.
 - Supersedes: the reveal part of [0006](0006-hide-the-block-through-its-when-clause.md), and its "same key, no migration" line
 
 ## Context and Problem

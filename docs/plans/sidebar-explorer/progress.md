@@ -23,3 +23,11 @@
   - Tests: the reveal and settings-change groups are gone, replaced by one that pins "no reveal of its own"; the manifest test pins `visibility`; toggle failure test added. README, site docs, plan and trail updated.
 - Next: the isolated VS Code test for this (fresh profile with the setting on, the setting turned on mid-session with Search open throughout, upgrade with an old close flag set), once the lead has Marco's go.
 
+## 2026-10-05, implementer, round 1 second half
+
+- Did: the isolated VS Code test of the round 1 fix (A fresh profile, B Search open with the setting turned on mid-session, C Search open at launch, D upgrade with 1.0.0's close flag set). The new key and the no-switching are proven; the block always starts collapsed because VS Code ignores `visibility` for Explorer views. Marco chose to reveal once when the user turns the block on (decision 0008).
+  - Code: `SidebarController.settingsChanged()` reveals on the setting going from off to on while the window runs, when the block is available and not remembered hidden; the adapter's `settingsChanged()` refreshes the context keys first. The manifest no longer declares `visibility`.
+  - Tests: eight cases for the transition (reveals; not on startup; not when a repo gets a color; not without a color; not when hidden; not on a style change; repeated; failure logged), each mutant-checked by hand.
+  - Docs: README and site say the block starts collapsed and when Toucan expands it.
+- Next: a short isolated VS Code rerun (Settings UI turn-on with Search open; a reload), then reply on and resolve both threads.
+

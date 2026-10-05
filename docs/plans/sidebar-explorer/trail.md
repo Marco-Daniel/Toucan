@@ -16,6 +16,8 @@ After v1.0.0, Marco turned the block on and didn't see it: in `always` mode Touc
 
 **Round 1: the reveal switched views; an old close carried over.** The blind reviewer found that the one-time `.focus` reveal switches Search or Source Control to the Explorer, and that reusing `sidebarBlock.closed` would hide the block for anyone who had switched the secondary sidebar to Chat in 1.0.0. All three agreed: `"visibility": "visible"` in the manifest instead of a reveal, a new key, `.focus` only on Toggle (show). → 0007
 
+**Round 1, second half: `visibility` expands nothing.** The isolated VS Code test of the round 1 fix proved the key and the no-switching, but showed the block always starting collapsed: VS Code ignores `visibility` for views in the Explorer. Options (a) accept it, (b) reveal once when the user turns the block on, (c) reveal only if the Explorer is already active (no stable API). Marco chose (b), by any route to the setting. → 0008
+
 **Testing before the version.** Marco added mid-planning that this needs proper testing in VS Code before the version is made; it became a gate before the bump PR. → 0004
 
 **A new team.** Marco brought in a new implementer, blind reviewer and DevOps for this work; the earlier sessions stood down with nothing open.
