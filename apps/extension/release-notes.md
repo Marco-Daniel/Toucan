@@ -8,7 +8,7 @@ Toucan 1.1.0 moves the optional sidebar block into the Explorer, where it no lon
 
 ### After updating
 
-If you had the block on, the secondary sidebar stays open and empty once after the update. Close it once with the bar's **×**. If you had closed the old block before, it shows again in the Explorer: hide it once with **Hide** if you don't want it.
+If the secondary sidebar was showing the block when you updated, it may stay open and empty once: close it with the bar's **×**. If you had closed the old block before, it shows again in the Explorer: hide it once with **Hide** if you don't want it.
 
 ### Behind the scenes
 
