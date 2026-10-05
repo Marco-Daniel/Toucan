@@ -38,16 +38,13 @@ export function resolveSidebarSettings(
 }
 
 export interface SidebarPorts {
-  /** Reveals the block with `preserveFocus`, expanding it and never switching other views. */
+  /** Reveals the block with `preserveFocus`, expanding it. Only Toggle uses it: it switches the primary sidebar to the Explorer. */
   reveal(): Promise<void>;
   /** Sets the view's `when` key: `false` hides the block, `true` lets VS Code show it. */
   setShown(shown: boolean): Promise<void>;
   /** Whether the block is remembered as closed in this workspace. */
   readClosed(): boolean;
   writeClosed(closed: boolean): Promise<void>;
-  /** Whether Toucan has revealed the block in this workspace once already. */
-  readRevealed(): boolean;
-  writeRevealed(revealed: boolean): Promise<void>;
   warn(message: string): void;
   debug(message: string): void;
 }
@@ -68,10 +65,11 @@ interface SidebarControllerArgs {
  * Shows and hides the opt-in sidebar block in the Explorer (sidebar-explorer/0001,
  * sidebar-explorer/0006).
  *
- * The block is revealed once per workspace, when it becomes available: at the
- * first start (an upgrade included), when the setting goes on, when the repo
- * gets a color. Never on every startup: VS Code remembers collapse, hide and
- * position, and a reveal would expand a block the user collapsed.
+ * Toucan never reveals the block by itself: the manifest declares it visible,
+ * so VS Code shows it expanded where it first appears, whenever the setting goes
+ * on or the repo gets a color, without switching the user's primary sidebar view
+ * (a `.focus` reveal would switch Search or Source Control to the Explorer).
+ * Only Toggle Sidebar Block reveals it.
  *
  * Collapsing it, showing another view or hiding the sidebar are not closes. A
  * close is the user's Hide from the Explorer's "..." menu, or Toggle Sidebar
@@ -81,11 +79,8 @@ interface SidebarControllerArgs {
  * because dispose cancels the timer.
  */
 export class SidebarController {
-  private started = false;
   /** After dispose nothing may change state: VS Code can still dispose a view and fire its events. */
   private disposed = false;
-  private revealing = false;
-  private available = false;
   private visible = false;
   private readonly hideTimer = createTimer();
 
@@ -95,24 +90,6 @@ export class SidebarController {
   constructor({ ports, settings }: SidebarControllerArgs) {
     this.ports = ports;
     this.settings = settings;
-  }
-
-  /** Call once at activation, after the view's context keys are set. */
-  start(): void {
-    this.started = true;
-    this.available = this.settings().enabled;
-    this.revealIfDue();
-  }
-
-  /** After a settings or repo change, once the context keys are set. */
-  settingsChanged(): void {
-    if (this.disposed || !this.started) {
-      return;
-    }
-    const { enabled } = this.settings();
-    const becameAvailable = enabled && !this.available;
-    this.available = enabled;
-    this.revealIfDue(becameAvailable);
   }
 
   /** The view was (re)resolved; `visible` is its state then. */
@@ -143,7 +120,7 @@ export class SidebarController {
       return;
     }
     this.visible = false;
-    if (!this.started || !this.settings().enabled || this.ports.readClosed()) {
+    if (!this.settings().enabled || this.ports.readClosed()) {
       return;
     }
     this.hideTimer.start({
@@ -168,7 +145,6 @@ export class SidebarController {
     await this.ports.writeClosed(false);
     await this.ports.setShown(true);
     await this.ports.reveal();
-    await this.ports.writeRevealed(true);
   }
 
   dispose(): void {
@@ -180,30 +156,6 @@ export class SidebarController {
   private async remember(): Promise<void> {
     await this.ports.writeClosed(true);
     await this.ports.setShown(false);
-  }
-
-  private revealIfDue(becameAvailable = false): void {
-    const { enabled } = this.settings();
-    if (!enabled || this.ports.readClosed()) {
-      return;
-    }
-    if (becameAvailable || !this.ports.readRevealed()) {
-      this.post({ what: "Revealing the block", task: () => this.reveal() });
-    }
-  }
-
-  private async reveal(): Promise<void> {
-    if (this.revealing) {
-      return;
-    }
-    this.revealing = true;
-    this.ports.debug("revealing the block");
-    const [, error] = await tryCatch(() => this.ports.reveal());
-    this.revealing = false;
-    if (error !== null) {
-      throw error;
-    }
-    await this.ports.writeRevealed(true);
   }
 
   /**

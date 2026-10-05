@@ -12,7 +12,7 @@ VS Code places the block among the Explorer's sections, below the folder tree by
 
 ## Showing and hiding
 
-Toucan reveals the block once in each workspace, when it comes on: the first start, the setting turned on, or the repository getting a color. It never expands a block you collapsed.
+VS Code shows the block, expanded, where it first appears: when the setting goes on or the repository gets a color. Toucan never switches the Explorer's view for it, and never expands a block you collapsed.
 
 Collapsing the block, showing another view such as Search, or hiding the sidebar don't hide it for good. **Hide** from the block's `…` menu does, and so does **Toucan: Toggle Sidebar Block** while the block is showing. A hidden block stays hidden in this workspace until you run Toggle Sidebar Block again, which also expands a block that is merely collapsed.
 

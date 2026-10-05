@@ -71,6 +71,7 @@ describe("package.json sidebar block", () => {
           type: "webview",
           id: SIDEBAR_VIEW_ID,
           name: "Toucan",
+          visibility: "visible",
           when: `${SIDEBAR_AVAILABLE_CONTEXT} && ${SIDEBAR_SHOWN_CONTEXT}`,
         },
       ],

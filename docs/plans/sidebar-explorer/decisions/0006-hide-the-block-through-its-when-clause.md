@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-10-05
 - Deciders: Marco, the lead
+- Amended by [0007](0007-let-the-manifest-open-the-block-and-use-a-new-key.md): the reveal and the remembered key changed after review round 1; everything about hiding and Toggle stands.
 - Supersedes: the "what counts as closing" and Toggle parts of [toucan-v1/0013](../../toucan-v1/decisions/0013-make-the-sidebar-block-style-and-visibility-configurable.md)
 
 ## Context and Problem

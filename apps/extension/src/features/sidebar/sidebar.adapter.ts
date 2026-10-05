@@ -26,10 +26,12 @@ import type { Log } from "../../core/log.adapter.ts";
 import type { SidebarStyle } from "../../shared/model/model.types.ts";
 import type { ActiveRepo } from "../../core/repo.adapter.ts";
 
-/** workspaceState key for "the user closed the block here" (toucan-v1/0013, sidebar-explorer/0006). */
-const CLOSED_KEY = "sidebarBlock.closed";
-/** workspaceState key for "Toucan revealed the block here once" (sidebar-explorer/0006). */
-const REVEALED_KEY = "sidebarBlock.revealed";
+/**
+ * workspaceState key for "the user hid the block here" (sidebar-explorer/0006, 0007). A new key:
+ * 1.0.0's `sidebarBlock.closed` also meant a switch of the secondary sidebar to another view, which
+ * isn't a hide in the Explorer, so an old value must not carry over.
+ */
+const HIDDEN_KEY = "sidebarBlock.hidden";
 
 interface SidebarBlockArgs {
   context: ExtensionContext;
@@ -64,13 +66,9 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         setShown: async (shown) => {
           await vscodeCommands.executeCommand("setContext", SIDEBAR_SHOWN_CONTEXT, shown);
         },
-        readClosed: () => context.workspaceState.get<boolean>(CLOSED_KEY, false),
+        readClosed: () => context.workspaceState.get<boolean>(HIDDEN_KEY, false),
         writeClosed: async (closed) => {
-          await context.workspaceState.update(CLOSED_KEY, closed || undefined);
-        },
-        readRevealed: () => context.workspaceState.get<boolean>(REVEALED_KEY, false),
-        writeRevealed: async (revealed) => {
-          await context.workspaceState.update(REVEALED_KEY, revealed || undefined);
+          await context.workspaceState.update(HIDDEN_KEY, closed || undefined);
         },
         warn: (message) => log.warn(`[sidebar] ${message}`),
         debug: (message) => log.debug(`[sidebar] ${message}`),
@@ -105,8 +103,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
 
   /**
    * After the repo or a setting changed: sets the context keys of the view's
-   * `when` clause, then lets the controller reveal a block that just became
-   * available (its view exists by then).
+   * `when` clause and renders.
    */
   async refresh(): Promise<void> {
     const { enabled } = this.settings();
@@ -114,10 +111,9 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
     await vscodeCommands.executeCommand(
       "setContext",
       SIDEBAR_SHOWN_CONTEXT,
-      !this.context.workspaceState.get<boolean>(CLOSED_KEY, false),
+      !this.context.workspaceState.get<boolean>(HIDDEN_KEY, false),
     );
     this.render();
-    this.controller.settingsChanged();
   }
 
   dispose(): void {
@@ -169,8 +165,8 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
         "Turn On",
       );
       if (answer === "Turn On") {
-        // Forget an earlier close; the settings change then reveals the block.
-        await this.context.workspaceState.update(CLOSED_KEY, undefined);
+        // Forget an earlier hide; the view then appears with the setting.
+        await this.context.workspaceState.update(HIDDEN_KEY, undefined);
         await writeUserSetting({ key: configs.sidebarBlockEnabled.key, value: true });
         this.log.info("Turned on the sidebar block.");
       }
