@@ -1,0 +1,27 @@
+# Thinking trail: The sidebar block lives in the Explorer
+
+## Starting framing
+
+After v1.0.0, Marco turned the block on and didn't see it: in `always` mode Toucan never opens the secondary sidebar. He dragged it into the Explorer and, with a screenshot of it at the top of the primary sidebar, asked: "when we set that show sidebar option in toucan, i would prefer it defaulted in the main sidebar in the way it looks in the screenshot, is that possible?" The assumption: the screenshot's position (top of the Explorer) could be the default.
+
+## Turns
+
+**The top isn't ours to pick.** The lead checked that an extension view can't be placed above the Explorer's own sections; the screenshot's position came from Marco's drag. The default is VS Code's placement, and the drag sticks. → 0003
+
+**`unfocused` doesn't survive the move.** Its reveal-on-blur and close-on-focus only made sense with a separate bar; in the Explorer it would switch or hide the user's primary sidebar. Put to Marco with a recommendation to drop it; he chose to drop it, noting it means doc updates too. → 0002
+
+**"Close" needs a new meaning.** The new implementer's read-through found that Toggle Sidebar Block's `closeAuxiliaryBar` would become closing the whole primary sidebar. Rather than guess, the plan makes recording the Explorer's visibility events the first task, with a when-clause hide as the starting proposal. → 0001, plan Approach
+
+**Testing before the version.** Marco added mid-planning that this needs proper testing in VS Code before the version is made; it became a gate before the bump PR. → 0004
+
+**A new team.** Marco brought in a new implementer, blind reviewer and DevOps for this work; the earlier sessions stood down with nothing open.
+
+## Rejected without a decision file
+
+- **Runtime moves through internal workbench commands** to force the top position: not stable API.
+
+## Open / to re-check
+
+- The close design, after the implementer's finding.
+- How the upgrade from 1.0.0 behaves for users with the block in the secondary sidebar.
+- When to delete the deprecated `visibility` settings.
