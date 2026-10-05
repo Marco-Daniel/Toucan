@@ -86,7 +86,6 @@ export async function activate(context: ExtensionContext): Promise<void> {
     // The one window-state listener; each part reacts to focus changes.
     window.onDidChangeWindowState(({ focused }) => {
       focus.setFocused(focused);
-      sidebar.controller.setFocused(focused);
       offerAgentsControl(focused);
       background({ what: "Search emoji refresh", task: searchEmoji.focusChanged(focused) });
     }),
@@ -103,12 +102,8 @@ export async function activate(context: ExtensionContext): Promise<void> {
       if (affects(configs.repos.key)) {
         refresh();
       }
-      if (
-        affects(configs.sidebarBlockEnabled.key) ||
-        affects(configs.sidebarBlockStyle.key) ||
-        affects(configs.sidebarBlockVisibility.key)
-      ) {
-        background({ what: "Sidebar block refresh", task: sidebar.refresh() });
+      if (affects(configs.sidebarBlockEnabled.key) || affects(configs.sidebarBlockStyle.key)) {
+        background({ what: "Sidebar block refresh", task: sidebar.settingsChanged() });
       }
       if (affects(configs.experimentalSearchEmoji.key)) {
         background({ what: "Search emoji refresh", task: searchEmoji.refresh() });
@@ -123,14 +118,12 @@ export async function activate(context: ExtensionContext): Promise<void> {
   // No event fires for the initial state; a window that starts focused also
   // clears leftovers from crashed windows here.
   focus.setFocused(window.state.focused);
-  // The view's `when` context key must be set before the first reveal, or the
-  // reveal can reach the workbench before the view exists.
+  // The view's `when` context keys must be set at startup, or the view appears in the wrong state.
   const [, sidebarError] = await tryCatch(() => sidebar.refresh());
   if (sidebarError !== null) {
     // Keep the rest of Toucan running if the sidebar's context key fails.
     logFailure({ log, what: "Sidebar block setup", error: sidebarError });
   }
-  sidebar.controller.start(window.state.focused);
   offerAgentsControl(window.state.focused);
 }
 

@@ -1,6 +1,6 @@
 # 0006. Offer an opt-in secondary sidebar color block
 
-- Status: Accepted
+- Status: Superseded by [sidebar-explorer/0001](../../sidebar-explorer/decisions/0001-move-the-sidebar-block-into-the-explorer.md): the block moved from the secondary sidebar to the Explorer
 - Date: 2026-10-01
 - Deciders: Marco
 

@@ -77,7 +77,7 @@ function half(size: number): number {
 /** How far a captured channel may be from the reference (scaling blends edges). */
 const COLOR_TOLERANCE = 6;
 /**
- * The sidebar stills, and the share of the bar in the repository color that
+ * The sidebar stills, and the share of the block in the repository color that
  * tells their styles apart: full style fills it, muted style only colors the
  * glyph.
  */
@@ -378,11 +378,12 @@ export async function captureStills({ session, paths }: CaptureStillsArgs): Prom
       },
     });
     await focusUntilColored({ session, name: STILL_REPO });
-    // The block is a webview, drawn in an overlay above the bar rather than
-    // inside it. Wait until the bar shows this style: in full style the
-    // repository color fills most of it, in muted style only the glyph has it.
-    // The previous style's block stays on screen until the new one renders.
-    const bar = await window.box(".part.auxiliarybar");
+    // The block is a webview in the Explorer, drawn in an overlay above its
+    // section rather than inside it. Wait until the section shows this style:
+    // in full style the repository color fills most of it, in muted style only
+    // the glyph has it. The previous style's block stays on screen until the
+    // new one renders.
+    const bar = await window.sectionBody("Toucan");
     const color = await commandCenterPixel(window);
     await waitFor({
       what: `the ${style} sidebar block`,

@@ -12,7 +12,7 @@
 Toucan 1.0.0 is on the Visual Studio Marketplace. The plan had Open VSX as step 2, for the editors built on VS Code that can't use the Marketplace. Checked on 2026-10-04:
 
 - Their VS Code bases are older than Toucan's `engines.vscode` floor of `^1.138.0`: Cursor is on 1.128, Windsurf on 1.126, VSCodium on 1.135. Published as it is, Toucan wouldn't install in any of them.
-- They differ where Toucan works: Cursor reserves the secondary sidebar (Toucan's optional sidebar block) and turns the Command Center (where Toucan shows the focused window's color) off by default.
+- They differ where Toucan works: Cursor reserves the secondary sidebar (where Toucan's optional sidebar block used to live; since [sidebar-explorer/0001](../plans/sidebar-explorer/decisions/0001-move-the-sidebar-block-into-the-explorer.md) it sits in the Explorer and no longer needs it) and turns the Command Center (where Toucan shows the focused window's color) off by default.
 
 Supporting them would mean lowering the engine floor, testing in each editor, and following their changes.
 
