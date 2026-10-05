@@ -54,6 +54,13 @@ const BOX = `function (selector) {
   return r && r.width > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : undefined;
 }`;
 
+/** The body of the primary sidebar section titled (argument), once it has a width. */
+const SECTION_BODY_BOX = `function (title) {
+  const header = [...document.querySelectorAll(".part.sidebar .pane-header")].find((e) => e.textContent.trim() === title);
+  const r = header?.parentElement?.querySelector(".pane-body")?.getBoundingClientRect();
+  return r && r.width > 0 && r.height > 0 ? { x: r.x, y: r.y, width: r.width, height: r.height } : undefined;
+}`;
+
 const COMMAND_CENTER_COLOR = `function () {
   return [...document.querySelectorAll(".command-center *")].map((e) => getComputedStyle(e).backgroundColor).find((c) => c !== "rgba(0, 0, 0, 0)");
 }`;
@@ -206,6 +213,18 @@ export class Window {
       throw new Error(`No screenshot of ${this.name}`);
     }
     return decodePng(Buffer.from(reply["data"], "base64"));
+  }
+
+  /** The body of the primary sidebar section with this title, once it's on screen and expanded. */
+  async sectionBody(title: string): Promise<Rect> {
+    const value = await this.waitFor({
+      what: `the ${title} section`,
+      call: { fn: SECTION_BODY_BOX, args: [title] },
+    });
+    if (!isRect(value)) {
+      throw new Error(`No box for the ${title} section`);
+    }
+    return value;
   }
 
   /** An element's box, once it's on screen. */

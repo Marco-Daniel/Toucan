@@ -8,7 +8,7 @@ _The Command Center follows the focused window; the status bar always shows each
 
 - The Command Center (the search bar in the title bar) takes the focused window's repository color.
 - Every window, focused or not, shows a glyph and the repository name in that color on the status bar.
-- Opt-in extras: a color block in the secondary sidebar, and an experimental colored emoji in the search bar.
+- Opt-in extras: a color block in the Explorer, and an experimental colored emoji in the search bar.
 - One setting for every repository you open, set through commands with a live preview, or by hand.
 
 ## Features
@@ -29,11 +29,15 @@ Every window shows the repository's glyph and name on the left of the status bar
 
 ### Sidebar block
 
-![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
+![The sidebar block in the Explorer: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
-An opt-in block in the secondary sidebar shows the repository's glyph large, with its name underneath, in the repository color. Turn it on with [`toucan.sidebarBlock.enabled`](#toucansidebarblockenabled) or [Toggle Sidebar Block](#toggle-sidebar-block), choose how strongly it's colored with [`toucan.sidebarBlock.style`](#toucansidebarblockstyle), and when it shows with [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility).
+An opt-in block in the Explorer shows the repository's glyph large, with its name underneath, in the repository color. Turn it on with [`toucan.sidebarBlock.enabled`](#toucansidebarblockenabled) or [Toggle Sidebar Block](#toggle-sidebar-block), and choose how strongly it's colored with [`toucan.sidebarBlock.style`](#toucansidebarblockstyle).
 
-When the block goes off (its repository loses its color, or you turn the setting off), Toucan closes the secondary sidebar only if it opened it itself, which only happens in `unfocused` mode. A secondary sidebar you opened stays open.
+VS Code places the block among the Explorer's sections, below the folder tree by default. Drag it where you like (to the top, say) and VS Code remembers the place.
+
+Toucan reveals the block once in each workspace, when it comes on: the first start, the setting turned on, or the repository getting a color. It never expands a block you collapsed. Collapsing it, showing another view such as Search, or hiding the sidebar don't hide it for good. **Hide** from the block's `…` menu does: the block then stays hidden in this workspace until you run [Toggle Sidebar Block](#toggle-sidebar-block).
+
+The old `unfocused` mode is gone. [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility) and the per-repository `sidebarBlock` field are deprecated and ignored.
 
 ### Search emoji (experimental)
 
@@ -89,9 +93,9 @@ Run them from the Command Palette, or from the status bar item: click it for Set
 
 ### Toggle Sidebar Block
 
-![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
+![The sidebar block in the Explorer: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
-**Toucan: Toggle Sidebar Block** shows or hides the [sidebar block](#sidebar-block). If the block is turned off, it offers to turn it on. Closing the block this way counts as your own close in `always` mode, and opening it again forgets that close. A repository needs a color first.
+**Toucan: Toggle Sidebar Block** hides the [sidebar block](#sidebar-block) when it is showing, and shows it when it is hidden or merely collapsed (it expands it). Hiding it this way is remembered for this workspace, and showing it forgets that. If the block is turned off, it offers to turn it on. A repository needs a color first.
 
 ## Settings
 
@@ -108,8 +112,7 @@ Colors per repository, keyed by workspace folder name: the directory name, or th
   "toucan": {
     "background": "#1b5e20",   // required
     "foreground": "#ffffff",   // optional overrides
-    "glyph": "heart",          // optional, default "square"
-    "sidebarBlock": "unfocused"
+    "glyph": "heart"           // optional, default "square"
   }
 }
 ```
@@ -119,13 +122,13 @@ A value is either a color string, the Command Center background with everything 
 - `background` (required): the Command Center background.
 - `foreground`, `activeBackground`, `activeForeground`, `border`, `activeBorder`, `inactiveForeground`, `inactiveBorder` (optional): override the Command Center's derived `commandCenter.*` colors. Colors derived from one you override build on your value.
 - `glyph` (optional): the status bar glyph, default `square` (see [Set Glyph](#set-glyph)).
-- `sidebarBlock` (optional): `always` or `unfocused`, overriding [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility) for this repository.
+- `sidebarBlock` (optional): deprecated and ignored, see [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility).
 
 ### toucan.sidebarBlock.enabled
 
-![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
+![The sidebar block in the Explorer: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
-Shows the [sidebar block](#sidebar-block) in the secondary sidebar, for repositories with a color. Off by default.
+Shows the [sidebar block](#sidebar-block) in the Explorer, for repositories with a color. Off by default.
 
 ### toucan.sidebarBlock.style
 
@@ -135,12 +138,9 @@ How strongly the sidebar block is colored: `full` (default) is the solid reposit
 
 ### toucan.sidebarBlock.visibility
 
-![The sidebar block in the secondary sidebar: the repository's glyph and name on its color](media/readme/sidebar-block.png)
+![The sidebar block in the Explorer: the repository's glyph and name on its color](media/readme/sidebar-block.png)
 
-When the sidebar block is shown. A repository's own `sidebarBlock` in [`toucan.repos`](#toucanrepos) overrides it.
-
-- `always` (default) reveals the block on startup. Once you close it, or switch the secondary sidebar to another view, it stays closed in this workspace until you open it again with Toggle Sidebar Block.
-- `unfocused` reveals it when the window loses focus, and closes the secondary sidebar again on focus if Toucan opened it. If another view such as Chat was open in the secondary sidebar, it is closed too.
+Deprecated and ignored. The sidebar block used to have an `unfocused` mode that showed it only when the window lost focus; it is gone, and every block behaves as `always`: shown while it is on, until you hide it. A leftover `unfocused` value (here or in a repository's `sidebarBlock`) does nothing, and the setting will be removed in a later release.
 
 ### toucan.experimental.searchEmoji
 

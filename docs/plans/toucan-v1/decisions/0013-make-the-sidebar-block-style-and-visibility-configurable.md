@@ -1,6 +1,6 @@
 # 0013. Make the sidebar block style and visibility configurable
 
-- Status: Accepted
+- Status: Partly superseded: the visibility modes by [sidebar-explorer/0002](../../sidebar-explorer/decisions/0002-drop-the-unfocused-visibility-mode.md), and what counts as a close and Toggle Sidebar Block by [sidebar-explorer/0006](../../sidebar-explorer/decisions/0006-hide-the-block-through-its-when-clause.md). The `full`/`muted` style stands.
 - Date: 2026-10-01
 - Deciders: Marco
 

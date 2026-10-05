@@ -31,8 +31,7 @@ export const DOCS_PAGES: readonly DocsPage[] = [
   {
     slug: "sidebar",
     title: "Sidebar block",
-    description:
-      "The opt-in color block in the secondary sidebar: full or muted, always or unfocused.",
+    description: "The opt-in color block in the Explorer: full or muted, shown until you hide it.",
   },
   {
     slug: "search-emoji",

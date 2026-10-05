@@ -45,7 +45,7 @@ const FEATURES: readonly Feature[] = [
   },
   {
     title: "Sidebar block",
-    text: "Optionally fill the secondary sidebar with the color, full or muted. Toucan only closes a bar it opened.",
+    text: "Optionally add a block in the Explorer with the color, full or muted. Hide it and it stays hidden.",
     screenshot: "sidebar-block.png",
     tag: presetClass("Bill Amber"),
     docs: "/docs/sidebar",

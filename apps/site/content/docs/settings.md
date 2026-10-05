@@ -13,8 +13,7 @@ Colors per repository, keyed by workspace folder name: the directory name, or th
   "toucan": {
     "background": "#1b5e20",   // required
     "foreground": "#ffffff",   // optional overrides
-    "glyph": "heart",          // optional, default "square"
-    "sidebarBlock": "unfocused"
+    "glyph": "heart"           // optional, default "square"
   }
 }
 ```
@@ -24,13 +23,13 @@ A value is either a color string, the Command Center background with everything 
 - `background` (required): the Command Center background.
 - `foreground`, `activeBackground`, `activeForeground`, `border`, `activeBorder`, `inactiveForeground`, `inactiveBorder` (optional): override the Command Center's derived `commandCenter.*` colors.
 - `glyph` (optional): the status bar [glyph](/docs/glyphs), default `square`.
-- `sidebarBlock` (optional): `always` or `unfocused`, overriding `toucan.sidebarBlock.visibility` for this repository.
+- `sidebarBlock` (optional): deprecated and ignored, see `toucan.sidebarBlock.visibility`.
 
 ## toucan.sidebarBlock.enabled
 
 Default: `false`
 
-Shows the [sidebar block](/docs/sidebar) in the secondary sidebar, for repositories with a color. Off by default.
+Shows the [sidebar block](/docs/sidebar) in the Explorer, for repositories with a color. Off by default.
 
 ## toucan.sidebarBlock.style
 
@@ -42,7 +41,7 @@ How strongly the sidebar block is colored: `full` (default) or `muted`.
 
 Default: `"always"`
 
-When the sidebar block is shown: `always` (default) or `unfocused`. A repository's own `sidebarBlock` in `toucan.repos` overrides it.
+Deprecated and ignored. The sidebar block's `unfocused` mode is gone; every block behaves as `always`, shown while it is on until you hide it. A leftover value does nothing, and the setting will be removed in a later release.
 
 ## toucan.experimental.searchEmoji
 
