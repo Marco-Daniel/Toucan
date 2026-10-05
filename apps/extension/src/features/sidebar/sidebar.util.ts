@@ -48,6 +48,8 @@ export interface SidebarPorts {
   setShown(shown: boolean): Promise<void>;
   /** Whether the block is remembered as closed in this workspace. */
   readClosed(): boolean;
+  /** Whether this window has the focus right now. */
+  isFocused(): boolean;
   writeClosed(closed: boolean): Promise<void>;
   warn(message: string): void;
   debug(message: string): void;
@@ -73,7 +75,7 @@ interface SidebarControllerArgs {
  * manifest says, and a reveal (`.focus`) switches the primary sidebar to the
  * Explorer. So Toucan reveals the block only on the user's own action: Toggle
  * Sidebar Block (show), and the setting going from off to on while the window
- * runs, by any route. Never on startup, never when a repo gets a color, never
+ * runs, by any route, in the focused window only. Never on startup, never when a repo gets a color, never
  * on a reload where the setting was already on (sidebar-explorer/0008).
  *
  * Collapsing it, showing another view or hiding the sidebar are not closes. A
@@ -108,8 +110,10 @@ export class SidebarController {
     const { enabled, settingOn } = this.settings();
     const turnedOn = settingOn && !this.settingWasOn;
     this.settingWasOn = settingOn;
-    // A block remembered as hidden stays hidden: the user brings it back with Toggle.
-    if (turnedOn && enabled && !this.ports.readClosed()) {
+    // A block remembered as hidden stays hidden: the user brings it back with Toggle. The
+    // setting is shared (Settings Sync, every open window sees the change), but only the
+    // window the user is working in switches its sidebar.
+    if (turnedOn && enabled && !this.ports.readClosed() && this.ports.isFocused()) {
       this.post({ what: "Revealing the block", task: () => this.ports.reveal() });
     }
   }

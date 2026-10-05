@@ -18,6 +18,8 @@ After v1.0.0, Marco turned the block on and didn't see it: in `always` mode Touc
 
 **Round 1, second half: `visibility` expands nothing.** The isolated VS Code test of the round 1 fix proved the key and the no-switching, but showed the block always starting collapsed: VS Code ignores `visibility` for views in the Explorer. Options (a) accept it, (b) reveal once when the user turns the block on, (c) reveal only if the Explorer is already active (no stable API). Marco chose (b), by any route to the setting. → 0008
 
+**Round 2: the setting is shared.** The reviewer noted that the setting has application scope, so turning it on (or a Settings Sync change) reaches every open window, and each would switch its sidebar. The reveal now runs only in the focused window. → 0008
+
 **Testing before the version.** Marco added mid-planning that this needs proper testing in VS Code before the version is made; it became a gate before the bump PR. → 0004
 
 **A new team.** Marco brought in a new implementer, blind reviewer and DevOps for this work; the earlier sessions stood down with nothing open.

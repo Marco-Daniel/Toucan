@@ -25,6 +25,7 @@ So a user who turns the block on sees a collapsed header at the bottom, not the 
 Chosen: **(b)**, with (a) as the rule for everything else.
 
 - The setting going from off to on while the window runs (a configuration change) runs `.focus` with `preserveFocus` once. That is the user's own action, so one switch to the Explorer is expected, and the block shows expanded.
+- Only in the focused window: the setting is shared, so every open window sees the change (Settings Sync too), but only the window the user is working in switches its sidebar. A change from Sync that arrives while the user works in a window still reveals there.
 - Not on startup, not when a repo gets its color, not on a reload with the setting already on, and not for a block remembered as hidden (it stays hidden until Toggle).
 - Toggle Sidebar Block (show) keeps its `.focus`.
 - The manifest no longer declares `visibility`.

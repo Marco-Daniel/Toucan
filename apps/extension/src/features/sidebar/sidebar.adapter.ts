@@ -68,6 +68,7 @@ export class SidebarBlock implements WebviewViewProvider, Disposable {
           await vscodeCommands.executeCommand("setContext", SIDEBAR_SHOWN_CONTEXT, shown);
         },
         readClosed: () => context.workspaceState.get<boolean>(HIDDEN_KEY, false),
+        isFocused: () => window.state.focused,
         writeClosed: async (closed) => {
           await context.workspaceState.update(HIDDEN_KEY, closed || undefined);
         },

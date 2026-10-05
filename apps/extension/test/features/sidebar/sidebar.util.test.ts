@@ -21,12 +21,14 @@ function setup(
     closed?: boolean;
     failReveals?: boolean;
     failWrites?: boolean;
+    focused?: boolean;
   } = {},
 ) {
-  const { closed, failReveals, failWrites, enabled, settingOn } = initial;
+  const { closed, failReveals, failWrites, enabled, settingOn, focused } = initial;
   const settings = { enabled: enabled ?? true, settingOn: settingOn ?? enabled ?? true };
   const state = {
     closed: closed ?? false,
+    focused: focused ?? true,
     calls: [] as string[],
     warnings: [] as string[],
   };
@@ -42,6 +44,7 @@ function setup(
         state.calls.push(`setShown:${shown}`);
       },
       readClosed: () => state.closed,
+      isFocused: () => state.focused,
       writeClosed: async (value) => {
         if (failWrites) {
           throw new Error("workspace state unavailable");
@@ -72,6 +75,34 @@ describe("SidebarController, reveal on the setting going on", () => {
     controller.settingsChanged();
     await vi.advanceTimersByTimeAsync(0);
     expect(state.calls).toEqual(["reveal"]);
+  });
+
+  it("doesn't reveal in a window without the focus, though the shared setting changed there too", async () => {
+    const { controller, settings, state } = setup({
+      enabled: false,
+      settingOn: false,
+      focused: false,
+    });
+    settings.enabled = true;
+    settings.settingOn = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("doesn't reveal on a later style change in a window that missed the turn-on unfocused", async () => {
+    const { controller, settings, state } = setup({
+      enabled: false,
+      settingOn: false,
+      focused: false,
+    });
+    settings.enabled = true;
+    settings.settingOn = true;
+    controller.settingsChanged();
+    state.focused = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual([]);
   });
 
   it("doesn't reveal on startup with the setting already on", async () => {
