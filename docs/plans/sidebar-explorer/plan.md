@@ -15,7 +15,7 @@ The opt-in sidebar block moves its default home from the secondary sidebar into 
 
 **Where it lives.** The webview view `toucan.block` is contributed to `views.explorer` instead of a `secondarySidebar` container, and the container is removed. The view id stays the same, so a user who dragged the block somewhere keeps that spot; VS Code restores moved views by id.
 
-**What showing and hiding means now.** In the secondary sidebar, "closing" the block meant closing the bar or switching it to another view, and Toggle Sidebar Block closed the bar. In the Explorer neither fits: closing the sidebar would hide the user's Explorer, and Toucan must never switch the primary sidebar's view (toucan-v1/0006's reason for avoiding Kingfisher's behaviour). The implementer's first task is a finding, before code: in the isolated VS Code, record what `onDidChangeVisibility` and the view's state report when the block is collapsed, when the Explorer is hidden, when another primary sidebar view (Search, Source Control) is shown, and when the view is hidden from the Explorer's "…" menu. The close design follows from that and is written up as a decision in this plan. The starting proposal: Toggle Sidebar Block hides and shows the view through its `when` clause, with a context key fed from the remembered "closed" state (the same workspaceState key, so no migration); collapsing is not a close.
+**What showing and hiding means now.** In the secondary sidebar, "closing" the block meant closing the bar or switching it to another view, and Toggle Sidebar Block closed the bar. In the Explorer neither fits: closing the sidebar would hide the user's Explorer, and Toucan must never switch the primary sidebar's view (toucan-v1/0006's reason for avoiding Kingfisher's behaviour). The implementer measured it first, in the isolated VS Code (→ 0006): collapse, a hidden sidebar and another primary view all report `visible=false`, so none of them is a close, and only a Hide from the Explorer's "…" menu shows up, as a dispose. The block therefore hides and shows through the `when` clause with a context key fed from the remembered "closed" state (the same workspaceState key, so no migration). A dispose with the key still true counts as a Hide only if the view isn't resolved again within a short delay; Toggle Sidebar Block hides a shown block and shows a hidden or collapsed one; the block is revealed once per workspace when it becomes available, never on every startup.
 
 **Dropping `unfocused` (→ 0002).** The `toucan.sidebarBlock.visibility` setting and the per-repo `visibility` field stay in the manifest for this release with a deprecation message, and Toucan ignores them: every block behaves as `always`. The reveal-on-blur and close-on-focus code paths, and the `closeBar` port as it stands, are removed.
 
@@ -29,7 +29,7 @@ The opt-in sidebar block moves its default home from the secondary sidebar into 
 - `apps/extension/src/features/sidebar/`: `SidebarController` without `unfocused`, the new hide/show path, the adapter's ports; `ids.consts.ts` comments.
 - Tests: `sidebar.util.test.ts` and the adapter tests, rewritten for the new behaviour; each must be able to fail.
 - Screenshots: `scripts/screenshots/scenes.mts` scenes for the block in the Explorer; the README and site images regenerated.
-- Docs in the same PR: `apps/extension/README.md` (Sidebar block, Settings); the site's `sidebar.md`, `settings.md`, `docs.consts.ts`, `features.view.tsx`; toucan-v1/0006 and 0013 marked superseded by 0001 and 0002; ADR-0016's line that Cursor reserves the secondary sidebar gets a pointer that the block no longer needs it. `/docs-sync` before the round.
+- Docs in the same PR: `apps/extension/README.md` (Sidebar block, Settings); the site's `sidebar.md`, `settings.md`, `docs.consts.ts`, `features.view.tsx`; toucan-v1/0006 and 0013 marked superseded by 0001, 0002 and 0006; ADR-0016's line that Cursor reserves the secondary sidebar gets a pointer that the block no longer needs it. `/docs-sync` before the round.
 - The bump PR: version, `release-notes.md`; later the releases.json snapshot.
 
 ## Data flow
@@ -48,5 +48,5 @@ The opt-in sidebar block moves its default home from the secondary sidebar into 
 
 ## Open questions
 
-- The close design, settled by the implementer's finding (a decision added to this plan).
+- Whether the dispose timer holds up in the test run (0006).
 - When to delete the deprecated settings from the manifest (a later release).

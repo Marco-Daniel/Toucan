@@ -12,6 +12,8 @@ After v1.0.0, Marco turned the block on and didn't see it: in `always` mode Touc
 
 **"Close" needs a new meaning.** The new implementer's read-through found that Toggle Sidebar Block's `closeAuxiliaryBar` would become closing the whole primary sidebar. Rather than guess, the plan makes recording the Explorer's visibility events the first task, with a when-clause hide as the starting proposal. → 0001, plan Approach
 
+**The visibility finding.** The implementer measured the Explorer in an isolated VS Code: collapse, a hidden sidebar and another primary view all report `visible=false`, so none can signal a close; only the Hide from the "…" menu differs, and it arrives as a dispose with no visibility event, the same as the `when` key going false. The proposal: hide through a context key, count only a dispose with the key still true as a Hide, never use `visible=false`, reveal once per workspace. The lead added that a dispose isn't always a Hide (a drag can resolve the view again), so the flag is written only after a short delay if the view hasn't been resolved again, and that Toggle on a collapsed block means "show". → 0006
+
 **Testing before the version.** Marco added mid-planning that this needs proper testing in VS Code before the version is made; it became a gate before the bump PR. → 0004
 
 **A new team.** Marco brought in a new implementer, blind reviewer and DevOps for this work; the earlier sessions stood down with nothing open.
@@ -22,6 +24,6 @@ After v1.0.0, Marco turned the block on and didn't see it: in `always` mode Touc
 
 ## Open / to re-check
 
-- The close design, after the implementer's finding.
+- Whether the dispose timer holds up in the test run (drags, host restart, disable and enable).
 - How the upgrade from 1.0.0 behaves for users with the block in the secondary sidebar.
 - When to delete the deprecated `visibility` settings.
