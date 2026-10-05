@@ -29,5 +29,10 @@
   - Code: `SidebarController.settingsChanged()` reveals on the setting going from off to on while the window runs, when the block is available and not remembered hidden; the adapter's `settingsChanged()` refreshes the context keys first. The manifest no longer declares `visibility`.
   - Tests: eight cases for the transition (reveals; not on startup; not when a repo gets a color; not without a color; not when hidden; not on a style change; repeated; failure logged), each mutant-checked by hand.
   - Docs: README and site say the block starts collapsed and when Toucan expands it.
-- Next: a short isolated VS Code rerun (Settings UI turn-on with Search open; a reload), then reply on and resolve both threads.
+- Rerun done (standing go, isolated VS Code, nothing left running, temp folders gone):
+  - E: Search open, the setting turned on in the Settings UI: one switch to the Explorer, block expanded and rendered.
+  - F: the same through settings.json; back to Search and a reload with the setting already on: stays on Search, no switch.
+  - G: a fresh profile with the setting on at launch: a collapsed "Toucan" header, no switch.
+- Both round 1 threads answered and resolved.
+- Next: Marco's OK on the screenshots, then the bump PR (0005).
 
