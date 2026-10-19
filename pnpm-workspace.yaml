@@ -14,6 +14,13 @@ catalog:
   typescript: ^7.0.2
   vitest: ^5.0.3
 
+# Floors for transitive dependencies with published advisories, so the weekly
+# audit stays green. Each range selects only the vulnerable versions; drop the
+# entry once nothing in the tree resolves below the patched release.
+overrides:
+  "qs@<6.16.0": ^6.16.0
+  "source-map-js@<1.2.2": ^1.2.2
+
 allowBuilds:
   "@vscode/vsce-sign": false
   esbuild: false
