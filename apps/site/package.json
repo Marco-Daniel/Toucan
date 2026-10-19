@@ -39,13 +39,13 @@
     "@types/pngjs": "catalog:",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "marked": "^18.0.14",
+    "marked": "^18.1.1",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "pngjs": "catalog:",
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",
-    "vite": "^8.3.2",
+    "vite": "^8.3.4",
     "vitest": "catalog:"
   }
 }
