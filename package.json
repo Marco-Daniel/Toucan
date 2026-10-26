@@ -32,7 +32,7 @@
     "oxfmt": "^0.71.0",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
-    "turbo": "2.11.7",
+    "turbo": "2.11.9",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
