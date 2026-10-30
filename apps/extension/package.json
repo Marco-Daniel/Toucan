@@ -71,7 +71,7 @@
     "pngjs": "catalog:",
     "svg2ttf": "^6.1.0",
     "svgicons2svgfont": "^16.0.0",
-    "tsdown": "^0.23.0",
+    "tsdown": "^0.23.2",
     "ttf2woff": "^3.0.0",
     "typescript": "catalog:",
     "vitest": "catalog:",
