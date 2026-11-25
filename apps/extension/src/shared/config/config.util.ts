@@ -12,16 +12,11 @@ import { isOneOf } from "../guards/oneOf.util.ts";
 
 // import consts
 import { GLYPHS } from "@toucan/brand/glyphs.consts.ts";
-import {
-  COMMAND_CENTER_KEYS,
-  DEFAULT_GLYPH,
-  RETIRED_GLYPHS,
-  SIDEBAR_VISIBILITIES,
-} from "../model/model.consts.ts";
+import { COMMAND_CENTER_KEYS, DEFAULT_GLYPH, RETIRED_GLYPHS } from "../model/model.consts.ts";
 
 // import types
 import type { Glyph } from "@toucan/brand/glyphs.types.ts";
-import type { ColorOverrides, Hex, SidebarVisibility } from "../model/model.types.ts";
+import type { ColorOverrides, Hex } from "../model/model.types.ts";
 
 export interface RepoConfig {
   /** Command Center background, always opaque. */
@@ -29,8 +24,6 @@ export interface RepoConfig {
   /** User-set colors as hex; missing keys are derived. */
   overrides: ColorOverrides;
   glyph: Glyph;
-  /** Deprecated and ignored: the old per-repo override of `toucan.sidebarBlock.visibility` (sidebar-explorer/0002). */
-  sidebarBlock?: SidebarVisibility;
 }
 
 export interface ConfigIssue {
@@ -90,7 +83,7 @@ function parseEntry({ value, report }: ParseArgs<unknown>): RepoConfig | undefin
     return undefined;
   }
 
-  const { background: rawBackground, glyph: rawGlyph, sidebarBlock: rawSidebar, ...rest } = value;
+  const { background: rawBackground, glyph: rawGlyph, ...rest } = value;
 
   if (rawBackground === undefined) {
     report("Missing background color.");
@@ -117,16 +110,6 @@ function parseEntry({ value, report }: ParseArgs<unknown>): RepoConfig | undefin
     } else {
       report(
         `glyph ${JSON.stringify(rawGlyph)} is not one of ${GLYPHS.join(", ")}; using ${DEFAULT_GLYPH}.`,
-      );
-    }
-  }
-
-  if (rawSidebar !== undefined) {
-    if (isOneOf(SIDEBAR_VISIBILITIES, rawSidebar)) {
-      entry.sidebarBlock = rawSidebar;
-    } else {
-      report(
-        `sidebarBlock ${JSON.stringify(rawSidebar)} is not one of ${SIDEBAR_VISIBILITIES.join(", ")}; ignored.`,
       );
     }
   }

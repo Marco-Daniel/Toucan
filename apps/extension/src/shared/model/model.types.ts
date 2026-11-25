@@ -1,5 +1,5 @@
 // import types
-import type { COMMAND_CENTER_KEYS, SIDEBAR_STYLES, SIDEBAR_VISIBILITIES } from "./model.consts.ts";
+import type { COMMAND_CENTER_KEYS, SIDEBAR_STYLES } from "./model.consts.ts";
 
 /**
  * A `#rrggbb` or `#rrggbbaa` string produced by `toHex`. The brand makes sure
@@ -11,4 +11,3 @@ export type CommandCenterKey = (typeof COMMAND_CENTER_KEYS)[number];
 export type CommandCenterColors = Record<CommandCenterKey, Hex>;
 export type ColorOverrides = Partial<Omit<CommandCenterColors, "background">>;
 export type SidebarStyle = (typeof SIDEBAR_STYLES)[number];
-export type SidebarVisibility = (typeof SIDEBAR_VISIBILITIES)[number];

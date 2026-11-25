@@ -27,8 +27,7 @@ interface ResolveSidebarSettingsArgs {
 
 /**
  * The block's effective settings from the raw setting values: enabled only for
- * a repo with a color; an unexpected style falls back to the default. The
- * deprecated visibility settings are no longer read (sidebar-explorer/0002).
+ * a repo with a color; an unexpected style falls back to the default.
  */
 export function resolveSidebarSettings(
   input: ResolveSidebarSettingsArgs,

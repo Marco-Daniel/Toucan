@@ -23,7 +23,6 @@ A value is either a color string, the Command Center background with everything 
 - `background` (required): the Command Center background.
 - `foreground`, `activeBackground`, `activeForeground`, `border`, `activeBorder`, `inactiveForeground`, `inactiveBorder` (optional): override the Command Center's derived `commandCenter.*` colors.
 - `glyph` (optional): the status bar [glyph](/docs/glyphs), default `square`.
-- `sidebarBlock` (optional): deprecated and ignored, see `toucan.sidebarBlock.visibility`.
 
 ## toucan.sidebarBlock.enabled
 
@@ -36,12 +35,6 @@ Shows the [sidebar block](/docs/sidebar) in the Explorer, for repositories with 
 Default: `"full"`
 
 How strongly the sidebar block is colored: `full` (default) or `muted`.
-
-## toucan.sidebarBlock.visibility
-
-Default: `"always"`
-
-Deprecated and ignored. The sidebar block's `unfocused` mode is gone; every block behaves as `always`, shown while it is on until you hide it. A leftover value does nothing, and the setting will be removed in a later release.
 
 ## toucan.experimental.searchEmoji
 
