@@ -7,11 +7,11 @@ import { describe, expect, it } from "vitest";
 // import consts
 import { RELEASES_URL, REPO_URL } from "../../app/lib/site.consts.ts";
 
-const manifest = JSON.parse(
+const manifest: { repository: { url: string } } = JSON.parse(
   readFileSync(new URL("../../../extension/package.json", import.meta.url), "utf8"),
 );
 /** The manifest's repository as a web address: its git URL without `.git`. */
-const repository: string = manifest.repository.url.replace(/\.git$/, "");
+const repository = manifest.repository.url.replace(/\.git$/, "");
 
 describe("the repository links", () => {
   it("point REPO_URL at the repository the extension's manifest names", () => {
