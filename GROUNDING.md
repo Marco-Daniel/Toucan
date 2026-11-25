@@ -9,6 +9,8 @@
 
 Run from the root; Turborepo runs lint, typecheck, test and build in every package, and format:check covers the whole repo.
 
+pnpm comes through corepack (`packageManager` in package.json): run `corepack enable pnpm` once, so Turborepo finds `pnpm` on PATH (README, Development); until then, use `corepack pnpm`.
+
 - `pnpm lint` — oxlint, type-aware; every finding is an error
 - `pnpm format:check` — oxfmt
 - `pnpm typecheck` — TypeScript 7 (`tsc --noEmit`)
