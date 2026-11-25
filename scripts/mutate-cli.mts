@@ -21,6 +21,9 @@
 // and starts detached processes, so a mutant there can reach the real
 // ~/.cache/qmd or leave processes running. Its tests still run as usual.
 // Neither is this file.
+// Nor are the extension's scripts/: they signal, remove and spawn processes,
+// so mutateRefusal refuses them and the extension's config lists src/ alone
+// (ADR-0014).
 //
 // The stryker.config.json files point tsconfigFile at a file that doesn't
 // exist on purpose: Stryker's tsconfig rewrite needs the TypeScript JS API,
