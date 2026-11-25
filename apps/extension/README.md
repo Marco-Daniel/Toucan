@@ -37,8 +37,6 @@ VS Code places the block among the Explorer's sections, below the folder tree by
 
 VS Code adds the block to the Explorer collapsed, so in a workspace where it was already on it first shows as a "Toucan" header at the bottom; open it once and VS Code remembers. When you turn the setting on while the window runs, Toucan expands it for you once (switching the sidebar to the Explorer if it showed another view), in the window you are working in only (also when the change arrives through Settings Sync). Otherwise Toucan never switches the sidebar's view, and never expands a block you collapsed. Collapsing it, showing another view such as Search, or hiding the sidebar don't hide it for good. **Hide** from the block's `…` menu does: the block then stays hidden in this workspace until you run [Toggle Sidebar Block](#toggle-sidebar-block).
 
-The old `unfocused` mode is gone. [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility) and the per-repository `sidebarBlock` field are deprecated and ignored.
-
 ### Search emoji (experimental)
 
 ![A colored emoji in front of the title in the search bar](media/readme/search-emoji.png)
@@ -122,7 +120,6 @@ A value is either a color string, the Command Center background with everything 
 - `background` (required): the Command Center background.
 - `foreground`, `activeBackground`, `activeForeground`, `border`, `activeBorder`, `inactiveForeground`, `inactiveBorder` (optional): override the Command Center's derived `commandCenter.*` colors. Colors derived from one you override build on your value.
 - `glyph` (optional): the status bar glyph, default `square` (see [Set Glyph](#set-glyph)).
-- `sidebarBlock` (optional): deprecated and ignored, see [`toucan.sidebarBlock.visibility`](#toucansidebarblockvisibility).
 
 ### toucan.sidebarBlock.enabled
 
@@ -136,12 +133,6 @@ Shows the [sidebar block](#sidebar-block) in the Explorer, for repositories with
 
 How strongly the sidebar block is colored: `full` (default) is the solid repository color, as in the [sidebar block](#sidebar-block) image; `muted` is a faint tint with the glyph in full color and the name in the theme's text color.
 
-### toucan.sidebarBlock.visibility
-
-![The sidebar block in the Explorer: the repository's glyph and name on its color](media/readme/sidebar-block.png)
-
-Deprecated and ignored. The sidebar block used to have an `unfocused` mode that showed it only when the window lost focus; it is gone, and every block behaves as `always`: shown while it is on, until you hide it. A leftover `unfocused` value (here or in a repository's `sidebarBlock`) does nothing, and the setting will be removed in a later release.
-
 ### toucan.experimental.searchEmoji
 
 ![A colored emoji in front of the title in the search bar](media/readme/search-emoji.png)
@@ -152,13 +143,12 @@ Shows the [search emoji](#search-emoji-experimental) in the Command Center label
 
 <!-- configs -->
 
-| Key                               | Description                                                                                                                                                                                                           | Type      | Default    |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
-| `toucan.repos`                    | Colors per repository, keyed by workspace folder name. A value is either a color string (the Command Center background; everything else is derived) or an object with a required `background` and optional overrides. | `object`  | `{}`       |
-| `toucan.sidebarBlock.enabled`     | Show a block in the repository color in the Explorer.                                                                                                                                                                 | `boolean` | `false`    |
-| `toucan.sidebarBlock.style`       | How strongly the sidebar block is colored.                                                                                                                                                                            | `string`  | `"full"`   |
-| `toucan.sidebarBlock.visibility`  | Deprecated and ignored: the sidebar block no longer has an unfocused mode.                                                                                                                                            | `string`  | `"always"` |
-| `toucan.experimental.searchEmoji` | **Experimental.** Show a colored emoji in the Command Center label. Changes `window.title` (Toucan asks first) and relies on internal VS Code behavior that may break in any release.                                 | `boolean` | `false`    |
+| Key                               | Description                                                                                                                                                                                                           | Type      | Default  |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | -------- |
+| `toucan.repos`                    | Colors per repository, keyed by workspace folder name. A value is either a color string (the Command Center background; everything else is derived) or an object with a required `background` and optional overrides. | `object`  | `{}`     |
+| `toucan.sidebarBlock.enabled`     | Show a block in the repository color in the Explorer.                                                                                                                                                                 | `boolean` | `false`  |
+| `toucan.sidebarBlock.style`       | How strongly the sidebar block is colored.                                                                                                                                                                            | `string`  | `"full"` |
+| `toucan.experimental.searchEmoji` | **Experimental.** Show a colored emoji in the Command Center label. Changes `window.title` (Toucan asks first) and relies on internal VS Code behavior that may break in any release.                                 | `boolean` | `false`  |
 
 <!-- configs -->
 

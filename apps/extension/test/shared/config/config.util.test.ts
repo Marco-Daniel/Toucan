@@ -30,7 +30,6 @@ describe("parseRepos", () => {
         border: "#2e7d32",
         inactiveBorder: "#2e7d3280",
         glyph: "heart",
-        sidebarBlock: "unfocused",
       },
     });
     expect(issues).toEqual([]);
@@ -38,8 +37,15 @@ describe("parseRepos", () => {
       background: "#1b5e20",
       overrides: { foreground: "#ffffff", border: "#2e7d32", inactiveBorder: "#2e7d3280" },
       glyph: "heart",
-      sidebarBlock: "unfocused",
     });
+  });
+
+  it("keeps an entry that still holds the removed sidebarBlock field, and reports the key", () => {
+    const { repos, issues } = parseRepos({
+      toucan: { background: "#1b5e20", glyph: "heart", sidebarBlock: "unfocused" },
+    });
+    expect(repos.get("toucan")).toEqual({ background: "#1b5e20", overrides: {}, glyph: "heart" });
+    expect(issues).toEqual([{ repo: "toucan", message: 'Unknown key "sidebarBlock" ignored.' }]);
   });
 
   it.each([
@@ -68,11 +74,6 @@ describe("parseRepos", () => {
     expect(entry.repos.get("r")?.overrides).toEqual({ inactiveForeground: "#ffffff99" });
   });
 
-  it("omits sidebarBlock when not set", () => {
-    const entry = parseRepos({ a: { background: "red" } }).repos.get("a");
-    expect(entry).not.toHaveProperty("sidebarBlock");
-  });
-
   it("drops entries with an invalid or missing background", () => {
     const { repos, issues } = parseRepos({
       a: "not-a-color",
@@ -95,7 +96,6 @@ describe("parseRepos", () => {
         foreground: "nope",
         border: 5,
         glyph: "triangle",
-        sidebarBlock: "sometimes",
         debuggingBackground: "#fff",
       },
     });
@@ -103,7 +103,6 @@ describe("parseRepos", () => {
     expect(issues).toEqual(
       [
         'glyph "triangle" is not one of square, bar, pill, circle, toucan, sun, leaf, drop, moon, alien, ghost, robot, cat, bolt, heart, star, rocket; using square.',
-        'sidebarBlock "sometimes" is not one of always, unfocused; ignored.',
         'foreground "nope" is not a valid color; derived instead.',
         "border 5 is not a valid color; derived instead.",
         'Unknown key "debuggingBackground" ignored.',

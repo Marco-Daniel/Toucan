@@ -20,6 +20,3 @@ export const RETIRED_GLYPHS = ["double-circle", "check-circle"] as const;
 
 /** Sidebar block styles (toucan-v1/0013). */
 export const SIDEBAR_STYLES = ["full", "muted"] as const;
-
-/** Sidebar block visibility modes (toucan-v1/0013). */
-export const SIDEBAR_VISIBILITIES = ["always", "unfocused"] as const;

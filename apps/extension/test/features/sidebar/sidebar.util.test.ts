@@ -7,6 +7,7 @@ import {
   resolveSidebarSettings,
   SidebarController,
 } from "../../../src/features/sidebar/sidebar.util.ts";
+import { parseRepos } from "../../../src/shared/config/config.util.ts";
 
 /**
  * A fake workspace and view. `calls` records every port call in order, so a test
@@ -341,6 +342,17 @@ describe("resolveSidebarSettings", () => {
       false,
     );
     expect(resolveSidebarSettings({ enabled: true, style: "full", repo: {} }).enabled).toBe(true);
+  });
+
+  it("shows the block for a repo whose entry still says sidebarBlock: unfocused (sidebar-explorer/0002)", () => {
+    const repo = parseRepos({
+      webshop: { background: "#e91e63", sidebarBlock: "unfocused" },
+    }).repos.get("webshop");
+    expect(resolveSidebarSettings({ enabled: true, style: "muted", repo })).toEqual({
+      enabled: true,
+      settingOn: true,
+      style: "muted",
+    });
   });
 
   it("keeps a valid style and falls back to full for anything else", () => {

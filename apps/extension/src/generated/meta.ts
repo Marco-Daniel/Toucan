@@ -57,14 +57,12 @@ export type ConfigKey =
   | "toucan.repos"
   | "toucan.sidebarBlock.enabled"
   | "toucan.sidebarBlock.style"
-  | "toucan.sidebarBlock.visibility"
   | "toucan.experimental.searchEmoji"
 
 export interface ConfigKeyTypeMap {
   "toucan.repos": Record<string, unknown>,
   "toucan.sidebarBlock.enabled": boolean,
   "toucan.sidebarBlock.style": ("full" | "muted"),
-  "toucan.sidebarBlock.visibility": ("always" | "unfocused"),
   "toucan.experimental.searchEmoji": boolean,
 }
 
@@ -72,7 +70,6 @@ export interface ConfigShorthandMap {
   repos: "toucan.repos",
   sidebarBlockEnabled: "toucan.sidebarBlock.enabled",
   sidebarBlockStyle: "toucan.sidebarBlock.style",
-  sidebarBlockVisibility: "toucan.sidebarBlock.visibility",
   experimentalSearchEmoji: "toucan.experimental.searchEmoji",
 }
 
@@ -80,7 +77,6 @@ export interface ConfigShorthandTypeMap {
   repos: Record<string, unknown>,
   sidebarBlockEnabled: boolean,
   sidebarBlockStyle: ("full" | "muted"),
-  sidebarBlockVisibility: ("always" | "unfocused"),
   experimentalSearchEmoji: boolean,
 }
 
@@ -125,16 +121,6 @@ export const configs = {
     default: "full",
   } as ConfigItem<"toucan.sidebarBlock.style">,
   /**
-   * Deprecated and ignored: the sidebar block no longer has an unfocused mode.
-   * @key `toucan.sidebarBlock.visibility`
-   * @default `"always"`
-   * @type `string`
-   */
-  sidebarBlockVisibility: {
-    key: "toucan.sidebarBlock.visibility",
-    default: "always",
-  } as ConfigItem<"toucan.sidebarBlock.visibility">,
-  /**
    *
    * @key `toucan.experimental.searchEmoji`
    * @default `false`
@@ -150,7 +136,6 @@ export interface ScopedConfigKeyTypeMap {
   "repos": Record<string, unknown>,
   "sidebarBlock.enabled": boolean,
   "sidebarBlock.style": ("full" | "muted"),
-  "sidebarBlock.visibility": ("always" | "unfocused"),
   "experimental.searchEmoji": boolean,
 }
 
@@ -160,7 +145,6 @@ export const scopedConfigs = {
     "repos": {},
     "sidebarBlock.enabled": false,
     "sidebarBlock.style": "full",
-    "sidebarBlock.visibility": "always",
     "experimental.searchEmoji": false,
   } satisfies ScopedConfigKeyTypeMap,
 }
@@ -171,7 +155,6 @@ export interface NestedConfigs {
     "sidebarBlock": {
       "enabled": boolean,
       "style": ("full" | "muted"),
-      "visibility": ("always" | "unfocused"),
     },
     "experimental": {
       "searchEmoji": boolean,
@@ -184,7 +167,6 @@ export interface NestedScopedConfigs {
   "sidebarBlock": {
     "enabled": boolean,
     "style": ("full" | "muted"),
-    "visibility": ("always" | "unfocused"),
   },
   "experimental": {
     "searchEmoji": boolean,

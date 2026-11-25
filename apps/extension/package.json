@@ -154,15 +154,6 @@
                       "rocket"
                     ],
                     "description": "Shape of the status bar glyph."
-                  },
-                  "sidebarBlock": {
-                    "type": "string",
-                    "enum": [
-                      "always",
-                      "unfocused"
-                    ],
-                    "description": "Deprecated and ignored: the sidebar block no longer has an unfocused mode.",
-                    "deprecationMessage": "The sidebar block no longer has an unfocused mode; this field is ignored and will be removed."
                   }
                 }
               }
@@ -188,21 +179,6 @@
             "Faint repository color with the glyph in full color and the name in the theme's text color."
           ],
           "description": "How strongly the sidebar block is colored."
-        },
-        "toucan.sidebarBlock.visibility": {
-          "type": "string",
-          "scope": "application",
-          "default": "always",
-          "enum": [
-            "always",
-            "unfocused"
-          ],
-          "enumDescriptions": [
-            "The block is shown while it is on, until you hide it.",
-            "Treated like Always: the unfocused mode was removed."
-          ],
-          "description": "Deprecated and ignored: the sidebar block no longer has an unfocused mode.",
-          "deprecationMessage": "The sidebar block no longer has an unfocused mode; this setting is ignored and will be removed."
         },
         "toucan.experimental.searchEmoji": {
           "type": "boolean",

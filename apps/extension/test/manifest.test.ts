@@ -14,7 +14,7 @@ import {
   SIDEBAR_SHOWN_CONTEXT,
   SIDEBAR_VIEW_ID,
 } from "../src/core/ids.consts.ts";
-import { COMMAND_CENTER_KEYS, SIDEBAR_VISIBILITIES } from "../src/shared/model/model.consts.ts";
+import { COMMAND_CENTER_KEYS } from "../src/shared/model/model.consts.ts";
 
 const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const { properties } = manifest.contributes.configuration;
@@ -26,15 +26,8 @@ describe("package.json configuration schema", () => {
     expect(entrySchema.properties.glyph.enum).toEqual([...GLYPHS]);
   });
 
-  it("lists the same sidebar visibilities", () => {
-    expect(entrySchema.properties.sidebarBlock.enum).toEqual([...SIDEBAR_VISIBILITIES]);
-    expect(properties["toucan.sidebarBlock.visibility"].enum).toEqual([...SIDEBAR_VISIBILITIES]);
-  });
-
   it("lists the same color keys", () => {
-    const colorKeys = Object.keys(entrySchema.properties).filter(
-      (key) => key !== "glyph" && key !== "sidebarBlock",
-    );
+    const colorKeys = Object.keys(entrySchema.properties).filter((key) => key !== "glyph");
     expect(colorKeys.toSorted()).toEqual([...COMMAND_CENTER_KEYS].toSorted());
   });
 });
@@ -81,9 +74,13 @@ describe("package.json sidebar block", () => {
     expect(manifest.contributes).not.toHaveProperty("viewsContainers");
   });
 
-  it("keeps the visibility setting and the per-repo field, both deprecated", () => {
-    expect(properties["toucan.sidebarBlock.visibility"].deprecationMessage).toContain("ignored");
-    expect(entrySchema.properties.sidebarBlock.deprecationMessage).toContain("ignored");
+  it("no longer has the sidebar visibility setting (sidebar-explorer/0002)", () => {
+    expect(Object.keys(properties)).toEqual([
+      "toucan.repos",
+      "toucan.sidebarBlock.enabled",
+      "toucan.sidebarBlock.style",
+      "toucan.experimental.searchEmoji",
+    ]);
   });
 });
 
