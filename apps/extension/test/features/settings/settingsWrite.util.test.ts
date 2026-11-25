@@ -12,7 +12,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import { unlinkSync, writeFileSync } from "node:fs";
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -22,7 +22,10 @@ import { SettingsFileWriter } from "../../../src/features/settings/settingsWrite
 import { parseSettingsForTest } from "../../helpers/settings.ts";
 
 // import types
-import type { Clock } from "../../../src/features/settings/settingsWrite.util.ts";
+import type {
+  Clock,
+  SettingsWriteOptions,
+} from "../../../src/features/settings/settingsWrite.util.ts";
 
 const KEY = "toucan.repos";
 const BEFORE = `{
@@ -55,16 +58,16 @@ afterEach(async () => {
 
 /**
  * A fake clock for the verify step: no real waiting. Each poll interval runs
- * `onSleep`, which is where a test lets VS Code's view catch up with the file
- * (or another writer step in).
+ * `onSleep` with its length, which is where a test lets VS Code's view catch
+ * up with the file (or another writer step in).
  */
-function fakeClock(onSleep: () => Promise<void> = async () => {}): Clock {
+function fakeClock(onSleep: (ms: number) => Promise<void> = async () => {}): Clock {
   let now = 0;
   return {
     now: () => now,
     sleep: async (ms) => {
       now += ms;
-      await onSleep();
+      await onSleep(ms);
     },
   };
 }
@@ -99,8 +102,8 @@ function setup({ file, view = "follows", dirty = [], onSleep }: SetupArgs) {
     },
     options: {
       ...TIMING,
-      clock: fakeClock(async () => {
-        sleeps.push(sleeps.length);
+      clock: fakeClock(async (ms) => {
+        sleeps.push(ms);
         if (view === "follows") {
           await refreshView(file);
         }
@@ -203,6 +206,99 @@ describe("SettingsFileWriter", () => {
     expect(await readFile(other, "utf8")).toBe(AFTER);
   });
 
+  it("stops checking as soon as VS Code's view shows the edit", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    await refreshView(file);
+    const { writer, sleeps } = setup({ file });
+    await writer.write({ key: KEY, update: replace, target: "profile" });
+    expect(sleeps).toEqual([100]); // VS Code catches up during the first 100 ms poll interval
+  });
+
+  interface StaleWriterArgs {
+    file: string;
+    slept: number[];
+    timing: Omit<SettingsWriteOptions, "clock">;
+  }
+
+  /** A writer whose view never follows the file, recording each poll interval's length. */
+  const staleWriter = ({ file, slept, timing }: StaleWriterArgs) =>
+    new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: { view: () => VIEW, update: async () => {}, dirtyFiles: () => [], debug: () => {} },
+      options: {
+        ...timing,
+        clock: fakeClock(async (ms) => {
+          slept.push(ms);
+        }),
+      },
+    });
+
+  it("checks every 100 ms for 4 s when given no timing", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const slept: number[] = [];
+    await staleWriter({ file, slept, timing: {} }).write({
+      key: KEY,
+      update: replace,
+      target: "profile",
+    });
+    expect(slept).toEqual(Array.from({ length: 40 }, () => 100));
+  });
+
+  it("checks at the interval and for the time it's given", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const slept: number[] = [];
+    await staleWriter({ file, slept, timing: { verifyTimeoutMs: 1000, verifyPollMs: 250 } }).write({
+      key: KEY,
+      update: replace,
+      target: "profile",
+    });
+    expect(slept).toEqual([250, 250, 250, 250]);
+  });
+
+  it("waits in real time for VS Code to pick up the edit when given no clock", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    let view: unknown = VIEW;
+    let isPickupScheduled = false;
+    const updates: unknown[] = [];
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
+        view: () => {
+          // VS Code notices the edit on a timer, so only a real wait lets it.
+          if (!isPickupScheduled && readFileSync(file, "utf8") === AFTER) {
+            isPickupScheduled = true;
+            setTimeout(() => {
+              view = NEXT;
+            }, 1);
+          }
+          return view;
+        },
+        update: async ({ value }) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      options: { verifyTimeoutMs: 2000, verifyPollMs: 5 },
+    });
+    await writer.write({ key: KEY, update: replace, target: "profile" });
+    expect(await readFile(file, "utf8")).toBe(AFTER);
+    expect(updates).toEqual([]);
+  });
+
+  it("gives the settings file each target resolves to", () => {
+    const writer = new SettingsFileWriter({
+      files: { profile: "/never/profile.json", defaultProfile: "/never/default.json" },
+      ports: { view: () => VIEW, update: async () => {}, dirtyFiles: () => [], debug: () => {} },
+    });
+    expect(writer.file("profile")).toBe("/never/profile.json");
+    expect(writer.file("defaultProfile")).toBe("/never/default.json");
+  });
+
   it("reverts the edit and uses update() when VS Code never picks it up", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
@@ -269,13 +365,14 @@ describe("SettingsFileWriter", () => {
     expect(updates).toEqual([undefined]);
   });
 
-  it("uses update() when the setting isn't in the file", async () => {
+  it("uses update() when the setting isn't in the file, saying why", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, '{\n  "editor.fontSize": 13,\n}\n');
-    const { writer, updates } = setup({ file });
+    const { writer, updates, debugs } = setup({ file });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(await readFile(file, "utf8")).toBe('{\n  "editor.fontSize": 13,\n}\n');
     expect(updates).toEqual([NEXT]);
+    expect(reasons(debugs)).toEqual(["toucan.repos isn't in the file"]);
   });
 
   it("does nothing when the updater leaves the setting alone or nothing changes", async () => {
@@ -416,10 +513,11 @@ describe("SettingsFileWriter", () => {
     expect(reasons(debugs)).toEqual([reason]);
   });
 
-  it("uses update() when the settings file disappears while planning", async () => {
+  it("uses update() when the settings file disappears while planning, saying so", async () => {
     const file = join(dir, "settings.json");
     await writeFile(file, BEFORE);
     const updates: unknown[] = [];
+    const debugs: string[] = [];
     let views = 0;
     const writer = new SettingsFileWriter({
       files: { profile: file, defaultProfile: file },
@@ -435,12 +533,87 @@ describe("SettingsFileWriter", () => {
           updates.push(value);
         },
         dirtyFiles: () => [],
-        debug: () => {},
+        debug: (message) => debugs.push(message),
       },
       options: { ...TIMING, clock: fakeClock() },
     });
     await writer.write({ key: KEY, update: replace, target: "profile" });
     expect(updates).toEqual([NEXT]);
+    expect(reasons(debugs)).toEqual(["the settings file disappeared"]);
+  });
+
+  it("edits the re-read text in place when another setting changed while planning", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    await refreshView(file);
+    const updates: unknown[] = [];
+    let views = 0;
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
+        view: () => {
+          views++;
+          if (views === 2) {
+            // Another window saves another setting while this one plans.
+            writeFileSync(file, `{\n  "editor.fontSize": 13,\n${BEFORE.slice(2)}`);
+          }
+          return readKey(file);
+        },
+        update: async ({ value }) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      options: { ...TIMING, clock: fakeClock(() => refreshView(file)) },
+    });
+    await writer.write({ key: KEY, update: replace, target: "profile" });
+    expect(await readFile(file, "utf8")).toBe(`{
+  "editor.fontSize": 13,
+  // my repos
+  "toucan.repos": {
+    "webshop": "#14939c", // orange
+    "other": "#123456",
+  },
+}
+`);
+    expect(updates).toEqual([]);
+  });
+
+  it("writes its first plan when the file didn't change while planning, though VS Code's view moved", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const updates: unknown[] = [];
+    /** A view the updater leaves alone: if Toucan planned again from it, it would write nothing. */
+    const moved = { webshop: "#000000" };
+    let views = 0;
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
+        view: () => {
+          views++;
+          const text = readFileSync(file, "utf8");
+          // From the third read on, VS Code's view has moved while the file is still the same.
+          if (views >= 3 && text === BEFORE) {
+            return moved;
+          }
+          return (parseSettingsForTest(text) as Record<string, unknown>)[KEY];
+        },
+        update: async ({ value }) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      options: { ...TIMING, clock: fakeClock() },
+    });
+    await writer.write({
+      key: KEY,
+      update: (view) => (view === moved ? undefined : { value: NEXT }),
+      target: "profile",
+    });
+    expect(await readFile(file, "utf8")).toBe(AFTER);
+    expect(updates).toEqual([]);
   });
 
   it("writes nothing when the recomputed value leaves the setting alone", async () => {

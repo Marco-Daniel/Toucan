@@ -130,6 +130,10 @@ describe("hasToucanKeys", () => {
   it("detects any commandCenter key", () => {
     expect(hasToucanKeys({ "commandCenter.border": "#fff" })).toBe(true);
     expect(hasToucanKeys({ "editor.background": "#fff" })).toBe(false);
+    expect(hasToucanKeys({ "editor.background": "#fff", "commandCenter.border": "#fff" })).toBe(
+      true,
+    );
+    expect(hasToucanKeys({})).toBe(false);
     expect(hasToucanKeys(undefined)).toBe(false);
     expect(hasToucanKeys("commandCenter.border")).toBe(false);
   });
@@ -155,6 +159,12 @@ describe("customizationsFor", () => {
         "commandCenter.inactiveBorder": "#33333380",
       },
     });
+  });
+
+  it("adds Toucan's keys when the setting is unset", () => {
+    expect(
+      customizationsFor({ current: undefined, colors: commandCenterColors("#000000") }),
+    ).toEqual({ value: asCustomizations(commandCenterColors("#000000")) });
   });
 
   it("returns the current value unchanged when it already matches", () => {

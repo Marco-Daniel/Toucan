@@ -13,7 +13,7 @@ import { parseRepos } from "../../../src/shared/config/config.util.ts";
  * A fake workspace and view. `calls` records every port call in order, so a test
  * can pin what happened and in which order. `closed` is the remembered flag,
  * seeded by the test. `failReveals` and `failWrites` make reveal and the flag
- * write reject. Warnings land in `warnings`.
+ * write reject. Warnings land in `warnings`, debug lines in `debugs`.
  */
 function setup(
   initial: {
@@ -32,6 +32,7 @@ function setup(
     focused: focused ?? true,
     calls: [] as string[],
     warnings: [] as string[],
+    debugs: [] as string[],
   };
   const controller = new SidebarController({
     ports: {
@@ -54,7 +55,7 @@ function setup(
         state.closed = value;
       },
       warn: (message) => state.warnings.push(message),
-      debug: () => {},
+      debug: (message) => state.debugs.push(message),
     },
     settings: () => settings,
   });
@@ -271,6 +272,12 @@ describe("SidebarController, a Hide from the view's menu", () => {
 });
 
 describe("SidebarController, toggle", () => {
+  it("shows a block whose view was never resolved, as one that starts hidden", async () => {
+    const { controller, state } = setup();
+    await controller.toggle();
+    expect(state.calls).toEqual(["writeClosed:false", "setShown:true", "reveal"]);
+  });
+
   it("hides a visible block: remembers the close first, then drops the key", async () => {
     const { controller, state } = setup();
     controller.viewResolved(true);
@@ -324,6 +331,53 @@ describe("SidebarController, toggle failures", () => {
     controller.visibilityChanged(false);
     await expect(controller.toggle()).rejects.toThrow("view not registered");
     expect(state.calls).toEqual(["writeClosed:false", "setShown:true", "reveal"]);
+  });
+});
+
+describe("SidebarController, after dispose", () => {
+  it("doesn't reveal for the setting going on", async () => {
+    const { controller, settings, state } = setup({ enabled: false, settingOn: false });
+    controller.dispose();
+    settings.enabled = true;
+    settings.settingOn = true;
+    controller.settingsChanged();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(state.calls).toEqual([]);
+  });
+
+  it("ignores a view resolved as visible, so Toggle still shows the block", async () => {
+    const { controller, state } = setup();
+    controller.dispose();
+    controller.viewResolved(true);
+    await controller.toggle();
+    expect(state.calls).toEqual(["writeClosed:false", "setShown:true", "reveal"]);
+  });
+
+  it("ignores a visibility change: no debug line, and Toggle still shows the block", async () => {
+    const { controller, state } = setup();
+    controller.dispose();
+    controller.visibilityChanged(true);
+    await controller.toggle();
+    expect(state.debugs).toEqual([]);
+    expect(state.calls).toEqual(["writeClosed:false", "setShown:true", "reveal"]);
+  });
+});
+
+describe("SidebarController, debug log", () => {
+  it("logs each visibility change as visible=<state>", () => {
+    const { controller, state } = setup();
+    controller.viewResolved(true);
+    controller.visibilityChanged(false);
+    controller.visibilityChanged(true);
+    expect(state.debugs).toEqual(["visible=false", "visible=true"]);
+  });
+
+  it("logs a Hide when it is remembered", async () => {
+    const { controller, state } = setup();
+    controller.viewResolved(true);
+    controller.viewDisposed();
+    await vi.advanceTimersByTimeAsync(REMEMBER_CLOSE_DELAY_MS);
+    expect(state.debugs).toEqual(["user hid the block; remembering"]);
   });
 });
 

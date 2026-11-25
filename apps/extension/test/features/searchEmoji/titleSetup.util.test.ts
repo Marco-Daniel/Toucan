@@ -27,6 +27,8 @@ function create(
     enabled?: boolean;
     focused?: boolean;
     title?: string;
+    /** VS Code's default title; `DEFAULT` unless given, even as `undefined`. */
+    defaultTitle?: string | undefined;
     overridden?: boolean;
     change?: TitleChange;
     answer?: boolean;
@@ -44,13 +46,18 @@ function create(
     calls: [] as string[],
     asked: [] as boolean[],
     warnings: [] as string[],
+    infos: [] as string[],
     now: 1_000_000,
   };
   const title = new TitleSetup({
     enabled: () => world.enabled,
     focused: () => state.focused ?? true,
     now: () => world.now,
-    title: () => ({ global: world.title, default: DEFAULT, overridden: state.overridden ?? false }),
+    title: () => ({
+      global: world.title,
+      default: "defaultTitle" in state ? state.defaultTitle : DEFAULT,
+      overridden: state.overridden ?? false,
+    }),
     readChange: () => world.change,
     writeChange: async (change) => {
       world.calls.push(`record ${JSON.stringify(change)}`);
@@ -72,7 +79,7 @@ function create(
       state.duringDialog?.(world);
       return state.dialog ?? state.answer ?? true;
     },
-    info: () => {},
+    info: (message) => world.infos.push(message),
     failed: (error) => world.warnings.push(String(error)),
   });
   return { title, world };
@@ -98,6 +105,19 @@ describe("TitleSetup, consent", () => {
       "${toucanRepoLead}${activeEditorShort}${separator}${toucanRepoEmoji}${rootName}",
     );
     expect(world.change).toEqual({ previous: undefined, written: world.title });
+  });
+
+  it("logs the change and reports no failure when the title write succeeds", async () => {
+    const { title, world } = create({ title: MINE });
+    await title.settle();
+    expect(world.infos).toEqual(["Changed window.title for the search emoji."]);
+    expect(world.warnings).toEqual([]);
+  });
+
+  it("writes only the lead variable when there is no title and no default", async () => {
+    const { title, world } = create({ defaultTitle: undefined });
+    await title.settle();
+    expect(world.title).toBe("${toucanRepoLead}");
   });
 
   it("turns the feature off and changes nothing when the user declines", async () => {
@@ -153,6 +173,14 @@ describe("TitleSetup, consent", () => {
     expect(world.asked).toEqual([false]);
   });
 
+  it("asks again when the user turns the feature back on after declining", async () => {
+    const { title, world } = create({ title: MINE, answer: false });
+    await title.settle();
+    world.enabled = true;
+    await title.settle();
+    expect(world.asked).toEqual([false, false]);
+  });
+
   it("does nothing global in an unfocused window", async () => {
     const { title, world } = create({ title: MINE, focused: false });
     expect(await title.settle()).toBeUndefined();
@@ -182,6 +210,37 @@ describe("TitleSetup, restore", () => {
     await title.settle();
     expect(world.calls).toEqual(["record undefined"]);
     expect(world.title).toBe("edited");
+  });
+
+  it("logs that it restored window.title", async () => {
+    const { title, world } = create({
+      enabled: false,
+      title: written,
+      change: { previous: MINE, written },
+    });
+    await title.settle();
+    expect(world.infos).toEqual(["Restored window.title."]);
+  });
+
+  it("logs that it left a title the user edited since alone", async () => {
+    const { title, world } = create({
+      enabled: false,
+      title: "edited",
+      change: { previous: MINE, written },
+    });
+    await title.settle();
+    expect(world.infos).toEqual(["Left window.title alone: it was changed after Toucan set it."]);
+  });
+
+  it("logs nothing when it forgets a change that wrote no title", async () => {
+    const { title, world } = create({
+      enabled: false,
+      title: MINE,
+      change: { previous: MINE, written: undefined },
+    });
+    await title.settle();
+    expect(world.calls).toEqual(["record undefined"]);
+    expect(world.infos).toEqual([]);
   });
 });
 
@@ -221,6 +280,15 @@ describe("TitleSetup, upgrade to Toucan's own variables", () => {
       `record {"previous":"${MINE}","written":"${MINE_WRITTEN}"}`,
     ]);
     expect(world.asked).toEqual([]);
+  });
+
+  it("logs that it moved the title to today's form", async () => {
+    const { title, world } = create({
+      title: MINE_V003,
+      change: { previous: MINE, written: MINE_V003 },
+    });
+    await title.settle();
+    expect(world.infos).toEqual(["Moved window.title to the search emoji's own variables."]);
   });
 
   it("only records when the title is already in today's form (a window died in between)", async () => {
