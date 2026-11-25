@@ -8,7 +8,7 @@
 - Why: PR #4 merged with the maintainer's visual sign-off; shipped in v0.0.2.
 - Open ends:
   - Does the 18-wide toucan's label shift show next to 16-wide glyphs? (trail.md:28) → dropped: covered by the visual sign-off on PR #4; shipped since v0.0.2
-  - Legibility on a real low-DPI screen (trail.md:27) → answered: covered by the visual sign-off on PR #4
+  - Legibility on a real low-DPI screen (trail.md:27) → dropped: covered by the visual sign-off on PR #4
   - Rounding approach in code (plan.md, Open questions) → answered: polygons with softened corners (decisions/0004)
   - Glyph names in Set Glyph (plan.md, Open questions) → answered: settled in PR #4
 - Lift candidates: none

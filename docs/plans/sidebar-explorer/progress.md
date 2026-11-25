@@ -8,7 +8,7 @@
 - Why: PRs #37, #38 and #39 merged; v1.1.0 released and on the Marketplace.
 - Open ends:
   - Remove the deprecated visibility settings from the manifest in a later release (decisions/0002, plan.md Open questions, trail.md:35) → ticket #59
-  - Whether the dispose timer holds up in the test run (trail.md:33, plan.md Open questions) → answered: the 2026-10-05 isolated VS Code test recorded no close for the drags, the host restart or the disable and enable
+  - Whether the dispose timer holds up in the test run (trail.md:33, plan.md Open questions) → answered: the isolated VS Code test in the first 2026-10-05 entry recorded no close for the drags, the host restart or the disable and enable
   - How the upgrade from 1.0.0 behaves with the block in the secondary sidebar (trail.md:34) → answered: covered by the same test, and the 1.1.0 release notes say what to do after updating
 - Lift candidates: none
 
