@@ -12,6 +12,7 @@
     "fileName": "reports/stryker/mutation.html"
   },
   "tempDirName": ".stryker-tmp",
+  "inPlace": true,
   "tsconfigFile": "no-tsconfig-rewrite.json",
   "concurrency": 4,
   "timeoutMS": 30000
