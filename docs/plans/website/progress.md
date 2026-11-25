@@ -4,6 +4,12 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-11-25 — close-plans: closed
+- Why: PRs #19, #20 and #21 merged; the site deploys from main.
+- Open ends:
+  - Plan the React Router major upgrade when it lands (trail.md:56) → dropped: Dependabot opens the major; the upgrade happens in that PR
+- Lift candidates: none
+
 ## 2026-10-03: PR 3, the site and its deploy (implementer)
 
 - `apps/site`: React Router framework mode, pre-rendered with `ssr: false`: the landing page to the approved mockup, eight docs pages from `content/docs/*.md`, the changelog from the GitHub releases with `content/releases.json` as its fallback, and a not-found page: Netlify serves the SPA fallback for any unknown path (`public/_redirects`), which renders it. Tailwind takes the brand's colors as CSS variables rendered from `@toucan/brand`.

@@ -1,5 +1,7 @@
 # Plan: Docs sync skill
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 A skill, run by hand every once in a while, that finds documentation drift since its last run: changes the docs missed, references that went stale, and docs that contradict the code. It covers README.md, GROUNDING.md, .claude/CLAUDE.md, `docs/adr/` and `docs/plans/`. It's the backstop for the CLAUDE.md rule that a PR updates every doc it affects ([issue #6](https://github.com/Marco-Daniel/Toucan/issues/6)).

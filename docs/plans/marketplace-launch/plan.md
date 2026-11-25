@@ -1,5 +1,7 @@
 # Plan: Toucan on the VS Code Marketplace (v1.0.0)
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 Launch Toucan publicly on the Visual Studio Marketplace as **v1.0.0** (→ 0001), published from GitHub Actions with no long-lived secret (→ 0002). Every later release goes to the store automatically, as exactly the file that was released (→ 0003).

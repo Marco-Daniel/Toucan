@@ -4,6 +4,12 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-11-25 — close-plans: closed
+- Why: PRs #37, #38 and #39 merged; v1.1.0 released and on the Marketplace.
+- Open ends:
+  - Remove the deprecated visibility settings from the manifest in a later release (decisions/0002, plan.md:52, trail.md:35) → ticket #59
+- Lift candidates: none
+
 ## 2026-10-05, implementer
 
 - Did: the visibility finding (decision 0006, own commit), then the build on branch `sidebar-explorer`.

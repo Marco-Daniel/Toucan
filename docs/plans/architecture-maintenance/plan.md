@@ -1,5 +1,7 @@
 # Plan: Architecture maintenance
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 Make Toucan's code and its rules legible and binding for the agents that work on it. After this run:
