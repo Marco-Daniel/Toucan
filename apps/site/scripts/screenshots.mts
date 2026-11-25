@@ -338,8 +338,11 @@ let port: string | undefined;
 /** Ends the run on Ctrl-C, a signal or a hang, after the same cleanup as a normal end. */
 function stop(reason: string): void {
   console.error(reason);
-  // oxlint-disable-next-line typescript/no-floating-promises -- a signal handler or timer has no caller to await; it exits once cleanup is done
-  cleanUp(port).finally(() => process.exit(EXIT_INTERRUPTED));
+  // A .catch, not tryCatch: a signal handler or timer has no caller to await
+  // this chain. A failed cleanup is logged, and the run exits either way.
+  cleanUp(port)
+    .catch((error: unknown) => console.error(`Cleanup failed: ${errorText(error)}`))
+    .finally(() => process.exit(EXIT_INTERRUPTED));
 }
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   process.once(signal, () => stop(`Stopped by ${signal}.`));

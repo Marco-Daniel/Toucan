@@ -33,7 +33,6 @@ export const SUN_SOFTENING = 0.7;
 /** The glyph's center on both axes: half its 16-unit height. */
 const CENTER = 8;
 /** A full turn in radians. */
-// oxlint-disable-next-line no-magic-numbers -- 2π is the definition, not a tunable
 const TURN = 2 * Math.PI;
 /** The sun's disc is a 12-gon (glyph-set/0006). */
 const SUN_DISC_SIDES = 12;
@@ -68,7 +67,6 @@ function ngon(cx: number, cy: number, r: number, n = 14): Point[] {
 /** A five-pointed star alternating outer and inner radius. */
 function star(cx: number, cy: number, outer: number, inner: number): Point[] {
   return Array.from({ length: STAR_VERTICES }, (_, i) => {
-    // oxlint-disable-next-line no-magic-numbers -- parity: even vertices are the outer points
     const r = i % 2 === 0 ? outer : inner;
     const angle = (Math.PI * i) / STAR_POINTS;
     return [
@@ -140,7 +138,6 @@ const shape = (width: number, fills: string[], holes: (string | Point[])[] = [])
 });
 
 /** The agreed geometry, ported from the plan's reference sheet (assets/glyph-sheet.py). */
-/* oxlint-disable no-magic-numbers -- glyph coordinates and sizes: the table is the design */
 export const GLYPH_DESIGNS: Record<Glyph, GlyphDesign> = {
   square: shape(16, ["1.2,1.2 14.8,1.2 14.8,14.8 1.2,14.8"]),
   // Ends 0.75 in, so the softened outline fills the box exactly.
@@ -201,4 +198,3 @@ export const GLYPH_DESIGNS: Record<Glyph, GlyphDesign> = {
     [ngon(8, 6.6, 1.3, 8)],
   ),
 };
-/* oxlint-enable no-magic-numbers */

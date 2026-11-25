@@ -31,3 +31,7 @@ Exceptions:
 
 - Good: one way to handle a failure, typed; no unhandled rejections.
 - Bad: a small helper every contributor has to know about.
+
+## Amendment (2026-11-25)
+
+In the extension, a sync event handler or timer hands its work off through `handOff()` (`apps/extension/src/shared/async/handOff.util.ts`). It holds the one `no-floating-promises` disable, with its reason, and logs a failure. Code outside the extension ends such a chain in a `.catch()` that logs the failure, under the `.catch()` exception above. The rule stands: one disable with its reason now covers every hand-off in the extension.

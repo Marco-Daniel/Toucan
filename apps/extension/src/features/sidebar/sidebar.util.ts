@@ -1,8 +1,7 @@
 // import utils
-import { tryCatch } from "../../shared/async/tryCatch.util.ts";
 import { isOneOf } from "../../shared/guards/oneOf.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
-import { logFailure } from "../../shared/async/logFailure.util.ts";
+import { handOff } from "../../shared/async/handOff.util.ts";
 
 // import consts
 import { SIDEBAR_STYLES } from "../../shared/model/model.consts.ts";
@@ -53,12 +52,6 @@ export interface SidebarPorts {
   writeClosed(closed: boolean): Promise<void>;
   warn(message: string): void;
   debug(message: string): void;
-}
-
-/** Background work started from an event or timer, and what to call it in a warning. */
-interface HandOffArgs {
-  what: string;
-  task: () => Promise<void>;
 }
 
 interface SidebarControllerArgs {
@@ -114,7 +107,7 @@ export class SidebarController {
     // setting is shared (Settings Sync, every open window sees the change), but only the
     // window the user is working in switches its sidebar.
     if (turnedOn && enabled && !this.ports.readClosed() && this.ports.isFocused()) {
-      this.post({ what: "Revealing the block", task: () => this.ports.reveal() });
+      handOff({ log: this.ports, what: "Revealing the block", task: () => this.ports.reveal() });
     }
   }
 
@@ -153,7 +146,7 @@ export class SidebarController {
       ms: REMEMBER_CLOSE_DELAY_MS,
       run: () => {
         this.ports.debug("user hid the block; remembering");
-        this.post({ what: "Remembering the hide", task: () => this.remember() });
+        handOff({ log: this.ports, what: "Remembering the hide", task: () => this.remember() });
       },
     });
   }
@@ -182,21 +175,5 @@ export class SidebarController {
   private async remember(): Promise<void> {
     await this.ports.writeClosed(true);
     await this.ports.setShown(false);
-  }
-
-  /**
-   * Finishes work started by a sync event handler or timer, which has no
-   * caller to await it: a failure is logged, never left unhandled.
-   */
-  private post({ what, task }: HandOffArgs): void {
-    // oxlint-disable-next-line typescript/no-floating-promises -- no caller to await (see above); settle never rejects
-    this.settle({ what, task });
-  }
-
-  private async settle({ what, task }: HandOffArgs): Promise<void> {
-    const [, error] = await tryCatch(task);
-    if (error !== null) {
-      logFailure({ log: this.ports, what, error });
-    }
   }
 }
