@@ -4,6 +4,8 @@
 
 - **Path**: `docs/plans`
 - **Schema**: 1
+- **Status**: every plan.md carries `Status: Live` or `Status: Closed YYYY-MM-DD` under its title. Closing a plan adds a dated note at the top of its progress.md that gives every open end a fate: a ticket, dropped with the reason, or answered with where.
+- **Edits**: plans are history ([ADR-0019](docs/adr/0019-amend-plans-never-rewrite-them.md)). Besides dated amendment notes, a plan or decision record gets only its `Status:` line, those dated progress notes, and, on a decision lifted to an ADR, one appended line: `Lifted to ADR-NNNN (YYYY-MM-DD): <link to the ADR>`.
 
 ## Quality Control
 
@@ -19,7 +21,7 @@ pnpm comes through corepack (`packageManager` in package.json): run `corepack en
 
 ## Conventions
 
-- Monorepo (pnpm workspace with Turborepo): `apps/extension` is the extension, `apps/site` (`@toucan/site`) the website, `packages/brand` (`@toucan/brand`) the shared brand (presets, color tokens, glyph names and SVGs, icon and logo), `packages/releases` (`@toucan/releases`) Toucan's GitHub releases for the site's changelog and the extension's CHANGELOG.md, `config/ts-config` and `config/vite` hold the shared TypeScript and Vite/Vitest settings, and `docs/` the ADRs and plans. The root holds the workspace configs and the repo's own tooling in `scripts/` and `test/` (qmd docs search, docs-sync).
+- Monorepo (pnpm workspace with Turborepo): `apps/extension` is the extension, `apps/site` (`@toucan/site`) the website, `packages/brand` (`@toucan/brand`) the shared brand (presets, color tokens, glyph names and SVGs, icon and logo), `packages/releases` (`@toucan/releases`) Toucan's GitHub releases for the site's changelog and the extension's CHANGELOG.md, `config/ts-config` and `config/vite` hold the shared TypeScript and Vite/Vitest settings, and `docs/` the ADRs, the plans and the housekeeping records. The root holds the workspace configs and the repo's own tooling in `scripts/` and `test/` (qmd docs search, docs-sync).
 - Extension layout: `apps/extension/src/core` holds the entry point and the adapters every part uses, `apps/extension/src/shared/<topic>` the code features share, and `apps/extension/src/features/<feature>` one folder per feature. `apps/extension/test/` mirrors `apps/extension/src/`. No barrel files: imports name the file.
 - File names carry their role: `.adapter.ts`, `.util.ts`, `.consts.ts`, `.types.ts`, `.view.ts` and `.messages.ts`.
 - Only adapters touch VS Code: `vscode` is imported only by `*.adapter.ts` files and `apps/extension/src/core/extension.ts`. Everything else (color derivation, config parsing, the colorCustomizations merge and so on) is plain TypeScript, unit tested with vitest.

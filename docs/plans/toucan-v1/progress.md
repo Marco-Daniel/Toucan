@@ -8,10 +8,10 @@
 - Why: PR #1 merged; shipped from v0.0.1 on.
 - Open ends:
   - Tune the derivation amounts visually (decisions/0004) → dropped: shipped unchanged through v1.1.0; a color that looks off is a bug with a concrete case
-  - Revisit following the active editor after v1 (decisions/0009) → dropped: no feature request for it
+  - Revisit following the active editor after v1 (decisions/0009, plan.md Open questions) → dropped: no feature request for it
   - Re-check the agents-control setting when VS Code renames or stabilizes it (decisions/0016) → ticket #62
   - Revisit if VS Code exposes resolved theme colors (decisions/0018) → ticket #62
-  - statusBar.* coloring as a later opt-in (plan.md:14) → dropped: no feature request for it
+  - statusBar.* coloring as a later opt-in (plan.md Non-goals) → dropped: no feature request for it
 - Lift candidates: decisions/0017 (edit settings in place), decisions/0008 (clear Toucan's keys) → handed to lift-decisions
 
 <!-- Example entry (delete this comment block once real entries exist):

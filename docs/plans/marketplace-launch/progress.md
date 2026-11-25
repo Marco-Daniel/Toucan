@@ -7,9 +7,10 @@
 ## 2026-11-25 — close-plans: closed
 - Why: PRs #30, #31, #33 and #34 merged; v1.0.0 is on the Marketplace.
 - Open ends:
-  - Does the Azure wizard fill in the immutable subject format? (trail.md:47) → dropped: overtaken, the Azure job is dormant (marketplace-upload/0004)
-  - Creator or Contributor role for the identity? (trail.md:48) → dropped: overtaken the same way
-  - A follow-up plan once trusted publishing is live (trail.md:49, plan.md:10) → dropped: the same watch as marketplace-upload's, tracked in #61
+  - Does the Azure wizard fill in the immutable subject format? (trail.md:47, plan.md Open questions) → dropped: overtaken, the Azure job is dormant (marketplace-upload/0004)
+  - Creator or Contributor role for the identity? (trail.md:48, plan.md Open questions) → dropped: overtaken the same way
+  - A follow-up plan once trusted publishing is live (trail.md:49, plan.md Non-goals) → dropped: the same watch as marketplace-upload's, tracked in #61
+  - The minimum VS Code version stated for 1.0.0 (plan.md, Open questions) → answered: 1.0.0 shipped with `engines.vscode` `^1.138.0`
 - Lift candidates: none
 
 ## 2026-10-04: the implementer, launch PR (`marketplace-launch`)

@@ -7,7 +7,7 @@
 ## 2026-11-25 — close-plans: closed
 - Why: PRs #32 and #33 merged; 1.0.0 and 1.1.0 went to the Marketplace by this route.
 - Open ends:
-  - Notice when Marketplace trusted publishing goes live (decisions/0006, trail.md:26, progress.md:16) → ticket #61
+  - Notice when Marketplace trusted publishing goes live (decisions/0006, trail.md:26, plan.md Open questions, the 2026-10-04 entry) → ticket #61
 - Lift candidates: none
 
 ## 2026-10-04: the implementer, `manual-marketplace-upload`

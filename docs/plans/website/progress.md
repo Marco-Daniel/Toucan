@@ -8,6 +8,9 @@
 - Why: PRs #19, #20 and #21 merged; the site deploys from main.
 - Open ends:
   - Plan the React Router major upgrade when it lands (trail.md:56) → dropped: Dependabot opens the major; the upgrade happens in that PR
+  - Where the README screenshots live after PR 2 (trail.md:54, plan.md Open questions) → answered: they stay with the extension, in `apps/extension/media/readme/`
+  - The site's Open Graph image (trail.md:55, plan.md Open questions) → answered: `apps/site/public/og-image.png`, generated from `assets/og-card.svg` (the 2026-10-03 entry)
+  - The mockup's asset links after the move in PR 1 (plan.md, Open questions) → answered: `assets/mockup.html` points at `apps/extension/media/readme/`
 - Lift candidates: none
 
 ## 2026-10-03: PR 3, the site and its deploy (implementer)

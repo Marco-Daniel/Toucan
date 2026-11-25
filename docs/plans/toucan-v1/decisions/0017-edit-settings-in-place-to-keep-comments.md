@@ -42,4 +42,4 @@ Chosen: **edit in place when it's provably safe, otherwise fall back to `update(
 - Risk: a wrong-profile edit can sit in the other profile's file for up to 4 seconds, and a crash in that window leaves it there. Only Toucan's own keys are touched, and the next focus in that profile fixes `commandCenter.*`.
 - Risk: Toucan and VS Code writing at the same moment. Re-reading right before the write narrows it to the gap between read and rename, and verify-and-revert catches the rest.
 
-Lifted to ADR-0017 (2026-11-25)
+Lifted to ADR-0017 (2026-11-25): [docs/adr/0017-edit-settings-in-place-to-keep-comments.md](../../../adr/0017-edit-settings-in-place-to-keep-comments.md)

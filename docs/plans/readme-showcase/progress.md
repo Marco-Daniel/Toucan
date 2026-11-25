@@ -8,7 +8,8 @@
 - Why: PR #14 merged; the newest entry says done.
 - Open ends:
   - Whether the showcase grows beyond the README (trail.md:18) → dropped: the website took that role
-  - The screenshot script runs on macOS only (progress.md:12) → dropped: the one maintainer works on macOS; an issue if that changes
+  - The screenshot script runs on macOS only (the 2026-10-03 entry) → dropped: the one maintainer works on macOS; an issue if that changes
+  - The GIF encoder (plan.md, Open questions) → answered: the `gifenc` devDependency
 - Lift candidates: none
 
 ## 2026-10-03: the implementer and the junior

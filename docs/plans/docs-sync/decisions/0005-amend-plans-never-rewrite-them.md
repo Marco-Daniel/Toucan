@@ -23,4 +23,4 @@ Chosen: dated amendment notes under a decision that no longer matches the code, 
 - Good: History stays intact and the record stays truthful.
 - Bad: Plans grow amendment notes over time.
 
-Lifted to ADR-0019 (2026-11-25)
+Lifted to ADR-0019 (2026-11-25): [docs/adr/0019-amend-plans-never-rewrite-them.md](../../../adr/0019-amend-plans-never-rewrite-them.md)
