@@ -50,4 +50,4 @@ The root's own tooling is now docs search (scripts/qmd), mutate, the marketplace
 
 ## Amendment (2026-11-25): the extension's mutation runs
 
-The extension's Stryker config also mutates in place: its tests read the brand's glyph SVGs by relative path (`../../packages/brand`), which Stryker's sandbox copy, one folder deeper, can't reach. It mutates the extension's `src/` only, never its scripts, which signal, remove and spawn processes. The rest of the layout above is unchanged.
+The extension's Stryker config also mutates in place: its tests read the brand's glyph SVGs by relative path (`../../packages/brand`), which Stryker's sandbox copy, one folder deeper, can't reach. It mutates the extension's `src/` only, never its scripts, which signal, remove and spawn processes: the config lists `src/` alone, and `mutate` refuses an extension script passed by name. The rest of the layout above is unchanged.
