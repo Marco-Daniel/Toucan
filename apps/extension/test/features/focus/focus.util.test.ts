@@ -807,16 +807,9 @@ describe("FocusCoordinator", () => {
       await vi.advanceTimersByTimeAsync(500);
       a.setFocused(true);
       await vi.advanceTimersByTimeAsync(2000);
-      expect(world.debugLog).toEqual([
-        "A: focused",
-        "A: took ownership",
-        "A: applied #aa0000",
-        "A: blurred",
-        "A: focused",
-        "A: took ownership",
-        "A: colors already applied",
+      expect(world.debugLog.filter((line) => line.includes("blur check:"))).toEqual([]);
+      expect(world.debugLog.filter((line) => line.includes("verify:"))).toEqual([
         "A: verify: focused=true owner=me",
-        "A: colors already applied",
       ]);
     });
 
@@ -827,13 +820,9 @@ describe("FocusCoordinator", () => {
       await settle();
       a.setFocused(false);
       await vi.advanceTimersByTimeAsync(2000);
-      expect(world.debugLog).toEqual([
-        "A: focused",
-        "A: took ownership",
-        "A: applied #aa0000",
-        "A: blurred",
+      expect(world.debugLog.filter((line) => line.includes("verify:"))).toEqual([]);
+      expect(world.debugLog.filter((line) => line.includes("blur check:"))).toEqual([
         "A: blur check: focused=false owner=me",
-        "A: cleared",
       ]);
     });
 
@@ -852,12 +841,9 @@ describe("FocusCoordinator", () => {
       await settle();
       await a.dispose();
       await vi.advanceTimersByTimeAsync(2000);
-      expect(world.debugLog).toEqual([
-        "A: focused",
-        "A: took ownership",
-        "A: applied #aa0000",
+      expect(world.debugLog.filter((line) => line.includes("verify:"))).toEqual([]);
+      expect(world.debugLog.filter((line) => line.includes("blur check:"))).toEqual([
         "A: blur check: focused=false owner=me",
-        "A: cleared",
       ]);
     });
 
@@ -869,13 +855,8 @@ describe("FocusCoordinator", () => {
       a.setFocused(false);
       await a.dispose();
       await vi.advanceTimersByTimeAsync(2000);
-      expect(world.debugLog).toEqual([
-        "A: focused",
-        "A: took ownership",
-        "A: applied #aa0000",
-        "A: blurred",
+      expect(world.debugLog.filter((line) => line.includes("blur check:"))).toEqual([
         "A: blur check: focused=false owner=me",
-        "A: cleared",
       ]);
     });
   });

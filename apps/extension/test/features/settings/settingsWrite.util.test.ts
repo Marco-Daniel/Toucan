@@ -102,8 +102,8 @@ function setup({ file, view = "follows", dirty = [], onSleep }: SetupArgs) {
     },
     options: {
       ...TIMING,
-      clock: fakeClock(async () => {
-        sleeps.push(sleeps.length);
+      clock: fakeClock(async (ms) => {
+        sleeps.push(ms);
         if (view === "follows") {
           await refreshView(file);
         }
@@ -212,7 +212,7 @@ describe("SettingsFileWriter", () => {
     await refreshView(file);
     const { writer, sleeps } = setup({ file });
     await writer.write({ key: KEY, update: replace, target: "profile" });
-    expect(sleeps).toEqual([0]); // VS Code catches up during the first poll interval
+    expect(sleeps).toEqual([100]); // VS Code catches up during the first 100 ms poll interval
   });
 
   interface StaleWriterArgs {
@@ -577,6 +577,42 @@ describe("SettingsFileWriter", () => {
   },
 }
 `);
+    expect(updates).toEqual([]);
+  });
+
+  it("writes its first plan when the file didn't change while planning, though VS Code's view moved", async () => {
+    const file = join(dir, "settings.json");
+    await writeFile(file, BEFORE);
+    const updates: unknown[] = [];
+    /** A view the updater leaves alone: if Toucan planned again from it, it would write nothing. */
+    const moved = { webshop: "#000000" };
+    let views = 0;
+    const writer = new SettingsFileWriter({
+      files: { profile: file, defaultProfile: file },
+      ports: {
+        view: () => {
+          views++;
+          const text = readFileSync(file, "utf8");
+          // From the third read on, VS Code's view has moved while the file is still the same.
+          if (views >= 3 && text === BEFORE) {
+            return moved;
+          }
+          return (parseSettingsForTest(text) as Record<string, unknown>)[KEY];
+        },
+        update: async ({ value }) => {
+          updates.push(value);
+        },
+        dirtyFiles: () => [],
+        debug: () => {},
+      },
+      options: { ...TIMING, clock: fakeClock() },
+    });
+    await writer.write({
+      key: KEY,
+      update: (view) => (view === moved ? undefined : { value: NEXT }),
+      target: "profile",
+    });
+    expect(await readFile(file, "utf8")).toBe(AFTER);
     expect(updates).toEqual([]);
   });
 

@@ -172,9 +172,10 @@ describe("planEdit", () => {
       view: { a: "#000000", b: "#111111" },
       desired: { a: "#000000" },
     });
-    expect(plan).toMatchObject({
+    expect(plan).toEqual({
       kind: "edit",
       text: `{\n  "${KEY}": {\n    "a": "#000000", /* mine */ // moved here\n  },\n}\n`,
+      changed: ["b"],
     });
   });
 
@@ -186,9 +187,10 @@ describe("planEdit", () => {
       view: { a: "#000000", b: "#111111" },
       desired: { a: "#000000" },
     });
-    expect(plan).toMatchObject({
+    expect(plan).toEqual({
       kind: "edit",
       text: `{\n  "${KEY}": {\n    "a": "#000000",\n// mine\n    // moved here\n  },\n}\n`,
+      changed: ["b"],
     });
   });
 
@@ -200,9 +202,10 @@ describe("planEdit", () => {
       view: { a: "#000000", b: "#111111" },
       desired: { a: "#000000" },
     });
-    expect(plan).toMatchObject({
+    expect(plan).toEqual({
       kind: "edit",
       text: `{\n  "${KEY}": {\n    "a": "#000000", // moved here\n  },\n}\n`,
+      changed: ["b"],
     });
   });
 
@@ -461,9 +464,10 @@ describe("planEdit", () => {
       view: { a: "#000000" },
       desired: { a: "#000000", b: { c: 1 } },
     });
-    expect(plan).toMatchObject({
+    expect(plan).toEqual({
       kind: "edit",
       text: `{\n    "${KEY}": {\n        "a": "#000000",\n        "b": {\n            "c": 1\n        }\n    }\n}\n`,
+      changed: ["b"],
     });
   });
 
@@ -476,9 +480,10 @@ describe("planEdit", () => {
       view: { a: "#000000" },
       desired: { a: "#000000", b: { c: 1 } },
     });
-    expect(plan).toMatchObject({
+    expect(plan).toEqual({
       kind: "edit",
       text: `{\n\t  "${KEY}": {\n\t\t"a": "#000000",\n\t\t"b": {\n\t\t\t"c": 1\n\t\t}\n\t  }\n}\n`,
+      changed: ["b"],
     });
   });
 
