@@ -63,7 +63,7 @@ export interface GlyphPickItem<Icon, Kind> {
 interface GlyphPickItemsArgs<Icon, Kind> {
   current: Glyph;
   icon: (glyph: Glyph) => Icon;
-  /** VS Code's `QuickPickItemKind.Separator`, passed in because core can't import `vscode`. */
+  /** VS Code's `QuickPickItemKind.Separator`, passed in because utils don't import `vscode` (ADR-0006). */
   separator: Kind;
 }
 
