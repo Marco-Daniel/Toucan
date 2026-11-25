@@ -68,7 +68,7 @@
       "meta": "inspect-health"
      },
      {
-      "text": "A follow-up outside the repo: add oxlint's `oxlint-disable` to the housekeeping protocol's suppression markers. Until then, inspect-health counts this repo's suppressions by hand.",
+      "text": "A follow-up outside the repo: the maintenance tooling's list of suppression markers misses oxlint's `oxlint-disable`. Until it's added, the repo's suppressions are counted by hand.",
       "status": "watch",
       "meta": "inspect-health"
      }

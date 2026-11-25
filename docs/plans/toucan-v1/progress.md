@@ -12,7 +12,7 @@
   - Re-check the agents-control setting when VS Code renames or stabilizes it (decisions/0016) → ticket #62
   - Revisit if VS Code exposes resolved theme colors (decisions/0018) → ticket #62
   - statusBar.* coloring as a later opt-in (plan.md Non-goals) → dropped: no feature request for it
-- Lift candidates: decisions/0017 (edit settings in place), decisions/0008 (clear Toucan's keys) → handed to lift-decisions
+- Lift candidates: decisions/0017 (edit settings in place), decisions/0008 (clear Toucan's keys) → lifted to ADR-0017 and ADR-0018
 
 <!-- Example entry (delete this comment block once real entries exist):
 

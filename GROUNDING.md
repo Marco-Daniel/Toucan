@@ -5,7 +5,7 @@
 - **Path**: `docs/plans`
 - **Schema**: 1
 - **Status**: every plan.md carries `Status: Live` or `Status: Closed YYYY-MM-DD` under its title. Closing a plan adds a dated note at the top of its progress.md that gives every open end a fate: a ticket, dropped with the reason, or answered with where.
-- **Edits**: plans are history ([ADR-0019](docs/adr/0019-amend-plans-never-rewrite-them.md)). Besides dated amendment notes, a plan or decision record gets only its `Status:` line, those dated progress notes, and, on a decision lifted to an ADR, one appended line: `Lifted to ADR-NNNN (YYYY-MM-DD): <link to the ADR>`.
+- **Edits**: plans are history: amend them with dated notes, never rewrite them ([ADR-0019](docs/adr/0019-amend-plans-never-rewrite-them.md)). The repo's maintenance also adds a plan.md's `Status:` line, a closing entry at the top of its progress.md, and, on a decision lifted to an ADR, one appended line: `Lifted to ADR-NNNN (YYYY-MM-DD): <link to the ADR>`.
 
 ## Quality Control
 

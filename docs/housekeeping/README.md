@@ -4,7 +4,7 @@ Every so often the repo gets a maintenance inspection. Agents look at what chang
 
 Each run leaves three files here:
 
-- `<date>.md`, the record: every verdict, the commit or action that carried it out, and the maintainer's answers. It is written before the run's PR opens and not edited after it merges.
+- `<date>.md`, the record: every verdict, the commit or action that carried it out, and the maintainer's answers. It is written before the run's PR opens, may be amended while that PR is in review, and is not edited after it merges.
 - `<date>.html`, the inspection page as it stood at the run's start commit, before the verdicts.
 - `<date>.json`, the data that page was drawn from.
 
@@ -15,3 +15,8 @@ The words a record uses:
 - **Verdict**: `do` (carry it out), `dismiss` (leave it out of later runs), `later` (ask again next run) or `reviewed` (a decision the maintainer has signed).
 - **Watermark**: a git tag, `housekeeping/<part>/last`, that marks where the next run's look at "what changed" starts. It moves to the run's start commit once the record has merged, unless that part was only partly covered or still has an open finding.
 - **Carried**: dismissed and done keys kept from earlier records, so they don't come back as new.
+- **Ran** and **acted**: the parts that inspected, and the parts that carried out the verdicts.
+- **Ref action**: a change to branches or tags (a delete, a prune, an archive tag) rather than a commit.
+- **When stored** (in the watermarks line): once the record's PR has merged.
+- **Not moved: handed over**: a part whose check was left to the repo's own tooling, so the inspection didn't cover it and its watermark stays.
+- **Provisional**: a threshold or window that is a first guess, such as the last 30 days on a first run, to be tuned after more runs.
