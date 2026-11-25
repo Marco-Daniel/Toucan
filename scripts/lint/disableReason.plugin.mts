@@ -4,6 +4,13 @@
 // outside semver: test/scripts/lint/disableReason.plugin.test.ts runs the real
 // oxlint with the repo config, so a release that stops loading or running the
 // rule fails the tests instead of passing every disable.
+//
+// What it can't see: oxlint applies disable directives to this rule's reports
+// too, so a directive whose range covers its own comment hides the report. With
+// oxlint 1.94 that is a block-form disable of every rule (`/* oxlint-disable */`,
+// `/* eslint-disable */`), `// oxlint-disable-line` with no rule, and any
+// directive that names `toucan/disable-reason`. Review catches those until
+// issue #73 adds a check the directives can't reach; the canary pins the gap.
 
 /** A source comment, as `sourceCode.getAllComments()` gives it. */
 export interface Comment {
@@ -27,8 +34,8 @@ interface RuleContext {
 
 /** A disable directive: `oxlint-disable`, `-line` or `-next-line`, and the `eslint-` spellings oxlint also honours. */
 const DIRECTIVE = /^\s*(?:oxlint|eslint)-disable(?:-next-line|-line)?(?:\s|$)/;
-/** A reason: `--`, then some text. oxlint itself reads `--reason` as one too. */
-const REASON = /\s--\s*\S/;
+/** A reason: `--`, then text with a letter or digit in it (`-- -` is none). oxlint itself reads `--reason` as one too. */
+const REASON = /\s--.*[\p{L}\p{N}]/su;
 
 const MESSAGE = "State the reason after `--` in the disable comment (ADR-0008).";
 

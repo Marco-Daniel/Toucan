@@ -1,7 +1,8 @@
 // The disable-reason rule (ADR-0008): which comments it reports, through a fake
 // context, and a canary that runs the real oxlint with the repo config the way
 // `pnpm lint` does. JS plugins are alpha in oxlint, so a release that stops
-// loading the plugin or handing it the comments turns the canary red.
+// loading the plugin or handing it the comments turns the canary red. The
+// canary also pins the forms oxlint hides from the rule (issue #73).
 // import libraries
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -10,6 +11,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // import utils
+import { tryCatchSync } from "../../../apps/extension/src/shared/async/tryCatch.util.ts";
 import plugin from "../../../scripts/lint/disableReason.plugin.mts";
 import { ROOT } from "../../helpers/workspace.ts";
 
@@ -19,7 +21,7 @@ import type { Comment } from "../../../scripts/lint/disableReason.plugin.mts";
 const MESSAGE = "State the reason after `--` in the disable comment (ADR-0008).";
 
 /** Each report as its message and the reported comment's value, in the order the rule reports them. */
-function reported(comments: Pick<Comment, "type" | "value">[]): string[] {
+function collectReports(comments: Pick<Comment, "type" | "value">[]): string[] {
   const reports: string[] = [];
   const visitor = plugin.rules["disable-reason"].create({
     sourceCode: {
@@ -42,25 +44,30 @@ describe("the disable-reason rule", () => {
     ["an empty reason", " oxlint-disable-next-line no-void --"],
     ["a reason of only spaces", " oxlint-disable-next-line no-void --   "],
     ["a `--` glued to the rule name", " oxlint-disable-next-line no-void-- the reason"],
+    ["a reason of only dashes", " oxlint-disable-next-line no-void ---"],
+    ["a reason of a lone dash", " oxlint-disable-next-line no-void -- -"],
   ])("reports %s", (_what, value) => {
-    expect(reported([{ type: "Line", value }])).toEqual([`${MESSAGE} ${JSON.stringify(value)}`]);
+    expect(collectReports([{ type: "Line", value }])).toEqual([
+      `${MESSAGE} ${JSON.stringify(value)}`,
+    ]);
   });
 
   it.each([
     ["a disable with a reason", " oxlint-disable-next-line no-void -- nothing to await"],
     ["a reason glued to `--`", " oxlint-disable-next-line no-void --nothing to await"],
     ["a reason on the next line of a block", " oxlint-disable no-void\n   -- nothing to await "],
+    ["a reason that starts with code", " oxlint-disable-next-line no-void -- `{}` is meant"],
     ["an enable", " oxlint-enable no-void"],
     ["a mention later in the text", " see oxlint-disable-next-line in ADR-0008"],
     ["a longer word that starts like a directive", " oxlint-disable-next-lines no-void"],
     ["a plain comment", " nothing to see here"],
   ])("passes %s", (_what, value) => {
-    expect(reported([{ type: "Line", value }])).toEqual([]);
+    expect(collectReports([{ type: "Line", value }])).toEqual([]);
   });
 
   it("reports only the comments without a reason, in source order", () => {
     expect(
-      reported([
+      collectReports([
         { type: "Shebang", value: "/usr/bin/env node" },
         { type: "Line", value: " oxlint-disable-next-line no-var" },
         { type: "Block", value: " oxlint-disable-next-line no-void -- a reason " },
@@ -114,14 +121,22 @@ describe("the canary: oxlint runs the rule with the repo config", () => {
       ],
       { encoding: "utf8" },
     );
-    const { diagnostics } = JSON.parse(run.stdout) as { diagnostics: OxlintDiagnostic[] };
+    // A plugin that fails to load leaves no JSON on stdout: say why instead.
+    const [report, error] = tryCatchSync(
+      () => JSON.parse(run.stdout) as { diagnostics: OxlintDiagnostic[] },
+    );
+    if (error !== null) {
+      throw new Error(`oxlint gave no report (exit ${run.status}): ${run.stderr}${run.stdout}`);
+    }
     return {
       status: run.status,
-      findings: diagnostics.map(({ code, labels }) => `${code} at line ${labels[0]?.span.line}`),
+      findings: report.diagnostics.map(
+        ({ code, labels }) => `${code} at line ${labels[0]?.span.line}`,
+      ),
     };
   }
 
-  it("fails every form of a disable without a reason, and nothing else", () => {
+  it("fails the per-line forms without a reason, in both spellings, and nothing else", () => {
     const result = lint(
       [
         "// oxlint-disable-next-line no-var",
@@ -129,6 +144,8 @@ describe("the canary: oxlint runs the rule with the repo config", () => {
         "/* oxlint-disable-next-line no-var */",
         "export var blockForm = 1;",
         "export var sameLine = 1; // oxlint-disable-line no-var",
+        "// eslint-disable-next-line no-var",
+        "export var eslintForm = 1;",
         "",
       ].join("\n"),
     );
@@ -139,8 +156,38 @@ describe("the canary: oxlint runs the rule with the repo config", () => {
         "toucan(disable-reason) at line 1",
         "toucan(disable-reason) at line 3",
         "toucan(disable-reason) at line 5",
+        "toucan(disable-reason) at line 6",
       ],
     });
+  });
+
+  it.each([
+    ["a line-form disable of every rule", "// oxlint-disable"],
+    ["a block-form disable of one rule", "/* oxlint-disable no-var */"],
+    ["the eslint- spelling of one rule", "/* eslint-disable no-var */"],
+  ])("fails %s for the whole file without a reason", (_what, directive) => {
+    expect(lint([directive, "export var a = 1;", ""].join("\n"))).toEqual({
+      status: 1,
+      findings: ["toucan(disable-reason) at line 1"],
+    });
+  });
+
+  // oxlint applies the directive to the rule's own report: until issue #73
+  // adds a check the directives can't reach, these pass, and review catches them.
+  it.each([
+    ["a block-form disable of every rule", ["/* oxlint-disable */", "export var a = 1;"]],
+    ["its eslint- spelling", ["/* eslint-disable */", "export var a = 1;"]],
+    ["a same-line disable of every rule", ["export var a = 1; // oxlint-disable-line"]],
+    [
+      "a directive that names the rule",
+      [
+        "/* oxlint-disable toucan/disable-reason */",
+        "// oxlint-disable-next-line no-var",
+        "export var a = 1;",
+      ],
+    ],
+  ])("cannot see %s, which hides the rule's own report", (_what, lines) => {
+    expect(lint([...lines, ""].join("\n"))).toEqual({ status: 0, findings: [] });
   });
 
   it("passes a disable with a reason", () => {

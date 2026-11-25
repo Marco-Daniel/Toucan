@@ -8,8 +8,9 @@ catalog:
   "@resvg/resvg-js": ^2.6.2
   "@types/node": ^22.20.5
   "@types/pngjs": 6.0.5
-  # Exact: oxlint's JS plugins are alpha and outside semver, so every bump comes
-  # as its own PR, where the disable-reason canary test runs (ADR-0008).
+  # Exact: oxlint's JS plugins are alpha and outside semver, so every bump needs a
+  # pull request (Dependabot's lint-format group), where the disable-reason
+  # canary test runs (ADR-0008).
   oxlint: 1.94.0
   oxlint-tsgolint: 7.0.2007
   pngjs: 7.0.0
