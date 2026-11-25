@@ -16,7 +16,7 @@ config/vite/        @toucan/vite-config: the shared Vite and Vitest settings
 docs/adr/           the architecture decisions: the system's rules and direction
 docs/plans/         one folder per piece of work: its plan, decisions and progress
 docs/housekeeping/  the periodic maintenance inspection records
-scripts/, test/     the repo's own tooling and its tests: qmd docs search, the docs-sync helper and mutate
+scripts/, test/     the repo's own tooling and its tests: qmd docs search, mutate and the marketplace-upload helper
 ```
 
 The root is the workspace: `pnpm-workspace.yaml`, `turbo.json`, the shared `.oxlintrc.json` and oxfmt config, the husky hook and CI. The [website plan](docs/plans/website/plan.md) records how the repo got this shape.
@@ -43,7 +43,6 @@ From the root, for the whole repo:
 | `pnpm format:check`   | Check formatting with oxfmt (`pnpm format` to fix)                                                                                                       |
 | `pnpm docs:index`     | Register the docs with qmd and refresh its index and embeddings (see below)                                                                              |
 | `pnpm mutate [file…]` | StrykerJS mutation testing of the root's own tooling (see below); on demand                                                                              |
-| `/docs-sync`          | Claude Code skill: report doc drift since the last run, with a fix per item                                                                              |
 | `/marketplace-upload` | Claude Code skill: verify a published release's VSIX, hand over the file and the publisher link for a manual upload, then check the Marketplace lists it |
 
 The extension's own scripts run with `pnpm -C apps/extension <script>` from the root (`pnpm -C apps/extension package`, say), or `pnpm <script>` inside `apps/extension`. Its package keeps the name `toucan`, part of the extension ID `marco-daniel.toucan`. Paths below are relative to `apps/extension`.
