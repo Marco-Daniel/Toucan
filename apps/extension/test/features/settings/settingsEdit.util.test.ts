@@ -134,6 +134,93 @@ describe("planEdit", () => {
     });
   });
 
+  it("moves the last property's trailing comment, set off by spaces, to the line before", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000",\n    "b": "#111111"   // moved here\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    "a": "#000000", // moved here\n  },\n}\n`,
+      changed: ["b"],
+    });
+  });
+
+  it("moves a first property's trailing block comment, without the spaces after it, to the line before", () => {
+    const text = `{\n  "${KEY}": {\n    "b": "#111111", /* moved here */  \n    "c": "#222222",\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { b: "#111111", c: "#222222" },
+      desired: { c: "#222222" },
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{\n  "${KEY}": { /* moved here */\n    "c": "#222222",\n  },\n}\n`,
+      changed: ["b"],
+    });
+  });
+
+  it("appends a moved comment after a block comment that ends the line before", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000", /* mine */\n    "b": "#111111", // moved here\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    "a": "#000000", /* mine */ // moved here\n  },\n}\n`,
+    });
+  });
+
+  it("keeps a moved comment on its own line below a line comment at the start of its line", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000",\n// mine\n    "b": "#111111", // moved here\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    "a": "#000000",\n// mine\n    // moved here\n  },\n}\n`,
+    });
+  });
+
+  it("drops trailing tabs on the line before when it moves a comment there", () => {
+    const text = `{\n  "${KEY}": {\n    "a": "#000000",\t\t\n    "b": "#111111", // moved here\n  },\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n  "${KEY}": {\n    "a": "#000000", // moved here\n  },\n}\n`,
+    });
+  });
+
+  it("removes a property that shares its line through jsonc-parser, in the file's tab indentation", () => {
+    const text = `{\n\t"${KEY}": {\n\t\t"a": "#000000", "b": "#111111"\n\t}\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { b: "#111111" },
+    });
+    expect(plan).toEqual({
+      kind: "edit",
+      text: `{\n\t"${KEY}": {\n\t\t"b": "#111111"\n\t}\n}\n`,
+      changed: ["a"],
+    });
+  });
+
   it("removes the first of two properties on one line without touching the other", () => {
     const text = `{\n  "${KEY}": {\n    "a": "#000000", "b": "#111111"\n  }\n}\n`;
     const plan = planEdit({
@@ -193,6 +280,28 @@ describe("planEdit", () => {
   it("falls back rather than drop a comment it can't keep", () => {
     // One line: Toucan's key doesn't have its lines to itself.
     const text = `{ "${KEY}": { "a": "#000000", /* mine */ "b": "#111111" } }\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toEqual({ kind: "fallback", reason: "the in-place edit would drop a comment" });
+  });
+
+  it("falls back rather than drop a comment right after a removed value", () => {
+    const text = `{ "${KEY}": { "a": "#000000"/* mine */, "b": "#111111" } }\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { b: "#111111" },
+    });
+    expect(plan).toEqual({ kind: "fallback", reason: "the in-place edit would drop a comment" });
+  });
+
+  it("falls back rather than drop one of two identical comments", () => {
+    const text = `{ /* mine */ "${KEY}": { "a": "#000000", /* mine */ "b": "#111111" } }\n`;
     const plan = planEdit({
       text,
       key: KEY,
@@ -286,24 +395,46 @@ describe("planEdit", () => {
     expect(planEdit({ text: FILE, key: KEY, view: VIEW, desired: VIEW })).toEqual({ kind: "noop" });
   });
 
-  it("falls back when the key is absent from the file", () => {
+  it("falls back, naming the key, when the key is absent from the file", () => {
     const plan = planEdit({ text: '{ "a": 1 }', key: KEY, view: undefined, desired: VIEW });
-    expect(plan).toMatchObject({ kind: "fallback" });
+    expect(plan).toEqual({
+      kind: "fallback",
+      reason: "workbench.colorCustomizations isn't in the file",
+    });
   });
 
-  it("falls back when the file differs from VS Code's view (another profile's file)", () => {
+  it("falls back, naming the key, when the file differs from VS Code's view (another profile's file)", () => {
     const plan = planEdit({
       text: FILE,
       key: KEY,
       view: { "editor.background": "#202020" },
       desired: VIEW,
     });
-    expect(plan).toMatchObject({ kind: "fallback" });
+    expect(plan).toEqual({
+      kind: "fallback",
+      reason: "workbench.colorCustomizations in the file differs from VS Code's view",
+    });
   });
 
-  it("falls back on a file that doesn't parse", () => {
-    expect(planEdit({ text: "{ oops", key: KEY, view: VIEW, desired: VIEW })).toMatchObject({
+  it("falls back, saying so, on a file that doesn't parse", () => {
+    expect(planEdit({ text: "{ oops", key: KEY, view: VIEW, desired: VIEW })).toEqual({
       kind: "fallback",
+      reason: "the settings file doesn't parse",
+    });
+  });
+
+  it("falls back when the property to remove is only in a later copy of the setting", () => {
+    // The last copy wins on parse, but the first is where a path lookup lands.
+    const text = `{\n  "${KEY}": {\n    "a": "#000000"\n  },\n  "${KEY}": {\n    "a": "#000000",\n    "b": "#111111"\n  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000", b: "#111111" },
+      desired: { a: "#000000" },
+    });
+    expect(plan).toEqual({
+      kind: "fallback",
+      reason: "the in-place edit didn't produce the expected value",
     });
   });
 
@@ -320,6 +451,35 @@ describe("planEdit", () => {
     expect(plan.text).toBe(
       `{\r\n\t"${KEY}": {\r\n\t\t"a": "#000000",\r\n\t\t"b": "#111111"\r\n\t}\r\n}\r\n`,
     );
+  });
+
+  it("indents new keys like the file, four spaces deep", () => {
+    const text = `{\n    "${KEY}": {\n        "a": "#000000"\n    }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000" },
+      desired: { a: "#000000", b: { c: 1 } },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n    "${KEY}": {\n        "a": "#000000",\n        "b": {\n            "c": 1\n        }\n    }\n}\n`,
+    });
+  });
+
+  it("indents new keys with tabs when the file's indentation starts with a tab", () => {
+    // Tabs, then spaces to align: the first indented line decides.
+    const text = `{\n\t  "${KEY}": {\n\t\t"a": "#000000"\n\t  }\n}\n`;
+    const plan = planEdit({
+      text,
+      key: KEY,
+      view: { a: "#000000" },
+      desired: { a: "#000000", b: { c: 1 } },
+    });
+    expect(plan).toMatchObject({
+      kind: "edit",
+      text: `{\n\t  "${KEY}": {\n\t\t"a": "#000000",\n\t\t"b": {\n\t\t\t"c": 1\n\t\t}\n\t  }\n}\n`,
+    });
   });
 
   it("writes a new object value with the file's CRLF line endings", () => {
@@ -387,6 +547,15 @@ describe("settingsFiles", () => {
     ).toEqual({
       profile: "/home/me/.config/Code/User/profiles/-6a1f/settings.json",
       defaultProfile: "/home/me/.config/Code/User/settings.json",
+    });
+  });
+
+  it("splits a POSIX path with a backslash in a folder name on its slashes", () => {
+    expect(
+      settingsFiles("/home/me/we\\ird/.config/Code/User/globalStorage/marco-daniel.toucan"),
+    ).toEqual({
+      profile: "/home/me/we\\ird/.config/Code/User/settings.json",
+      defaultProfile: "/home/me/we\\ird/.config/Code/User/settings.json",
     });
   });
 
