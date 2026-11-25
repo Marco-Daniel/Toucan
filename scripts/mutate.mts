@@ -6,9 +6,11 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
 
 /** Never mutated: it locks files, writes qmd's cache and starts detached processes (ADR-0012). */
-export const EXCLUDED = "scripts/qmd/";
+const EXCLUDED = "scripts/qmd/";
 /** The mutate command itself, never mutated (see the header). */
-export const ENTRY = "scripts/mutate-cli.mts";
+const ENTRY = "scripts/mutate-cli.mts";
+/** The extension's package folder, whose scripts/ are never mutated: they signal, remove and spawn processes. */
+const EXTENSION = "apps/extension";
 /** Added to every explicit file list, which replaces the config's list and its exclusions. */
 export const EXCLUSIONS = [`!${EXCLUDED}**`, `!${ENTRY}`];
 
@@ -35,6 +37,15 @@ export function mutateRefusal({ files, cwd }: MutateRefusalArgs): string | undef
   const qmd = paths.filter(({ path }) => path.toLowerCase().startsWith(EXCLUDED));
   if (qmd.length > 0) {
     return `Not mutating ${qmd.map(({ file }) => file).join(", ")}: scripts/qmd/ is excluded from mutation testing, because its file locks, cache writes and detached processes could reach the real ~/.cache/qmd.`;
+  }
+  // The extension's scripts kill process groups, remove folders and start VS Code;
+  // a mutant that drops a guard there reaches real processes and folders.
+  const inExtension = resolve(cwd).split(sep).join("/").toLowerCase().endsWith(`/${EXTENSION}`);
+  const scripts = inExtension
+    ? paths.filter(({ path }) => path.toLowerCase().startsWith("scripts/"))
+    : [];
+  if (scripts.length > 0) {
+    return `Not mutating ${scripts.map(({ file }) => file).join(", ")}: the extension's scripts/ is excluded from mutation testing, because its scripts signal, remove and spawn processes, so a mutant could reach real processes and folders.`;
   }
   const entry = paths.filter(({ path }) => path.toLowerCase() === ENTRY);
   if (entry.length > 0) {

@@ -69,7 +69,8 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/apps/extension/media/**",
-        "$TURBO_ROOT$/apps/extension/src/shared/**"
+        "$TURBO_ROOT$/apps/extension/src/shared/**",
+        "$TURBO_ROOT$/apps/extension/package.json"
       ],
       "outputs": []
     },

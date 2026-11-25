@@ -43,13 +43,34 @@ describe("mutateRefusal", () => {
     );
   });
 
-  it("lets the extension mutate its own files, its own scripts included", () => {
+  it("lets the extension mutate its own src files", () => {
     expect(
-      mutateRefusal({
-        files: ["src/core/extension.ts", "scripts/check-vsix.mts", "..file.ts"],
-        cwd: EXTENSION,
-      }),
+      mutateRefusal({ files: ["src/core/extension.ts", "..file.ts"], cwd: EXTENSION }),
     ).toBeUndefined();
+  });
+
+  it.each([
+    ["scripts/screenshots/cleanup.mts"],
+    ["./scripts/screenshots/session.mts"],
+    ["/repo/apps/extension/scripts/check-vsix.mts"],
+    ["Scripts/check-vsix.mts"],
+  ])("refuses the extension's script %s, and says why", (file) => {
+    expect(mutateRefusal({ files: ["src/core/extension.ts", file], cwd: EXTENSION })).toBe(
+      `Not mutating ${file}: the extension's scripts/ is excluded from mutation testing, because its scripts signal, remove and spawn processes, so a mutant could reach real processes and folders.`,
+    );
+  });
+
+  it("refuses the extension's scripts from a cwd spelled in another case or with a trailing slash", () => {
+    expect(mutateRefusal({ files: ["scripts/check-vsix.mts"], cwd: "/repo/Apps/Extension/" })).toBe(
+      "Not mutating scripts/check-vsix.mts: the extension's scripts/ is excluded from mutation testing, because its scripts signal, remove and spawn processes, so a mutant could reach real processes and folders.",
+    );
+  });
+
+  it("lets the site mutate the script its config names, and the root its own scripts", () => {
+    expect(
+      mutateRefusal({ files: ["scripts/chrome.mts"], cwd: "/repo/apps/site" }),
+    ).toBeUndefined();
+    expect(mutateRefusal({ files: ["scripts/check-vsix.mts"], cwd: ROOT })).toBeUndefined();
   });
 
   it("refuses a glob, which would reach the related-tests command verbatim", () => {
@@ -104,6 +125,16 @@ describe("mutateRefusal", () => {
 });
 
 describe("what a mutate run leaves out", () => {
+  it("leaves the extension's scripts out of its config's own list, which runs in place", () => {
+    const config = JSON.parse(
+      readFileSync(new URL("../../apps/extension/stryker.config.json", import.meta.url), "utf8"),
+    );
+    expect({ mutate: config.mutate, inPlace: config.inPlace }).toEqual({
+      mutate: ["src/**/*.ts", "!src/generated/**"],
+      inPlace: true,
+    });
+  });
+
   it("adds the qmd scripts and the command to every explicit file list", () => {
     expect(EXCLUSIONS).toEqual(["!scripts/qmd/**", "!scripts/mutate-cli.mts"]);
   });
