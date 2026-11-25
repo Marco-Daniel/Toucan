@@ -1,0 +1,1535 @@
+{
+ "report": "housekeeping",
+ "repo": "Marco-Daniel/Toucan",
+ "date": "2026-11-25",
+ "range": "since first run (last 30 days, provisional, from 2026-10-26) to 21ad398",
+ "verdict": {
+  "status": "wrong",
+  "text": "Nothing is broken and the gates are green, but every plan is still open: 8 look finished and 1 is idle, with 18 open ends that have no fate. Start with the plans (H1–H10), then the 38 lift candidates (U1–U38)."
+ },
+ "blocks": [
+  {
+   "type": "tiles",
+   "anchor": true,
+   "title": "At a glance",
+   "data": {
+    "tiles": [
+     {
+      "label": "Findings",
+      "value": 56,
+      "unit": "0 high · 50 medium · 6 low",
+      "status": "watch"
+     },
+     {
+      "label": "Needs the developer",
+      "value": 5,
+      "status": "watch"
+     },
+     {
+      "label": "Live plans",
+      "value": 9,
+      "unit": "8 look finished, 1 idle",
+      "status": "wrong"
+     },
+     {
+      "label": "Health",
+      "value": "watch",
+      "unit": "gates green, 2 moderate advisories",
+      "status": "watch"
+     }
+    ]
+   }
+  },
+  {
+   "type": "list",
+   "anchor": true,
+   "title": "Needs the developer",
+   "note": "Questions from the parts; the answers are in the record (2026-11-25.md, Developer answers).",
+   "data": {
+    "items": [
+     {
+      "text": "Run /docs-sync, the repo's own docs sync. There is no docs-sync/last tag yet, so it is a full sweep. The sync-docs part was handed to it, and its watermark stays put until then (also H2's open end).",
+      "status": "watch",
+      "meta": "sync-docs"
+     },
+     {
+      "text": "Audit fix PRs #48 and #50 merged about 1.5 minutes after opening, with no review. Is that the intended route for advisory fixes, or should they go through the review loop?",
+      "status": "watch",
+      "meta": "retro-prs"
+     },
+     {
+      "text": "R1: removing `labels:` makes Dependabot use and create its default labels. Alternatives are `labels: []` (no labels and no bot comment) or creating the three labels on GitHub.",
+      "status": "watch",
+      "meta": "prune-rules"
+     },
+     {
+      "text": "Optional: a local mutation run (pnpm mutate <files>) in an isolated checkout, to give the surviving-mutants tile a number.",
+      "status": "unknown",
+      "meta": "inspect-health"
+     },
+     {
+      "text": "A follow-up outside the repo: add oxlint's `oxlint-disable` to the housekeeping protocol's suppression markers. Until then, inspect-health counts this repo's suppressions by hand.",
+      "status": "watch",
+      "meta": "inspect-health"
+     }
+    ]
+   }
+  },
+  {
+   "type": "list",
+   "title": "Outcome",
+   "note": "What the verdicts did; per id in the record.",
+   "data": {
+    "items": [
+     {
+      "text": "9 plans closed, open ends ticketed or dropped (H1–H10)",
+      "status": "good",
+      "meta": "c842432"
+     },
+     {
+      "text": "3 decisions lifted: ADR-0017, ADR-0018, ADR-0019 (U1, U2, U12); 35 lift candidates dismissed",
+      "status": "good",
+      "meta": "7973fb0"
+     },
+     {
+      "text": "GROUNDING: housekeeping settings, and pnpm through corepack (S1)",
+      "status": "good",
+      "meta": "14fede5, ac7fd06"
+     },
+     {
+      "text": "Branches: 25 local deleted (2 archived), 1 remote deleted, 39 tracking refs pruned (L1–L5)",
+      "status": "good",
+      "meta": "ref actions"
+     },
+     {
+      "text": "Board, labels, epic #57 and Sprint 1; tickets #58–#63",
+      "status": "good",
+      "meta": "GitHub"
+     },
+     {
+      "text": "Dependabot labels created; R1 and S2 dismissed",
+      "status": "good",
+      "meta": "GitHub"
+     },
+     {
+      "text": "sync-docs watermark held: handed to the repo's docs-sync",
+      "status": "watch",
+      "meta": "#58"
+     }
+    ]
+   }
+  },
+  {
+   "type": "note",
+   "title": "Coverage",
+   "data": {
+    "text": "sync-docs was handed to the repo's own docs-sync, so its watermark is not moved; ticket #58 retires that helper, so the next run sweeps the docs itself. retro-sessions read 2 sessions; sessions from removed worktrees outside the repo may be missing."
+   }
+  },
+  {
+   "type": "findings",
+   "title": "Findings",
+   "note": "56 findings: S retro-sessions, R prune-rules, L clean-loose-ends, H inspect-plans, U lift candidates (inspect-decisions). retro-prs, retro-plans and the reports raised no findings of their own.",
+   "data": {
+    "items": [
+     {
+      "id": "S1",
+      "severity": "medium",
+      "lane": "retro-sessions",
+      "pattern": "2×",
+      "statement": "Agents can't find pnpm on PATH and rebuild a corepack workaround in every session",
+      "key": "out-of-reach:pnpm",
+      "evidence": "session 1, 2026-10-19T18:08: the agent checked Node, corepack and pnpm locations, then built a corepack pnpm shim before install and the gates could run.\nsession 2, 2026-10-30T07:38: install failed because pnpm was not found; the agent searched again, switched to corepack pnpm and built a shim so the Turborepo gates could run.\nREADME.md:27 already says to run `corepack enable pnpm` once; GROUNDING.md, which agents read first, does not.",
+      "fix": "GROUNDING.md, Quality Control, add one line after the intro sentence:\n+ pnpm comes through corepack (`packageManager` in package.json): run `corepack enable pnpm` once so Turborepo finds `pnpm` on PATH (README, Development); until then, use `corepack pnpm`.\nOn the developer's machine, running `corepack enable pnpm` once removes the cause.",
+      "lands_in": "doc GROUNDING.md"
+     },
+     {
+      "id": "S2",
+      "severity": "medium",
+      "lane": "retro-sessions",
+      "pattern": "2×",
+      "statement": "The scheduled weekly Audit failed on 12, 19 and 26 Oct, and nothing surfaced it: each time it was found by chance, days later",
+      "key": "out-of-reach:.github/workflows/audit.yml",
+      "evidence": "session 1, 2026-10-19T18:04: the developer half-remembered a failing pipeline; the agent found the Audit had failed on the last two weekly runs.\nsession 2, 2026-10-30T07:36: the same again; the 26 Oct scheduled Audit had failed four days earlier with new advisories.\nsession 2, 2026-10-30T22:25: the Audit was red from 12 Oct until the third override PR (#50) merged on 30 Oct.",
+      "fix": ".github/workflows/audit.yml: add a last step with `if: failure() && github.event_name == 'schedule'` that opens one tracking issue (or comments on the open one) labelled `audit`, via `gh issue`, and give that job `permissions: issues: write`. A red scheduled run then shows as an open issue in GitHub's notifications and in inspect-github.",
+      "lands_in": "check"
+     },
+     {
+      "id": "R1",
+      "severity": "low",
+      "lane": "prune-rules, retro-prs, retro-sessions",
+      "pattern": "2× places (needs a verdict)",
+      "statement": "The Dependabot `labels` settings do nothing: none of the labels exist, so every Dependabot PR goes out unlabelled with a \"labels could not be found\" bot comment",
+      "key": "rule-noise:group-995c4662",
+      "evidence": ".github/dependabot.yml:15 sets `labels: [dependencies, github-actions]` and :40 sets `labels: [dependencies, npm]`, both since b205428 (2026-10-01).\nThe repo's 11 labels include none of `dependencies`, `github-actions`, `npm`; every Dependabot PR (#2, #40–#44, #46, #47, #49, #51–#55) has no label.\nDependabot's bot comment names the missing labels on #46, #47, #49, #53, #54, #55 (retro-prs: #49; retro-sessions: session evidence 2026-10-30).\nNo ADR requires these labels; the only mention is plan history (toucan-v1/progress.md:155).",
+      "fix": "(git apply --check passes at 21ad398)\n--- a/.github/dependabot.yml\n+++ b/.github/dependabot.yml\n@@ -12,7 +12,6 @@\n     cooldown:\n       default-days: 7\n     open-pull-requests-limit: 3\n-    labels: [dependencies, github-actions]\n     commit-message:\n       prefix: deps\n       include: scope\n@@ -37,7 +36,6 @@\n       default-days: 7\n       semver-major-days: 14\n     open-pull-requests-limit: 5\n-    labels: [dependencies, npm]\n     commit-message:\n       prefix: deps\n       include: scope\nNote: without `labels`, Dependabot uses its defaults (`dependencies` plus the ecosystem) and creates them, so PRs get labelled under the default names. See the question under \"Needs the developer\".",
+      "lands_in": "check"
+     },
+     {
+      "id": "L1",
+      "severity": "low",
+      "lane": "clean-loose-ends",
+      "pattern": "23× (needs a verdict)",
+      "statement": "23 local branches are already merged into main (level: safe)",
+      "key": "merged-branch:group-76e02353",
+      "evidence": "`git branch --merged origin/main`: adr-0016-vscode-only, brand-package, codeql-cdp-arguments, dry-upkeep, file-moves, fix-contrast-warning-line, identity-check, manual-marketplace-upload, marketplace-launch, monorepo-move, mutate-no-incremental, readme-showcase, release-1.0.0, release-1.1.0, rules-and-adrs, screenshots-followups, sidebar-explorer, site, site-csp, site-hamburger, site-marketplace-card, site-releases-snapshot, test-temp-cleanup.\nThree (dry-upkeep, file-moves, rules-and-adrs) are [gone] upstream. None has an open PR or a worktree; last commits 2026-10-02 to 2026-10-05.",
+      "fix": "git branch -d -- <each of the 23 names>  (refused for any branch that is not merged)",
+      "lands_in": "file refs/heads/<each branch>"
+     },
+     {
+      "id": "L2",
+      "severity": "low",
+      "lane": "clean-loose-ends",
+      "pattern": "1× (needs a verdict)",
+      "statement": "Local branch `brand-docs` is unmerged by ancestry, but its patch is already on main (level: ask)",
+      "key": "gone-branch:brand-docs",
+      "evidence": "one commit df5a196 (2026-10-03), never pushed, no PR. `git cherry origin/main brand-docs` marks it `-`: the same patch is on main as b39c388.",
+      "fix": "git tag archive/brand-docs-<stem> brand-docs\ngit branch -D -- 'brand-docs'\n(restore: git branch brand-docs archive/brand-docs-<stem>)",
+      "lands_in": "file refs/heads/brand-docs"
+     },
+     {
+      "id": "L3",
+      "severity": "low",
+      "lane": "clean-loose-ends",
+      "pattern": "1× (needs a verdict)",
+      "statement": "Local branch `screenshots-followups-wip` is unmerged by ancestry, but its tree equals merged PR #23 (level: ask)",
+      "key": "gone-branch:screenshots-followups-wip",
+      "evidence": "two commits (097284c, 565dba4, 2026-10-03), no upstream, no PR. Its tree 7ae26d7 equals the tree of `screenshots-followups` (dd20048), PR #23's merged head.",
+      "fix": "git tag archive/screenshots-followups-wip-<stem> screenshots-followups-wip\ngit branch -D -- 'screenshots-followups-wip'\n(restore: git branch screenshots-followups-wip archive/screenshots-followups-wip-<stem>)",
+      "lands_in": "file refs/heads/screenshots-followups-wip"
+     },
+     {
+      "id": "L4",
+      "severity": "low",
+      "lane": "clean-loose-ends",
+      "pattern": "1× (needs a verdict)",
+      "statement": "Remote branch `marketplace-upload-plan` is merged into main and still on origin (level: ask)",
+      "key": "remote-branch:marketplace-upload-plan",
+      "evidence": "origin has it at 87939c3 (2026-10-04), an ancestor of origin/main; no PR ever used it; not protected, not a deploy branch. 51 days stale (also shown by inspect-github).",
+      "fix": "re-read the tip, then (a gated remote delete):\ngit push --force-with-lease='refs/heads/marketplace-upload-plan:87939c3439a960ea8a10092c1fb4f5b4b2c5a471' origin ':refs/heads/marketplace-upload-plan'",
+      "lands_in": "file refs/heads/marketplace-upload-plan"
+     },
+     {
+      "id": "L5",
+      "severity": "low",
+      "lane": "clean-loose-ends",
+      "pattern": "32× (needs a verdict)",
+      "statement": "32 remote-tracking refs point at branches already gone from origin (level: ask)",
+      "key": "gone-branch:group-d5a723b8",
+      "evidence": "refs under refs/remotes/origin not in `git ls-remote --heads origin`: 29 merged into main (fix-audit-*, release-*, site-*, sidebar-explorer and others) and 3 Dependabot branches whose PRs were closed (#43, #44, #47).",
+      "fix": "git remote prune origin --dry-run   (shows the list)\ngit remote prune origin              (deletes local tracking refs only; nothing on origin)",
+      "lands_in": "file refs/remotes/origin"
+     },
+     {
+      "id": "H1",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance is live and idle 54 days, with its last Next still open",
+      "key": "idle-plan:docs/plans/architecture-maintenance/plan.md",
+      "evidence": "no Status line; newest progress entry and last commit 2026-10-02 (e0056c0); 54 days idle.\nFinished signals: PRs #7, #8, #9 merged; backlog issue #6 closed. Not counted finished: progress.md:10's Next still lists the post-merge checks and the qmd re-index.\nOpen ends:\n1. progress.md:10, trail.md:46-47, decisions/0005:25: post-merge checks (hooks, MCP server) and the re-index from main (→ 0028). Not recorded done, though the docs index serves the start commit, so they look done.\n2. decisions/0012:25, trail.md:48, plan.md:102: enforce ignore reasons through lint once oxlint jsPlugins is stable. ADR-0008 calls this tracked work, but no issue exists.\n3. decisions/0004:25: per-folder rule files \"if they're needed\".",
+      "fix": "close-plans closes it (Status: Closed <date>) and gives each open end a fate (ticket, drop, move). Dismiss if the plan resumes.",
+      "lands_in": "record docs/plans/architecture-maintenance/plan.md"
+     },
+     {
+      "id": "H2",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "docs-sync looks finished: its issue is closed and its PR merged",
+      "key": "finished-plan:docs/plans/docs-sync/plan.md",
+      "evidence": "no Status line; issue #6 closed 2026-10-03; PR #10 merged; progress.md has no entries; last commit 2026-10-03 (3cbc894); 53 days idle. No open PR, issue or Next.\nOpen ends:\n1. trail.md:18: \"the first real run: a full sweep\". origin has no docs-sync/last tag, so no full run has landed.",
+      "fix": "close-plans closes it and gives the open end a fate.",
+      "lands_in": "record docs/plans/docs-sync/plan.md"
+     },
+     {
+      "id": "H3",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set looks finished: PR #4 merged with the visual sign-off and shipped in v0.0.2",
+      "key": "finished-plan:docs/plans/glyph-set/plan.md",
+      "evidence": "no Status line; PR #4 merged 2026-10-02 with the maintainer's visual sign-off; v0.0.2 released; newest progress entry has no Next; 54 days idle.\nOpen ends:\n1. trail.md:28: whether the 18-wide toucan's label shift shows next to 16-wide glyphs. Not answered on its own; the sign-off may cover it.",
+      "fix": "close-plans closes it and gives the open end a fate.",
+      "lands_in": "record docs/plans/glyph-set/plan.md"
+     },
+     {
+      "id": "H4",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "marketplace-launch looks finished: 1.0.0 is on the Marketplace and all its PRs are merged",
+      "key": "finished-plan:docs/plans/marketplace-launch/plan.md",
+      "evidence": "no Status line; PRs #30, #31, #33, #34 merged; v1.0.0 released 2026-10-04 and listed on the Marketplace; 52 days idle.\nNewest Next (progress.md:13-17): Open VSX in its own plan, dropped by decisions/0011 and ADR-0016. The older Next (Azure setup) was overtaken by marketplace-upload.\nOpen ends:\n1. trail.md:47: does the Azure wizard fill in the immutable subject format? Overtaken (marketplace-upload/0004 keeps the Azure job dormant).\n2. trail.md:48: Creator or Contributor for the identity? Overtaken the same way.\n3. trail.md:49, plan.md:10: a follow-up plan once trusted publishing is live; marketplace-upload/0006 decides it, but there is no ticket.",
+      "fix": "close-plans closes it and gives each open end a fate (1–2 look like drops; 3 a move or a ticket).",
+      "lands_in": "record docs/plans/marketplace-launch/plan.md"
+     },
+     {
+      "id": "H5",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "marketplace-upload looks finished: the hand-upload route is in place and two releases went through it",
+      "key": "finished-plan:docs/plans/marketplace-upload/plan.md",
+      "evidence": "no Status line; PRs #32 and #33 merged; the Marketplace lists 1.0.0 and 1.1.0; 52 days idle. Newest entry (progress.md:13-16) is a standing practice (same route until trusted publishing, → 0006), not plan work.\nOpen ends:\n1. trail.md:26, progress.md:16, decisions/0006 Consequences: no ticket or watch for when Marketplace trusted publishing goes live.",
+      "fix": "close-plans closes it and gives the open end a fate (probably a ticket).",
+      "lands_in": "record docs/plans/marketplace-upload/plan.md"
+     },
+     {
+      "id": "H6",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "readme-showcase looks finished: PR #14 merged and its log says done",
+      "key": "finished-plan:docs/plans/readme-showcase/plan.md",
+      "evidence": "no Status line; PR #14 merged 2026-10-03; newest entry (progress.md:9) says Done; 53 days idle.\nOpen ends:\n1. trail.md:18: whether the showcase grows beyond the README.\n2. progress.md:12: the screenshot script runs on macOS only; another platform needs the app's paths.",
+      "fix": "close-plans closes it and gives each open end a fate.",
+      "lands_in": "record docs/plans/readme-showcase/plan.md"
+     },
+     {
+      "id": "H7",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "sidebar-explorer looks finished: v1.1.0 is released, uploaded and in the site snapshot",
+      "key": "finished-plan:docs/plans/sidebar-explorer/plan.md",
+      "evidence": "no Status line; PRs #37, #38, #39 merged; v1.1.0 released 2026-10-05 and listed on the Marketplace; every step of the newest Next (progress.md:42) is done; 51 days idle.\nOpen ends:\n1. decisions/0002:26, plan.md:52, trail.md:35: remove the deprecated visibility settings from the manifest in a later release. They are still in apps/extension/package.json:164-165 and :204-205, with no ticket.",
+      "fix": "close-plans closes it and gives the open end a fate.",
+      "lands_in": "record docs/plans/sidebar-explorer/plan.md"
+     },
+     {
+      "id": "H8",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1 looks finished: PR #1 merged and v0.0.1 shipped, with five follow-ups that have no fate",
+      "key": "finished-plan:docs/plans/toucan-v1/plan.md",
+      "evidence": "no Status line; PR #1 merged 2026-10-01; v0.0.1 released; newest progress entry has no Next; last commit 2026-10-05 (457696b); 51 days idle.\nOpen ends:\n1. decisions/0004:25: tune the derivation amounts visually; no tuning pass recorded.\n2. decisions/0009:25: revisit following the active editor after v1.\n3. decisions/0016:33: re-check the agents-control setting when VS Code renames or stabilizes it.\n4. decisions/0018:27: revisit if VS Code exposes resolved theme colors.\n5. plan.md:14: statusBar.* coloring, possible later as an opt-in.",
+      "fix": "close-plans closes it and gives each open end a fate.",
+      "lands_in": "record docs/plans/toucan-v1/plan.md"
+     },
+     {
+      "id": "H9",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website looks finished: its three PRs are merged and the site deploys from main",
+      "key": "finished-plan:docs/plans/website/plan.md",
+      "evidence": "no Status line; PRs #19, #20, #21 merged; Deploy site runs on main succeed (latest 2026-10-30); the newest Next (progress.md:13) is done, and its \"refresh releases.json after each release\" is documented in README.md:80; 52 days idle.\nOpen ends:\n1. trail.md:56: the React Router major upgrade is planned work, with no ticket.",
+      "fix": "close-plans closes it and gives the open end a fate.",
+      "lands_in": "record docs/plans/website/plan.md"
+     },
+     {
+      "id": "H10",
+      "severity": "medium",
+      "lane": "inspect-plans",
+      "pattern": "9× (needs a verdict)",
+      "statement": "No plan.md has a Status line (9 plans)",
+      "key": "no-status:group-f80c562c",
+      "evidence": "no `Status:` line in any docs/plans/*/plan.md: architecture-maintenance, docs-sync, glyph-set, marketplace-launch, marketplace-upload, readme-showcase, sidebar-explorer, toucan-v1, website.",
+      "fix": "close-plans sets the line: closing a plan (H1–H9) writes `Status: Closed <date>`; a plan kept open gets `Status: Live`.",
+      "lands_in": "record docs/plans/<plan>/plan.md (each of the 9)"
+     },
+     {
+      "id": "U1",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0017 (Edit settings in place to keep comments) is cited outside its plan in 8 place(s), ADR-0001 among them",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0017-edit-settings-in-place-to-keep-comments.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0017-edit-settings-in-place-to-keep-comments.md; cited at:\napps/extension/src/features/commands/commands.adapter.ts:22\napps/extension/src/features/focus/focus.adapter.ts:83\napps/extension/src/features/settings/settings.adapter.ts:38\napps/extension/src/features/settings/settingsEdit.util.ts:28\napps/extension/src/features/settings/settingsWrite.util.ts:95\napps/extension/src/features/sidebar/sidebar.adapter.ts:166\napps/extension/test/features/settings/settingsEdit.util.test.ts:495\ndocs/adr/0001-keep-toucans-settings-in-user-scope.md:35",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0017-edit-settings-in-place-to-keep-comments.md"
+     },
+     {
+      "id": "U2",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0008 (Clear Toucan's keys for unconfigured repos) is cited outside its plan in 7 place(s), ADR-0002 among them",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0008-clear-toucan-keys-for-unconfigured-repos.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0008-clear-toucan-keys-for-unconfigured-repos.md; cited at:\napps/extension/src/core/repo.adapter.ts:24\napps/extension/src/features/focus/focus.adapter.ts:22\napps/extension/src/features/focus/focus.util.ts:49\napps/extension/src/features/focus/merge.util.ts:29\napps/extension/src/features/statusBar/statusBar.adapter.ts:20\napps/extension/test/features/focus/focus.util.test.ts:27\ndocs/adr/0002-toucan-owns-the-commandcenter-keys.md:27",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0008-clear-toucan-keys-for-unconfigured-repos.md"
+     },
+     {
+      "id": "U3",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0018 (Warn about low status bar contrast when picking a color) is cited outside its plan in 6 place(s), ADR-0005 among them",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0018-warn-about-low-status-bar-contrast-when-picking.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0018-warn-about-low-status-bar-contrast-when-picking.md; cited at:\napps/extension/src/features/commands/commandUi.adapter.ts:37\napps/extension/src/features/commands/presetItem.util.ts:11\napps/extension/src/features/commands/setColor.adapter.ts:31\napps/extension/src/shared/color/contrast.util.ts:15\napps/extension/test/shared/color/contrast.util.test.ts:102\ndocs/adr/0005-always-show-a-status-bar-glyph-and-repo-name.md:35",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0018-warn-about-low-status-bar-contrast-when-picking.md"
+     },
+     {
+      "id": "U4",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0007 (Offer an experimental emoji in the Command Center label) is cited outside its plan in 6 place(s), ADR-0003 among them",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0007-offer-an-experimental-emoji-in-the-command-center-label.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0007-offer-an-experimental-emoji-in-the-command-center-label.md; cited at:\napps/extension/src/features/searchEmoji/emoji.util.ts:115\napps/extension/src/features/searchEmoji/emojiLabel.util.ts:5\napps/extension/src/features/searchEmoji/searchEmoji.adapter.ts:43\napps/extension/src/features/searchEmoji/titleSetup.util.ts:127\napps/extension/src/features/searchEmoji/windowTitle.util.ts:2\ndocs/adr/0003-use-stable-vs-code-api-only.md:14",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0007-offer-an-experimental-emoji-in-the-command-center-label.md"
+     },
+     {
+      "id": "U5",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance/0023 (Take one object argument by default) states a repo-wide rule that no ADR holds",
+      "key": "lift-candidate:docs/plans/architecture-maintenance/decisions/0023-take-one-object-argument-by-default.md",
+      "evidence": "record docs/plans/architecture-maintenance/decisions/0023-take-one-object-argument-by-default.md; the rule is stated at .claude/CLAUDE.md:31, and no ADR states it",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/architecture-maintenance/decisions/0023-take-one-object-argument-by-default.md"
+     },
+     {
+      "id": "U6",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance/0021 (Import types separately, and group imports by role) states a repo-wide rule that no ADR holds",
+      "key": "lift-candidate:docs/plans/architecture-maintenance/decisions/0021-import-types-separately-and-group-imports-by-role.md",
+      "evidence": "record docs/plans/architecture-maintenance/decisions/0021-import-types-separately-and-group-imports-by-role.md; the rule is stated at .claude/CLAUDE.md:29, and no ADR states it",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/architecture-maintenance/decisions/0021-import-types-separately-and-group-imports-by-role.md"
+     },
+     {
+      "id": "U7",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance/0022 (Write shared code from the start, without over-abstracting it) states a repo-wide rule that no ADR holds",
+      "key": "lift-candidate:docs/plans/architecture-maintenance/decisions/0022-write-shared-code-from-the-start-without-over-abstracting-it.md",
+      "evidence": "record docs/plans/architecture-maintenance/decisions/0022-write-shared-code-from-the-start-without-over-abstracting-it.md; the rule is stated at .claude/CLAUDE.md:30, and no ADR states it",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/architecture-maintenance/decisions/0022-write-shared-code-from-the-start-without-over-abstracting-it.md"
+     },
+     {
+      "id": "U8",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance/0026 (Write naming conventions into CLAUDE.md) states a repo-wide rule that no ADR holds",
+      "key": "lift-candidate:docs/plans/architecture-maintenance/decisions/0026-write-naming-conventions-into-claude-md.md",
+      "evidence": "record docs/plans/architecture-maintenance/decisions/0026-write-naming-conventions-into-claude-md.md; the rule is stated at .claude/CLAUDE.md:28, and no ADR states it",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/architecture-maintenance/decisions/0026-write-naming-conventions-into-claude-md.md"
+     },
+     {
+      "id": "U9",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance/0024 (Keep test-only exports, and remove unused ones) states a repo-wide rule that no ADR holds",
+      "key": "lift-candidate:docs/plans/architecture-maintenance/decisions/0024-keep-test-only-exports-and-remove-unused-ones.md",
+      "evidence": "record docs/plans/architecture-maintenance/decisions/0024-keep-test-only-exports-and-remove-unused-ones.md; the rule is stated at .claude/CLAUDE.md:35, and no ADR states it",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/architecture-maintenance/decisions/0024-keep-test-only-exports-and-remove-unused-ones.md"
+     },
+     {
+      "id": "U10",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance/0007 (Keep docs in sync through a CLAUDE.md rule) states a repo-wide rule that no ADR holds",
+      "key": "lift-candidate:docs/plans/architecture-maintenance/decisions/0007-keep-docs-in-sync-through-a-claude-md-rule.md",
+      "evidence": "record docs/plans/architecture-maintenance/decisions/0007-keep-docs-in-sync-through-a-claude-md-rule.md; the rule is stated at .claude/CLAUDE.md:51, and no ADR states it",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/architecture-maintenance/decisions/0007-keep-docs-in-sync-through-a-claude-md-rule.md"
+     },
+     {
+      "id": "U11",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "architecture-maintenance/0006 (Write CLAUDE.md as lean rules plus a library of pointers) states a repo-wide rule and is cited outside its plan",
+      "key": "lift-candidate:docs/plans/architecture-maintenance/decisions/0006-write-claude-md-as-lean-rules-plus-a-library-of-pointers.md",
+      "evidence": "record docs/plans/architecture-maintenance/decisions/0006-write-claude-md-as-lean-rules-plus-a-library-of-pointers.md; the rule shapes .claude/CLAUDE.md (its whole shape), and no ADR states it; cited at:\n.claude/skills/docs-sync/SKILL.md:49",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/architecture-maintenance/decisions/0006-write-claude-md-as-lean-rules-plus-a-library-of-pointers.md"
+     },
+     {
+      "id": "U12",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "docs-sync/0005 (Amend plans, never rewrite them) states a repo-wide rule that no ADR holds",
+      "key": "lift-candidate:docs/plans/docs-sync/decisions/0005-amend-plans-never-rewrite-them.md",
+      "evidence": "record docs/plans/docs-sync/decisions/0005-amend-plans-never-rewrite-them.md; the rule is stated at .claude/skills/docs-sync/SKILL.md:52, and no ADR states it",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/docs-sync/decisions/0005-amend-plans-never-rewrite-them.md"
+     },
+     {
+      "id": "U13",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0012 (Make the glyph a per-repo setting, defaulting to square) is cited outside its plan in 2 place(s), ADR-0005 among them",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0012-make-the-glyph-a-per-repo-setting-defaulting-to-square.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0012-make-the-glyph-a-per-repo-setting-defaulting-to-square.md; cited at:\napps/extension/src/features/searchEmoji/emoji.util.ts:115\ndocs/adr/0005-always-show-a-status-bar-glyph-and-repo-name.md:28",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0012-make-the-glyph-a-per-repo-setting-defaulting-to-square.md"
+     },
+     {
+      "id": "U14",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "sidebar-explorer/0001 (Move the sidebar block into the Explorer) is cited outside its plan in 4 place(s), ADR-0016 among them",
+      "key": "lift-candidate:docs/plans/sidebar-explorer/decisions/0001-move-the-sidebar-block-into-the-explorer.md",
+      "evidence": "record docs/plans/sidebar-explorer/decisions/0001-move-the-sidebar-block-into-the-explorer.md; cited at:\napps/extension/src/features/sidebar/sidebar.adapter.ts:45\napps/extension/src/features/sidebar/sidebar.util.ts:71\ndocs/adr/0016-toucan-is-a-vs-code-extension.md:15\ndocs/plans/toucan-v1/decisions/0006-offer-an-opt-in-secondary-sidebar-color-block.md:3",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/sidebar-explorer/decisions/0001-move-the-sidebar-block-into-the-explorer.md"
+     },
+     {
+      "id": "U15",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0014 (Ship a toucan-themed preset palette) is cited outside its plan in 5 place(s)",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0014-ship-a-toucan-themed-preset-palette.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0014-ship-a-toucan-themed-preset-palette.md; cited at:\napps/extension/src/shared/color/presets.consts.ts:15\napps/extension/test/features/searchEmoji/emoji.util.test.ts:12\napps/extension/test/shared/color/derive.util.test.ts:22\napps/extension/test/shared/color/presets.consts.test.ts:8\npackages/brand/src/presets.consts.ts:1",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0014-ship-a-toucan-themed-preset-palette.md"
+     },
+     {
+      "id": "U16",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0016 (Offer once to switch Agents control to badge) is cited outside its plan in 3 place(s)",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0016-offer-to-switch-agents-control-to-badge.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0016-offer-to-switch-agents-control-to-badge.md; cited at:\napps/extension/src/core/extension.ts:63\napps/extension/src/features/agentsControl/agentsControl.adapter.ts:27\napps/extension/src/features/agentsControl/agentsControl.util.ts:1",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0016-offer-to-switch-agents-control-to-badge.md"
+     },
+     {
+      "id": "U17",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0015 (Ask before changing window.title) is cited outside its plan in 3 place(s)",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0015-ask-before-changing-window-title.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0015-ask-before-changing-window-title.md; cited at:\napps/extension/src/features/searchEmoji/searchEmoji.adapter.ts:31\napps/extension/src/features/searchEmoji/titleSetup.util.ts:44\napps/extension/src/features/searchEmoji/windowTitle.util.ts:16",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0015-ask-before-changing-window-title.md"
+     },
+     {
+      "id": "U18",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0004 (Derive missing colors with culori) is cited outside its plan in 2 place(s)",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0004-derive-missing-colors-with-culori.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0004-derive-missing-colors-with-culori.md; cited at:\napps/extension/src/shared/color/derive.util.ts:11\napps/extension/src/shared/model/model.consts.ts:4",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0004-derive-missing-colors-with-culori.md"
+     },
+     {
+      "id": "U19",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0013 (Make the sidebar block style and visibility configurable) is cited outside its plan in 5 place(s)",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0013-make-the-sidebar-block-style-and-visibility-configurable.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0013-make-the-sidebar-block-style-and-visibility-configurable.md; cited at:\napps/extension/src/features/sidebar/sidebar.view.ts:9\napps/extension/src/shared/model/model.consts.ts:21\ndocs/plans/sidebar-explorer/context.md:8\ndocs/plans/sidebar-explorer/decisions/0002-drop-the-unfocused-visibility-mode.md:6\ndocs/plans/sidebar-explorer/decisions/0006-hide-the-block-through-its-when-clause.md:7",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0013-make-the-sidebar-block-style-and-visibility-configurable.md"
+     },
+     {
+      "id": "U20",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "toucan-v1/0009 (Use the first folder in multi-root windows) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/toucan-v1/decisions/0009-use-the-first-folder-in-multi-root-windows.md",
+      "evidence": "record docs/plans/toucan-v1/decisions/0009-use-the-first-folder-in-multi-root-windows.md; cited at:\napps/extension/src/core/repo.adapter.ts:21",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/toucan-v1/decisions/0009-use-the-first-folder-in-multi-root-windows.md"
+     },
+     {
+      "id": "U21",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "sidebar-explorer/0002 (Drop the unfocused visibility mode) is cited outside its plan in 3 place(s)",
+      "key": "lift-candidate:docs/plans/sidebar-explorer/decisions/0002-drop-the-unfocused-visibility-mode.md",
+      "evidence": "record docs/plans/sidebar-explorer/decisions/0002-drop-the-unfocused-visibility-mode.md; cited at:\napps/extension/src/features/sidebar/sidebar.util.ts:32\napps/extension/src/shared/config/config.util.ts:32\ndocs/plans/toucan-v1/decisions/0013-make-the-sidebar-block-style-and-visibility-configurable.md:3",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/sidebar-explorer/decisions/0002-drop-the-unfocused-visibility-mode.md"
+     },
+     {
+      "id": "U22",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "sidebar-explorer/0006 (Hide the block through its when clause; only a Hide closes it) is cited outside its plan in 3 place(s)",
+      "key": "lift-candidate:docs/plans/sidebar-explorer/decisions/0006-hide-the-block-through-its-when-clause.md",
+      "evidence": "record docs/plans/sidebar-explorer/decisions/0006-hide-the-block-through-its-when-clause.md; cited at:\napps/extension/src/features/sidebar/sidebar.adapter.ts:31\napps/extension/src/features/sidebar/sidebar.util.ts:13\ndocs/plans/toucan-v1/decisions/0013-make-the-sidebar-block-style-and-visibility-configurable.md:3",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/sidebar-explorer/decisions/0006-hide-the-block-through-its-when-clause.md"
+     },
+     {
+      "id": "U23",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "sidebar-explorer/0008 (Reveal the block once, when the user turns it on) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/sidebar-explorer/decisions/0008-reveal-once-when-the-user-turns-the-block-on.md",
+      "evidence": "record docs/plans/sidebar-explorer/decisions/0008-reveal-once-when-the-user-turns-the-block-on.md; cited at:\napps/extension/src/features/sidebar/sidebar.util.ts:79",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/sidebar-explorer/decisions/0008-reveal-once-when-the-user-turns-the-block-on.md"
+     },
+     {
+      "id": "U24",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website/0010 (Deploy to Netlify from GitHub Actions) is cited outside its plan in 4 place(s)",
+      "key": "lift-candidate:docs/plans/website/decisions/0010-deploy-to-netlify-from-github-actions.md",
+      "evidence": "record docs/plans/website/decisions/0010-deploy-to-netlify-from-github-actions.md; cited at:\n.github/workflows/deploy.yml:3\napps/site/app/lib/site.consts.ts:1\napps/site/scripts/deploy.mts:3\napps/site/scripts/netlify.mts:2",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/website/decisions/0010-deploy-to-netlify-from-github-actions.md"
+     },
+     {
+      "id": "U25",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website/0011 (Follow the approved mockup) is cited outside its plan in 3 place(s)",
+      "key": "lift-candidate:docs/plans/website/decisions/0011-follow-the-approved-mockup.md",
+      "evidence": "record docs/plans/website/decisions/0011-follow-the-approved-mockup.md; cited at:\napps/site/app/components/features.view.tsx:18\napps/site/app/lib/svg.util.ts:42\napps/site/scripts/og-card.mts:1",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/website/decisions/0011-follow-the-approved-mockup.md"
+     },
+     {
+      "id": "U26",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website/0012 (Check every page at phone, tablet and desktop width) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/website/decisions/0012-check-every-page-at-three-widths.md",
+      "evidence": "record docs/plans/website/decisions/0012-check-every-page-at-three-widths.md; cited at:\napps/site/scripts/screenshots.mts:3",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/website/decisions/0012-check-every-page-at-three-widths.md"
+     },
+     {
+      "id": "U27",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website/0013 (Keep Marketplace publishing out of this plan) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/website/decisions/0013-keep-marketplace-publishing-separate.md",
+      "evidence": "record docs/plans/website/decisions/0013-keep-marketplace-publishing-separate.md; cited at:\ndocs/plans/marketplace-launch/decisions/0009-point-the-site-at-the-store-after-launch.md:9",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/website/decisions/0013-keep-marketplace-publishing-separate.md"
+     },
+     {
+      "id": "U28",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website/0001 (Build the site with React Router framework mode, pre-rendered) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/website/decisions/0001-build-the-site-with-react-router-framework-mode.md",
+      "evidence": "record docs/plans/website/decisions/0001-build-the-site-with-react-router-framework-mode.md; cited at:\napps/site/react-router.config.ts:11",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/website/decisions/0001-build-the-site-with-react-router-framework-mode.md"
+     },
+     {
+      "id": "U29",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website/0002 (Style with Tailwind, with the icon's colors as theme tokens) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/website/decisions/0002-style-with-tailwind-using-the-icons-colors.md",
+      "evidence": "record docs/plans/website/decisions/0002-style-with-tailwind-using-the-icons-colors.md; cited at:\napps/site/app/app.css:4",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/website/decisions/0002-style-with-tailwind-using-the-icons-colors.md"
+     },
+     {
+      "id": "U30",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "website/0003 (Ship a landing page, docs and a changelog) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/website/decisions/0003-ship-a-landing-page-docs-and-a-changelog.md",
+      "evidence": "record docs/plans/website/decisions/0003-ship-a-landing-page-docs-and-a-changelog.md; cited at:\napps/site/app/lib/docs.consts.ts:8",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/website/decisions/0003-ship-a-landing-page-docs-and-a-changelog.md"
+     },
+     {
+      "id": "U31",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "marketplace-launch/0009 (Point the website at the store after launch) is cited outside its plan in 3 place(s)",
+      "key": "lift-candidate:docs/plans/marketplace-launch/decisions/0009-point-the-site-at-the-store-after-launch.md",
+      "evidence": "record docs/plans/marketplace-launch/decisions/0009-point-the-site-at-the-store-after-launch.md; cited at:\napps/site/app/components/install.view.tsx:15\napps/site/app/lib/site.consts.ts:8\ndocs/plans/marketplace-upload/progress.md:15",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/marketplace-launch/decisions/0009-point-the-site-at-the-store-after-launch.md"
+     },
+     {
+      "id": "U32",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set/0001 (Draw every glyph in Toucan's own font) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/glyph-set/decisions/0001-draw-every-glyph-in-toucans-own-font.md",
+      "evidence": "record docs/plans/glyph-set/decisions/0001-draw-every-glyph-in-toucans-own-font.md; cited at:\ndocs/plans/architecture-maintenance/progress.md:18",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/glyph-set/decisions/0001-draw-every-glyph-in-toucans-own-font.md"
+     },
+     {
+      "id": "U33",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set/0002 (Curate sixteen glyphs in four themed groups) is cited outside its plan in 2 place(s)",
+      "key": "lift-candidate:docs/plans/glyph-set/decisions/0002-curate-sixteen-glyphs-in-four-themed-groups.md",
+      "evidence": "record docs/plans/glyph-set/decisions/0002-curate-sixteen-glyphs-in-four-themed-groups.md; cited at:\ndocs/plans/toucan-v1/decisions/0012-make-the-glyph-a-per-repo-setting-defaulting-to-square.md:3\npackages/brand/src/glyphs.consts.ts:4",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/glyph-set/decisions/0002-curate-sixteen-glyphs-in-four-themed-groups.md"
+     },
+     {
+      "id": "U34",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set/0003 (Drop double-circle and check-circle) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/glyph-set/decisions/0003-drop-double-circle-and-check-circle.md",
+      "evidence": "record docs/plans/glyph-set/decisions/0003-drop-double-circle-and-check-circle.md; cited at:\napps/extension/src/shared/model/model.consts.ts:18",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/glyph-set/decisions/0003-drop-double-circle-and-check-circle.md"
+     },
+     {
+      "id": "U35",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set/0004 (Draw glyphs polygonal with softened corners) is cited outside its plan in 2 place(s)",
+      "key": "lift-candidate:docs/plans/glyph-set/decisions/0004-draw-glyphs-polygonal-with-softened-corners.md",
+      "evidence": "record docs/plans/glyph-set/decisions/0004-draw-glyphs-polygonal-with-softened-corners.md; cited at:\napps/extension/scripts/bake-glyphs.mts:7\napps/extension/src/features/glyphs/glyphDesign.consts.ts:11",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/glyph-set/decisions/0004-draw-glyphs-polygonal-with-softened-corners.md"
+     },
+     {
+      "id": "U36",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set/0005 (Draw the toucan after the app icon, with a cut-out eye) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/glyph-set/decisions/0005-draw-the-toucan-after-the-app-icon-with-a-cut-out-eye.md",
+      "evidence": "record docs/plans/glyph-set/decisions/0005-draw-the-toucan-after-the-app-icon-with-a-cut-out-eye.md; cited at:\napps/extension/src/features/glyphs/glyphDesign.consts.ts:150",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/glyph-set/decisions/0005-draw-the-toucan-after-the-app-icon-with-a-cut-out-eye.md"
+     },
+     {
+      "id": "U37",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set/0006 (Draw the sun with eight separate pointy rays) is cited outside its plan in 1 place(s)",
+      "key": "lift-candidate:docs/plans/glyph-set/decisions/0006-draw-the-sun-with-eight-separate-pointy-rays.md",
+      "evidence": "record docs/plans/glyph-set/decisions/0006-draw-the-sun-with-eight-separate-pointy-rays.md; cited at:\napps/extension/src/features/glyphs/glyphDesign.consts.ts:30",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/glyph-set/decisions/0006-draw-the-sun-with-eight-separate-pointy-rays.md"
+     },
+     {
+      "id": "U38",
+      "severity": "medium",
+      "lane": "inspect-decisions",
+      "pattern": "1× (needs a verdict)",
+      "statement": "glyph-set/0007 (Redraw the leaf and add a water drop) is cited outside its plan in 2 place(s)",
+      "key": "lift-candidate:docs/plans/glyph-set/decisions/0007-redraw-the-leaf-and-add-a-water-drop.md",
+      "evidence": "record docs/plans/glyph-set/decisions/0007-redraw-the-leaf-and-add-a-water-drop.md; cited at:\napps/extension/src/features/glyphs/glyphDesign.consts.ts:161\npackages/brand/src/glyphs.consts.ts:4",
+      "fix": "lift-decisions lifts it to an ADR",
+      "lands_in": "record docs/plans/glyph-set/decisions/0007-redraw-the-leaf-and-add-a-water-drop.md"
+     }
+    ]
+   }
+  }
+ ],
+ "sections": [
+  {
+   "title": "Since the last inspection",
+   "report": "inspect-changes",
+   "verdict": {
+    "status": "good",
+    "text": "Three PRs merged on 2026-10-30, all dependency work (two audit fixes, one Dependabot bump); no plans, decisions, ADRs, releases or notable commits, so nothing to look at."
+   },
+   "blocks": [
+    {
+     "type": "timeline",
+     "anchor": true,
+     "title": "Since the last inspection",
+     "note": "First inspection: the last 30 days (provisional), since 2026-10-26 to 21ad398.",
+     "data": {
+      "events": [
+       {
+        "date": "2026-10-30",
+        "kind": "PR",
+        "label": "#48 Audit: raise zod, fast-uri and qs above their advisories",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/48"
+       },
+       {
+        "date": "2026-10-30",
+        "kind": "PR",
+        "label": "#49 deps(deps): bump the everything-else group across 1 directory with 11 updates",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/49"
+       },
+       {
+        "date": "2026-10-30",
+        "kind": "PR",
+        "label": "#50 Audit: raise @azure/msal-node above its advisory",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/50"
+       }
+      ]
+     }
+    },
+    {
+     "type": "tiles",
+     "title": "Counts",
+     "data": {
+      "tiles": [
+       {
+        "label": "PRs merged",
+        "value": "3"
+       },
+       {
+        "label": "Plans opened / closed",
+        "value": "0 / 0"
+       },
+       {
+        "label": "Decisions added",
+        "value": "0"
+       },
+       {
+        "label": "ADRs changed",
+        "value": "0"
+       },
+       {
+        "label": "Releases",
+        "value": "0"
+       }
+      ]
+     }
+    },
+    {
+     "type": "heatmap",
+     "title": "Activity per area and week",
+     "note": "Commits touching each area per ISO week (labelled by Monday); merge commits counted through their changes only.",
+     "data": {
+      "rows": [
+       "root",
+       "apps"
+      ],
+      "cols": [
+       "10-26"
+      ],
+      "values": [
+       [
+        3
+       ],
+       [
+        1
+       ]
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "GitHub status",
+   "report": "inspect-github",
+   "verdict": {
+    "status": "watch",
+    "text": "Nothing waits on the developer and CI on main is green; six Dependabot PRs sit unreviewed, the oldest (#40, 43 days) blocked by a failing CI check."
+   },
+   "blocks": [
+    {
+     "type": "list",
+     "anchor": true,
+     "title": "Waiting on the developer",
+     "note": "Review requests and assignments only; no human-judgement label is set.",
+     "data": {
+      "items": [
+       {
+        "text": "Nothing waits on the developer",
+        "status": "good"
+       }
+      ]
+     }
+    },
+    {
+     "type": "tiles",
+     "title": "At a glance",
+     "note": "CI: 49 of the last 50 completed runs on main passed, none cancelled or skipped; spark is the pass rate per week (weeks 44-48). Unreleased: commits on main since v1.1.0 (2026-10-05). No board set.",
+     "data": {
+      "tiles": [
+       {
+        "label": "Open PRs",
+        "value": 6,
+        "unit": "6 waiting for review",
+        "status": "watch"
+       },
+       {
+        "label": "Open issues",
+        "value": 0,
+        "status": "good"
+       },
+       {
+        "label": "CI pass rate (main)",
+        "value": 98,
+        "unit": "%",
+        "status": "good",
+        "spark": [
+         95,
+         100,
+         100,
+         100,
+         100
+        ]
+       },
+       {
+        "label": "Unreleased commits",
+        "value": 10,
+        "unit": "since v1.1.0"
+       },
+       {
+        "label": "Stale branches",
+        "value": 1,
+        "status": "watch"
+       }
+      ]
+     }
+    },
+    {
+     "type": "list",
+     "title": "PRs that need a look",
+     "note": "All six are Dependabot PRs with no review and no review request; only #40 is blocked.",
+     "data": {
+      "items": [
+       {
+        "text": "#40 deps(deps): bump the lint-format group across 1 directory with 2 updates",
+        "status": "wrong",
+        "meta": "43 days · 0 rounds · blocked: CI check failed",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/40"
+       },
+       {
+        "text": "#42 deps(deps-dev): bump tsdown from 0.23.0 to 0.23.2 in the build group",
+        "status": "wrong",
+        "meta": "37 days · 0 rounds · waiting for review",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/42"
+       },
+       {
+        "text": "#46 deps(deps): bump vitest from 5.0.3 to 5.0.5 in the test group",
+        "status": "watch",
+        "meta": "30 days · 0 rounds · waiting for review",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/46"
+       },
+       {
+        "text": "#51 deps(deps-dev): bump @vscode/vsce from 4.0.0 to 4.1.0 in the vscode-tooling group",
+        "status": "watch",
+        "meta": "16 days · 0 rounds · waiting for review",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/51"
+       },
+       {
+        "text": "#53 deps(deps): bump the actions group across 1 directory with 4 updates",
+        "status": "watch",
+        "meta": "9 days · 0 rounds · waiting for review",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/53"
+       },
+       {
+        "text": "#55 deps(deps): bump the everything-else group across 1 directory with 10 updates",
+        "status": "good",
+        "meta": "2 days · 0 rounds · waiting for review",
+        "link": "https://github.com/Marco-Daniel/Toucan/pull/55"
+       }
+      ]
+     }
+    },
+    {
+     "type": "list",
+     "title": "Branches",
+     "note": "None merged-not-deleted; the six Dependabot branches belong to the open PRs above.",
+     "data": {
+      "items": [
+       {
+        "text": "marketplace-upload-plan",
+        "status": "watch",
+        "meta": "51 days · stale · no PR, its commit is already on main",
+        "link": "https://github.com/Marco-Daniel/Toucan/tree/marketplace-upload-plan"
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "title": "Plans health",
+   "report": "inspect-plans",
+   "verdict": {
+    "status": "wrong",
+    "text": "All 9 plans are live with no Status line: 8 look finished and 1 is idle, with 18 open ends between them. Look first at architecture-maintenance, idle 54 days with a Next still open."
+   },
+   "blocks": [
+    {
+     "type": "grid",
+     "anchor": true,
+     "title": "Plans",
+     "note": "Snapshot at 21ad398. Activity is the later of the newest progress entry and the newest commit touching or citing the folder.",
+     "data": {
+      "columns": [
+       "Plan",
+       "State",
+       "Last activity",
+       "Idle days",
+       "Open ends"
+      ],
+      "rows": [
+       {
+        "cells": [
+         "architecture-maintenance",
+         "no status · idle",
+         "2026-10-02",
+         "54",
+         "3"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/architecture-maintenance/plan.md"
+       },
+       {
+        "cells": [
+         "glyph-set",
+         "no status · looks finished",
+         "2026-10-02",
+         "54",
+         "1"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/glyph-set/plan.md"
+       },
+       {
+        "cells": [
+         "docs-sync",
+         "no status · looks finished",
+         "2026-10-03",
+         "53",
+         "1"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/docs-sync/plan.md"
+       },
+       {
+        "cells": [
+         "readme-showcase",
+         "no status · looks finished",
+         "2026-10-03",
+         "53",
+         "2"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/readme-showcase/plan.md"
+       },
+       {
+        "cells": [
+         "marketplace-launch",
+         "no status · looks finished",
+         "2026-10-04",
+         "52",
+         "3"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/marketplace-launch/plan.md"
+       },
+       {
+        "cells": [
+         "marketplace-upload",
+         "no status · looks finished",
+         "2026-10-04",
+         "52",
+         "1"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/marketplace-upload/plan.md"
+       },
+       {
+        "cells": [
+         "website",
+         "no status · looks finished",
+         "2026-10-04",
+         "52",
+         "1"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/website/plan.md"
+       },
+       {
+        "cells": [
+         "sidebar-explorer",
+         "no status · looks finished",
+         "2026-10-05",
+         "51",
+         "1"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/sidebar-explorer/plan.md"
+       },
+       {
+        "cells": [
+         "toucan-v1",
+         "no status · looks finished",
+         "2026-10-05",
+         "51",
+         "5"
+        ],
+        "status": "wrong",
+        "link": "docs/plans/toucan-v1/plan.md"
+       }
+      ]
+     }
+    },
+    {
+     "type": "tiles",
+     "data": {
+      "tiles": [
+       {
+        "label": "Live",
+        "value": 9
+       },
+       {
+        "label": "Closed",
+        "value": 0
+       },
+       {
+        "label": "No Status line",
+        "value": 9,
+        "status": "wrong"
+       },
+       {
+        "label": "Open ends",
+        "value": 18,
+        "status": "watch"
+       },
+       {
+        "label": "Plans wrong",
+        "value": 9,
+        "status": "wrong"
+       }
+      ]
+     }
+    },
+    {
+     "type": "note",
+     "data": {
+      "text": "All nine plans went quiet together after v1.1.0 (2026-10-05). Three progress logs (marketplace-launch, marketplace-upload, sidebar-explorer) add entries at the bottom, not the top as their header says."
+     }
+    }
+   ]
+  },
+  {
+   "title": "Decisions",
+   "report": "inspect-decisions",
+   "verdict": {
+    "status": "watch",
+    "text": "117 records (16 ADRs, 101 plan decisions), every one signed by a person; 38 plan decisions are lift candidates — look first at toucan-v1/0017, cited by ADR-0001 and seven files."
+   },
+   "blocks": [
+    {
+     "type": "tiles",
+     "anchor": true,
+     "title": "Unreviewed",
+     "note": "Every Deciders line names a person. No plan.md has a Status line, so all 9 plans count as live and none as closed.",
+     "data": {
+      "tiles": [
+       {
+        "label": "Unreviewed ADRs",
+        "value": 0,
+        "status": "good"
+       },
+       {
+        "label": "Unreviewed, live plans",
+        "value": 0,
+        "status": "good"
+       },
+       {
+        "label": "Unreviewed, closed plans",
+        "value": 0
+       },
+       {
+        "label": "No decider",
+        "value": 0,
+        "status": "good"
+       }
+      ]
+     }
+    },
+    {
+     "type": "distribution",
+     "anchor": true,
+     "title": "By status",
+     "note": "ADRs 16, plan decisions 101. The unknown one is toucan-v1/0013, whose Status reads 'Partly superseded'.",
+     "data": {
+      "segments": [
+       {
+        "label": "Accepted",
+        "value": 115,
+        "status": "good"
+       },
+       {
+        "label": "Superseded",
+        "value": 1
+       },
+       {
+        "label": "unknown",
+        "value": 1,
+        "status": "unknown"
+       }
+      ]
+     }
+    },
+    {
+     "type": "distribution",
+     "title": "ADRs by kind",
+     "data": {
+      "segments": [
+       {
+        "label": "constraint",
+        "value": 14
+       },
+       {
+        "label": "background",
+        "value": 1
+       },
+       {
+        "label": "direction",
+        "value": 1
+       }
+      ]
+     }
+    },
+    {
+     "type": "list",
+     "title": "Lift candidates",
+     "note": "And 26 more: 19 feature decisions from toucan-v1, sidebar-explorer, website and marketplace-launch, and glyph-set 0001–0007, cited from their feature's code, another plan or an ADR's context. The architecture-maintenance plan keeps feature-history citations as qualified plan ids on purpose.",
+     "data": {
+      "items": [
+       {
+        "text": "Edit settings in place to keep comments",
+        "status": "watch",
+        "meta": "toucan-v1/0017 · cited by ADR-0001 and 7 files in 4 features",
+        "link": "docs/plans/toucan-v1/decisions/0017-edit-settings-in-place-to-keep-comments.md"
+       },
+       {
+        "text": "Clear Toucan's keys for unconfigured repos",
+        "status": "watch",
+        "meta": "toucan-v1/0008 · cited by ADR-0002 and 6 files, core included",
+        "link": "docs/plans/toucan-v1/decisions/0008-clear-toucan-keys-for-unconfigured-repos.md"
+       },
+       {
+        "text": "Warn about low status bar contrast when picking a color",
+        "status": "watch",
+        "meta": "toucan-v1/0018 · cited by ADR-0005 and 5 files",
+        "link": "docs/plans/toucan-v1/decisions/0018-warn-about-low-status-bar-contrast-when-picking.md"
+       },
+       {
+        "text": "Offer an experimental emoji in the Command Center label",
+        "status": "watch",
+        "meta": "toucan-v1/0007 · cited by ADR-0003 and 5 files",
+        "link": "docs/plans/toucan-v1/decisions/0007-offer-an-experimental-emoji-in-the-command-center-label.md"
+       },
+       {
+        "text": "Take one object argument by default",
+        "status": "watch",
+        "meta": "architecture-maintenance/0023 · repo-wide rule, held only by CLAUDE.md",
+        "link": "docs/plans/architecture-maintenance/decisions/0023-take-one-object-argument-by-default.md"
+       },
+       {
+        "text": "Import types separately and group imports by role",
+        "status": "watch",
+        "meta": "architecture-maintenance/0021 · repo-wide rule, held only by CLAUDE.md",
+        "link": "docs/plans/architecture-maintenance/decisions/0021-import-types-separately-and-group-imports-by-role.md"
+       },
+       {
+        "text": "Write shared code from the start without over-abstracting it",
+        "status": "watch",
+        "meta": "architecture-maintenance/0022 · repo-wide rule, held only by CLAUDE.md",
+        "link": "docs/plans/architecture-maintenance/decisions/0022-write-shared-code-from-the-start-without-over-abstracting-it.md"
+       },
+       {
+        "text": "Write naming conventions into CLAUDE.md",
+        "status": "watch",
+        "meta": "architecture-maintenance/0026 · repo-wide rule, held only by CLAUDE.md",
+        "link": "docs/plans/architecture-maintenance/decisions/0026-write-naming-conventions-into-claude-md.md"
+       },
+       {
+        "text": "Keep test-only exports and remove unused ones",
+        "status": "watch",
+        "meta": "architecture-maintenance/0024 · repo-wide rule, held only by CLAUDE.md",
+        "link": "docs/plans/architecture-maintenance/decisions/0024-keep-test-only-exports-and-remove-unused-ones.md"
+       },
+       {
+        "text": "Keep docs in sync through a CLAUDE.md rule",
+        "status": "watch",
+        "meta": "architecture-maintenance/0007 · repo-wide rule, held only by CLAUDE.md",
+        "link": "docs/plans/architecture-maintenance/decisions/0007-keep-docs-in-sync-through-a-claude-md-rule.md"
+       },
+       {
+        "text": "Write CLAUDE.md as lean rules plus a library of pointers",
+        "status": "watch",
+        "meta": "architecture-maintenance/0006 · repo-wide rule; cited by the docs-sync skill",
+        "link": "docs/plans/architecture-maintenance/decisions/0006-write-claude-md-as-lean-rules-plus-a-library-of-pointers.md"
+       },
+       {
+        "text": "Amend plans, never rewrite them",
+        "status": "watch",
+        "meta": "docs-sync/0005 · a rule for every plan folder",
+        "link": "docs/plans/docs-sync/decisions/0005-amend-plans-never-rewrite-them.md"
+       }
+      ]
+     }
+    },
+    {
+     "type": "note",
+     "data": {
+      "text": "No record carries a Retire when: line, so there was no retire condition to check. No near-twin group survived a read: the two 'deliver in three PRs' decisions are each their own plan's delivery, not one rule."
+     }
+    },
+    {
+     "type": "note",
+     "data": {
+      "text": "Not raised by any lane: 21 plan decisions that an ADR's Decided in / Lifted from names have no `Lifted to ADR-NNNN` back-line, which architecture-maintenance/0001 asks for. toucan-v1/0013's status reads 'Partly superseded', which is not a standard value."
+     }
+    }
+   ]
+  },
+  {
+   "title": "Repo health",
+   "report": "inspect-health",
+   "verdict": {
+    "status": "watch",
+    "text": "The gates hold: all five passed on all 40 completed CI runs on main. Look first at the 2 moderate npm advisories (glob, minimatch) the weekly Audit has reported since 2026-11-02."
+   },
+   "blocks": [
+    {
+     "type": "tiles",
+     "anchor": true,
+     "title": "Quality gates",
+     "note": "From job `check` in ci.yml, 40 completed runs on main (newest 20 vs the 20 before). Last run 2026-10-30 at 21ad398.",
+     "data": {
+      "tiles": [
+       {
+        "label": "pnpm lint",
+        "value": 100,
+        "unit": "%",
+        "status": "good",
+        "trend": {
+         "delta": 0,
+         "direction": "flat",
+         "better": "up"
+        },
+        "spark": [
+         100,
+         100,
+         100,
+         100
+        ]
+       },
+       {
+        "label": "pnpm format:check",
+        "value": 100,
+        "unit": "%",
+        "status": "good",
+        "trend": {
+         "delta": 0,
+         "direction": "flat",
+         "better": "up"
+        },
+        "spark": [
+         100,
+         100,
+         100,
+         100
+        ]
+       },
+       {
+        "label": "pnpm typecheck",
+        "value": 100,
+        "unit": "%",
+        "status": "good",
+        "trend": {
+         "delta": 0,
+         "direction": "flat",
+         "better": "up"
+        },
+        "spark": [
+         100,
+         100,
+         100,
+         100
+        ]
+       },
+       {
+        "label": "pnpm test",
+        "value": 100,
+        "unit": "%",
+        "status": "good",
+        "trend": {
+         "delta": 0,
+         "direction": "flat",
+         "better": "up"
+        },
+        "spark": [
+         100,
+         100,
+         100,
+         100
+        ]
+       },
+       {
+        "label": "pnpm build",
+        "value": 100,
+        "unit": "%",
+        "status": "good",
+        "trend": {
+         "delta": 0,
+         "direction": "flat",
+         "better": "up"
+        },
+        "spark": [
+         100,
+         100,
+         100,
+         100
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "type": "tiles",
+     "title": "Escape hatches and advisories",
+     "note": "Suppressions 30 days ago (b670836) and now. Advisories per Audit-workflow run, oldest first.",
+     "data": {
+      "tiles": [
+       {
+        "label": "Suppression comments",
+        "value": 12,
+        "unit": "oxlint-disable",
+        "status": "good",
+        "trend": {
+         "delta": 0,
+         "direction": "flat",
+         "better": "down"
+        },
+        "spark": [
+         12,
+         12
+        ]
+       },
+       {
+        "label": "Surviving mutants",
+        "value": "?",
+        "status": "unknown"
+       },
+       {
+        "label": "Open advisories",
+        "value": 2,
+        "unit": "moderate (0 high/critical)",
+        "status": "watch",
+        "spark": [
+         3,
+         3,
+         4,
+         4,
+         0,
+         12,
+         0,
+         2,
+         2,
+         2,
+         2
+        ]
+       }
+      ]
+     }
+    },
+    {
+     "type": "distribution",
+     "title": "Advisories by severity",
+     "note": "pnpm audit in the Audit workflow, run of 2026-11-23 on 21ad398. Dependabot shows 0 open alerts, but it cannot read the pnpm lockfile.",
+     "data": {
+      "segments": [
+       {
+        "label": "critical",
+        "value": 0,
+        "status": "wrong"
+       },
+       {
+        "label": "high",
+        "value": 0,
+        "status": "wrong"
+       },
+       {
+        "label": "moderate",
+        "value": 2,
+        "status": "watch"
+       },
+       {
+        "label": "low",
+        "value": 0
+       }
+      ]
+     }
+    },
+    {
+     "type": "list",
+     "title": "Suppressions by rule at the start commit",
+     "note": "Every one is an oxlint-disable with a reason.",
+     "data": {
+      "items": [
+       {
+        "text": "typescript/no-floating-promises",
+        "meta": "3"
+       },
+       {
+        "text": "no-magic-numbers",
+        "meta": "3 (one block-level)"
+       },
+       {
+        "text": "typescript/no-unsafe-type-assertion",
+        "meta": "2"
+       },
+       {
+        "text": "typescript/no-generated-empty-object-type",
+        "meta": "1"
+       },
+       {
+        "text": "no-void",
+        "meta": "1"
+       },
+       {
+        "text": "no-await-in-loop",
+        "meta": "1"
+       },
+       {
+        "text": "no-underscore-dangle",
+        "meta": "1"
+       }
+      ]
+     }
+    },
+    {
+     "type": "note",
+     "title": "Not measured",
+     "data": {
+      "text": "Surviving mutants are unknown: Stryker runs only on demand, with no CI job or local report. Lint, typecheck, test and build share one CI step, so a failure there cannot be pinned to one gate."
+     }
+    }
+   ]
+  }
+ ]
+}

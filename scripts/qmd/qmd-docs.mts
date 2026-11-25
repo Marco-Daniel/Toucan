@@ -30,6 +30,8 @@ export const DOCS_COLLECTIONS: readonly DocsCollection[] = [
     contexts: {
       "": "Toucan VS Code extension documentation: architecture decisions and feature plans",
       adr: "System rules and direction for Toucan (binding): architecture decision records",
+      housekeeping:
+        "Housekeeping inspection records: the verdict on each finding, what was done, and the watermarks",
       plans:
         "Per-feature plan folders: plan, context, progress, trail and the feature's decision records",
     },
