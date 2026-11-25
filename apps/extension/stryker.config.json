@@ -5,13 +5,14 @@
     "command": "node node_modules/vitest/vitest.mjs run"
   },
   "coverageAnalysis": "off",
-  "mutate": ["src/**/*.ts", "scripts/**/*.mts", "!src/generated/**"],
+  "mutate": ["src/**/*.ts", "!src/generated/**"],
   "incremental": false,
   "reporters": ["clear-text", "html", "progress"],
   "htmlReporter": {
     "fileName": "reports/stryker/mutation.html"
   },
   "tempDirName": ".stryker-tmp",
+  "inPlace": true,
   "tsconfigFile": "no-tsconfig-rewrite.json",
   "concurrency": 4,
   "timeoutMS": 30000
