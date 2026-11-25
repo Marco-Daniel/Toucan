@@ -98,4 +98,4 @@ Toucan colors each VS Code window by its repository: the focused window's Comman
 
 ## Adding one
 
-Take the next number and the header the others use (Status, Date, Deciders, Kind, Area, plus Migration for a direction), add its row here under its area, and link the plan decision it came from. To replace one, set the old one's status to `Superseded by ADR-NNNN` instead of deleting it.
+Take the next number and the header the others use (Status, Date, Deciders, Kind, Area, plus Migration for a direction), add its row here under its area, and link the plan decision it came from. Append `Lifted to ADR-NNNN (YYYY-MM-DD): <link>` to that decision (GROUNDING.md, Plans). To replace one, set the old one's status to `Superseded by ADR-NNNN` instead of deleting it.
