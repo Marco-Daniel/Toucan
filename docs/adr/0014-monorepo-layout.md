@@ -47,3 +47,7 @@ scripts/, test/   the root's own tooling: docs search (scripts/qmd), docs-sync, 
 ## Amendment (2026-11-25)
 
 The root's own tooling is now docs search (scripts/qmd), mutate, the marketplace-upload helper and the ADR log test. docs-sync's skill, script and test are removed, because the maintenance tooling that runs outside the repo checks doc drift the same way. The rule it backed stays in `.claude/CLAUDE.md` (Keep docs in sync). The rest of the layout above is unchanged.
+
+## Amendment (2026-11-25): the extension's mutation runs
+
+The extension's Stryker config also mutates in place: its tests read the brand's glyph SVGs by relative path (`../../packages/brand`), which Stryker's sandbox copy, one folder deeper, can't reach. It mutates the extension's `src/` only, never its scripts, which signal, remove and spawn processes. The rest of the layout above is unchanged.

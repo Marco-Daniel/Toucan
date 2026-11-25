@@ -23,16 +23,33 @@ describe("DOCS_PAGES", () => {
     ]);
   });
 
-  it("describes every page in one distinct sentence a search result shows in full", () => {
-    const descriptions = DOCS_PAGES.map(({ description }) => description);
+  it("gives each page its own description", () => {
+    expect(DOCS_PAGES.map(({ slug, description }) => [slug, description])).toEqual([
+      ["getting-started", "Install Toucan and give your first repository a color."],
+      [
+        "colors",
+        "How Toucan colors the Command Center and the status bar, and how to set and clear a color.",
+      ],
+      ["presets", "The 16 toucan-themed preset colors and the low-contrast warning."],
+      ["glyphs", "The 17 status bar glyphs in four groups, and how to pick one."],
+      [
+        "sidebar",
+        "The opt-in color block in the Explorer: full or muted, shown until you hide it.",
+      ],
+      ["search-emoji", "The experimental colored emoji in the Command Center label."],
+      ["settings", "Every Toucan setting, with the shape of toucan.repos."],
+      ["commands", "Toucan's five commands and where to find them."],
+    ]);
+  });
+
+  it("keeps every description to one sentence a search result shows in full", () => {
     expect(
-      descriptions.filter(
+      DOCS_PAGES.map(({ description }) => description).filter(
         (description) =>
           !/^[A-Z0-9`].*[^.]\.$/.test(description) ||
           description.length > MAX_DESCRIPTION_LENGTH ||
           description.includes(". "),
       ),
     ).toEqual([]);
-    expect(new Set(descriptions).size).toBe(DOCS_PAGES.length);
   });
 });
