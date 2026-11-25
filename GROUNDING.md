@@ -31,7 +31,7 @@ pnpm comes through corepack (`packageManager` in package.json): run `corepack en
 
 ## Primary tech + key skills
 
-VS Code extension (`marco-daniel.toucan`): pnpm 12, TypeScript 7, tsdown, oxlint, oxfmt, vitest 5, vscode-ext-gen, culori. Plain VS Code API, no framework.
+VS Code extension (`marco-daniel.toucan`): pnpm 12, TypeScript 7, tsdown, oxlint, oxfmt, vitest 5, vscode-ext-gen, culori. Plain VS Code API, no framework. Repo skill: `/marketplace-upload` (`.claude/skills/marketplace-upload/`) verifies a published release's VSIX for a manual Marketplace upload.
 
 ## Housekeeping
 
