@@ -21,7 +21,7 @@ pnpm comes through corepack (`packageManager` in package.json): run `corepack en
 
 ## Conventions
 
-- Monorepo (pnpm workspace with Turborepo): `apps/extension` is the extension, `apps/site` (`@toucan/site`) the website, `packages/brand` (`@toucan/brand`) the shared brand (presets, color tokens, glyph names and SVGs, icon and logo), `packages/releases` (`@toucan/releases`) Toucan's GitHub releases for the site's changelog and the extension's CHANGELOG.md, `config/ts-config` and `config/vite` hold the shared TypeScript and Vite/Vitest settings, and `docs/` the ADRs, the plans and the housekeeping records. The root holds the workspace configs and the repo's own tooling in `scripts/` and `test/` (qmd docs search, docs-sync).
+- Monorepo (pnpm workspace with Turborepo): `apps/extension` is the extension, `apps/site` (`@toucan/site`) the website, `packages/brand` (`@toucan/brand`) the shared brand (presets, color tokens, glyph names and SVGs, icon and logo), `packages/releases` (`@toucan/releases`) Toucan's GitHub releases for the site's changelog and the extension's CHANGELOG.md, `config/ts-config` and `config/vite` hold the shared TypeScript and Vite/Vitest settings, and `docs/` the ADRs, the plans and the housekeeping records. The root holds the workspace configs and the repo's own tooling in `scripts/` and `test/` (qmd docs search, mutate, the marketplace-upload helper).
 - Extension layout: `apps/extension/src/core` holds the entry point and the adapters every part uses, `apps/extension/src/shared/<topic>` the code features share, and `apps/extension/src/features/<feature>` one folder per feature. `apps/extension/test/` mirrors `apps/extension/src/`. No barrel files: imports name the file.
 - File names carry their role: `.adapter.ts`, `.util.ts`, `.consts.ts`, `.types.ts`, `.view.ts` and `.messages.ts`.
 - Only adapters touch VS Code: `vscode` is imported only by `*.adapter.ts` files and `apps/extension/src/core/extension.ts`. Everything else (color derivation, config parsing, the colorCustomizations merge and so on) is plain TypeScript, unit tested with vitest.
@@ -31,7 +31,7 @@ pnpm comes through corepack (`packageManager` in package.json): run `corepack en
 
 ## Primary tech + key skills
 
-VS Code extension (`marco-daniel.toucan`): pnpm 12, TypeScript 7, tsdown, oxlint, oxfmt, vitest 5, vscode-ext-gen, culori. Plain VS Code API, no framework. Repo skill: `/docs-sync` (`.claude/skills/docs-sync/`) reports doc drift since its last run.
+VS Code extension (`marco-daniel.toucan`): pnpm 12, TypeScript 7, tsdown, oxlint, oxfmt, vitest 5, vscode-ext-gen, culori. Plain VS Code API, no framework.
 
 ## Housekeeping
 

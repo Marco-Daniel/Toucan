@@ -12,9 +12,9 @@ const EXTENSION = "/repo/apps/extension";
 
 describe("mutateRefusal", () => {
   it.each([
-    ["scripts/docs-sync.mts"],
-    ["./scripts/docs-sync.mts"],
-    ["/repo/scripts/docs-sync.mts"],
+    ["scripts/marketplace-upload.mts"],
+    ["./scripts/marketplace-upload.mts"],
+    ["/repo/scripts/marketplace-upload.mts"],
     ["scripts/qmdx/notes.mts"],
   ])("lets the root mutate %s", (file) => {
     expect(mutateRefusal({ files: [file], cwd: ROOT })).toBeUndefined();
@@ -27,15 +27,15 @@ describe("mutateRefusal", () => {
     ["scripts/../scripts/qmd/qmd-run.mts"],
     ["Scripts/QMD/qmd-run.mts"],
   ])("refuses the qmd script %s, and says why", (file) => {
-    expect(mutateRefusal({ files: ["scripts/docs-sync.mts", file], cwd: ROOT })).toBe(
+    expect(mutateRefusal({ files: ["scripts/marketplace-upload.mts", file], cwd: ROOT })).toBe(
       `Not mutating ${file}: scripts/qmd/ is excluded from mutation testing, because its file locks, cache writes and detached processes could reach the real ~/.cache/qmd.`,
     );
   });
 
   it.each([
     ["../../scripts/qmd/qmd-lock.mts"],
-    ["../../scripts/docs-sync.mts"],
-    ["/repo/scripts/docs-sync.mts"],
+    ["../../scripts/marketplace-upload.mts"],
+    ["/repo/scripts/marketplace-upload.mts"],
     [".."],
   ])("refuses %s from the extension, outside its package", (file) => {
     expect(mutateRefusal({ files: ["src/core/extension.ts", file], cwd: EXTENSION })).toBe(

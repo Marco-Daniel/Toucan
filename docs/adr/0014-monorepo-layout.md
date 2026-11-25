@@ -43,3 +43,7 @@ scripts/, test/   the root's own tooling: docs search (scripts/qmd), docs-sync, 
 
 - Good: each product owns its dependencies and gates. Shared code and configs have one home, and new packages fit without reshuffling.
 - Bad: paths in docs, scripts and CI grew a prefix. The root tooling reaching into the extension's `src/` is a known shortcut until the helpers move into a shared package.
+
+## Amendment 2026-11-25
+
+The root's own tooling no longer includes docs-sync: its skill, script and test are removed, because the maintenance tooling that runs outside the repo checks doc drift the same way. The rule it backed stays in `.claude/CLAUDE.md` (Keep docs in sync). The layout above is otherwise unchanged.

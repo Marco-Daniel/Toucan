@@ -24,7 +24,7 @@ Always look things up in the docs through qmd (ADR-0011), wherever you work in t
 
 ## Code rules
 
-- **Layout** (ADR-0010): the extension lives in `apps/extension/`, with `src/core/`, `src/shared/<topic>/`, `src/features/<feature>/` under it, role suffixes (`.adapter`, `.util`, `.consts`, `.types`, `.view`, `.messages`), no barrels or re-exports. Only adapters and `apps/extension/src/core/extension.ts` import `vscode` (ADR-0006). A package's `test/` mirrors its `src/`; shared test helpers go in its `test/helpers/<topic>.ts`. The repo's own tooling (qmd docs search, docs-sync) lives in the root `scripts/` and `test/`.
+- **Layout** (ADR-0010): the extension lives in `apps/extension/`, with `src/core/`, `src/shared/<topic>/`, `src/features/<feature>/` under it, role suffixes (`.adapter`, `.util`, `.consts`, `.types`, `.view`, `.messages`), no barrels or re-exports. Only adapters and `apps/extension/src/core/extension.ts` import `vscode` (ADR-0006). A package's `test/` mirrors its `src/`; shared test helpers go in its `test/helpers/<topic>.ts`. The repo's own tooling (qmd docs search, mutate, the marketplace-upload helper) lives in the root `scripts/` and `test/`.
 - **Names:** functions are verbs, booleans read as `is`/`has` questions, constants `UPPER_SNAKE`, types PascalCase, files camelCase with their role suffix.
 - **Imports:** grouped under comment headers in this order, only the ones needed: `// import vscode`, `// import libraries` (including `node:*`), `// import adapters`, `// import utils`, `// import views`, `// import consts`, `// import messages`, `// import types`. Generated tables go under `// import consts`; test helpers and suffix-less scripts under `// import utils`. Types come in through their own `import type`; importing a path twice is fine.
 - **Shared from the start:** code another feature could use unchanged goes to `shared/<topic>/` at once, even with one caller; feature code stays in its feature. No speculative options, generics nobody needs, single-call wrappers, feature rules dressed as generic code, or merged look-alikes that change for different reasons.
@@ -50,7 +50,7 @@ Every test has to survive one question: **would it still pass if the code it cov
 
 ## Keep docs in sync
 
-A change to a command, a path or a behaviour updates every doc that mentions it, in the same PR. Run `/docs-sync` every so often to catch what slipped through.
+A change to a command, a path or a behaviour updates every doc that mentions it, in the same PR.
 
 ## This repo is public
 
