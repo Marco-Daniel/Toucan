@@ -4,6 +4,12 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-11-25 — close-plans: closed
+- Why: PRs #32 and #33 merged; 1.0.0 and 1.1.0 went to the Marketplace by this route.
+- Open ends:
+  - Notice when Marketplace trusted publishing goes live (decisions/0006, trail.md:26, plan.md Open questions, the 2026-10-04 entry after the 1.0.0 upload) → ticket #61
+- Lift candidates: none
+
 ## 2026-10-04: the implementer, `manual-marketplace-upload`
 
 - Did: the `/marketplace-upload` skill (`.claude/skills/marketplace-upload/SKILL.md`) and its script, `scripts/marketplace-upload.mts`. The script sits with the repo's other tooling, so `lint:repo`, `typecheck:repo` and `test/scripts/marketplace-upload.test.ts` cover it: `verify <version>` checks the release's VSIX as publish.yml's verify job does; `published <version>` asks the public gallery. publish.yml's `publish` job is gated on the repository variable `MARKETPLACE_PUBLISH` (→ 0004's note). `marketplace-identity.yml` is deleted. The README's Releasing section and ADR-0015 are updated, with pointers on marketplace-launch's 0002 and 0003.

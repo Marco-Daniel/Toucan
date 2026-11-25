@@ -1,5 +1,7 @@
 # Plan: The sidebar block lives in the Explorer (v1.1.0)
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 The opt-in sidebar block moves its default home from the secondary sidebar into the **Explorer** in the primary sidebar (→ 0001). The `unfocused` visibility mode goes away; the block is simply there while it's on, until the user hides it (→ 0002). The change is tested in an isolated VS Code before any version is made (→ 0004) and ships as **v1.1.0**, on GitHub and the Marketplace (→ 0005).

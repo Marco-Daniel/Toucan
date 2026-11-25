@@ -4,6 +4,15 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-11-25 — close-plans: closed
+- Why: PRs #19, #20 and #21 merged; the site deploys from main.
+- Open ends:
+  - Plan the React Router major upgrade when it lands (trail.md:56) → dropped: Dependabot opens the major; the upgrade happens in that PR
+  - Where the README screenshots live after PR 2 (trail.md:54, plan.md Open questions) → answered: they stay with the extension, in `apps/extension/media/readme/`
+  - The site's Open Graph image (trail.md:55, plan.md Open questions) → answered: `apps/site/public/og-image.png`, generated from `apps/site/assets/og-card.svg` (the 2026-10-03 PR 3 entry)
+  - The mockup's asset links after the move in PR 1 (plan.md, Open questions) → answered: `assets/mockup.html` points at `apps/extension/media/readme/`
+- Lift candidates: none
+
 ## 2026-10-03: PR 3, the site and its deploy (implementer)
 
 - `apps/site`: React Router framework mode, pre-rendered with `ssr: false`: the landing page to the approved mockup, eight docs pages from `content/docs/*.md`, the changelog from the GitHub releases with `content/releases.json` as its fallback, and a not-found page: Netlify serves the SPA fallback for any unknown path (`public/_redirects`), which renders it. Tailwind takes the brand's colors as CSS variables rendered from `@toucan/brand`.

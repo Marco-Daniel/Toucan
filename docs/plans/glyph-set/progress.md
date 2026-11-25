@@ -4,6 +4,15 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-11-25 — close-plans: closed
+- Why: PR #4 merged with the maintainer's visual sign-off; shipped in v0.0.2.
+- Open ends:
+  - Does the 18-wide toucan's label shift show next to 16-wide glyphs? (trail.md:28) → dropped: covered by the visual sign-off on PR #4; shipped since v0.0.2
+  - Legibility on a real low-DPI screen (trail.md:27) → dropped: covered by the visual sign-off on PR #4
+  - Rounding approach in code (plan.md, Open questions) → answered: polygons with softened corners (decisions/0004)
+  - Glyph names in Set Glyph (plan.md, Open questions) → answered: settled in PR #4
+- Lift candidates: none
+
 ## 2026-10-02 — The implementer, review round 1
 - M1: bar (ends at y 0.75 and 15.25), the sun's rays (to radius 7.65) and the toucan's base (y 15.25) move in just enough that their softened outlines stay inside the glyph box. A bounds test checks every baked outline. The font test now compares the font with the clipped swatch on a padded canvas, so an overflow shows as a difference. These change the three glyphs slightly, so they go back to Marco's sign-off.
 - M2: probe rows for bar, bolt and star, and more clear points for the leaf. Replacing any of them with a square fails.

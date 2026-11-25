@@ -1,5 +1,7 @@
 # Plan: Toucan v1
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 Toucan is a VS Code extension (`marco-daniel.toucan`) that shows at a glance which repository a window has open, in the spirit of Peacock and Kingfisher. Colors are configured once, by repo (workspace folder) name, in the user's own settings. Nothing is ever written into the opened repository, and each window stays recognizable even when it is not focused.

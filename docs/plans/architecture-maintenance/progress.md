@@ -4,6 +4,15 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-11-25 — close-plans: closed
+- Why: PRs #7, #8 and #9 merged; backlog issue #6 closed. Idle since 2026-10-02; the last Next (post-merge checks, re-index) is verified done.
+- Open ends:
+  - Post-merge checks and the re-index from main (trail.md Open / to re-check; progress.md, the Next of the 2026-10-02 ADR check and CLAUDE.md entry; decisions/0005) → dropped: verified 2026-11-25, .claude/settings.json has both hooks and enables the qmd server, and the index serves the docs
+  - Enforce ignore reasons through lint once oxlint jsPlugins is stable (decisions/0012) → ticket #60
+  - Per-folder rule files, if they're needed (decisions/0004) → dropped: none was needed; CLAUDE.md and the ADRs carry the rules
+  - Which plan decisions besides the initial set deserve lifting into ADRs (plan.md, Open questions) → answered: reviewed for every plan in the 2026-11-25 housekeeping; three lifted (ADR-0017, ADR-0018, ADR-0019)
+- Lift candidates: none
+
 ## 2026-10-02 — The implementer, ADR check and CLAUDE.md (PR #7, `rules-and-adrs`)
 - Did: a test keeps the ADR log whole: numbered without gaps, each with a title, kind and status, all listed in the index as their files say, and every cited `ADR-NNNN` existing and not superseded (`1a4ee14`).
 - Did: CLAUDE.md rewritten as lean rules plus pointers, the ADR log first (`a7090b6`).

@@ -25,3 +25,5 @@ Chosen: **clear Toucan's keys**, so unconfigured repos look exactly like plain V
 - Bad: each repo needs one setup action.
 - Bad: with profiles that share settings but not global state, a profile that never applied a color also never clears, so a leftover color from another profile stays in its windows until a window of a profile that has applied colors takes focus. The README's profile note mentions it.
 - Bad: once Toucan has applied a color, hand-set `commandCenter.*` values are gone (0003). The README says this happens at the first applied color, not at install.
+
+Lifted to ADR-0018 (2026-11-25): [docs/adr/0018-clear-toucans-keys-for-unconfigured-repos.md](../../../adr/0018-clear-toucans-keys-for-unconfigured-repos.md)

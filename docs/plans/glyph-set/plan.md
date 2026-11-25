@@ -1,5 +1,7 @@
 # Plan: Toucan glyph set
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 Give every repo a glyph that is both a second cue next to color and a bit of personality. Today there are eight glyphs: three from Toucan's own icon font (square, bar, pill) and five built-in codicons (circle, double-circle, heart, star, check-circle). After this change there are 17 (the planned 16 plus a water drop, → [0007](decisions/0007-redraw-the-leaf-and-add-a-water-drop.md)), all drawn by Toucan in one style and served from Toucan's own font, in four themed groups:

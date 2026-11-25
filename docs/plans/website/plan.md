@@ -1,5 +1,7 @@
 # Plan: Toucan website and monorepo
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 Give Toucan a public website at `toucan-vscode.netlify.app`: a landing page, docs and a changelog. Build it in React with React Router's pre-rendering and Tailwind, and deploy it from GitHub Actions (→ 0001, 0002, 0003, 0010). To keep the site and the extension apart, first turn the repo into a monorepo that both live in (→ 0004).

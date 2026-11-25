@@ -4,6 +4,15 @@
      leaves this body empty. Each entry: date, who/what, what changed, what's
      next or blocked. -->
 
+## 2026-11-25 — close-plans: closed
+- Why: PRs #30, #31, #33 and #34 merged; v1.0.0 is on the Marketplace.
+- Open ends:
+  - Does the Azure wizard fill in the immutable subject format? (trail.md:47, plan.md Open questions) → dropped: overtaken, the Azure job is dormant (marketplace-upload/0004)
+  - Creator or Contributor role for the identity? (trail.md:48, plan.md Open questions) → dropped: overtaken the same way
+  - A follow-up plan once trusted publishing is live (trail.md:49, plan.md Non-goals) → dropped: the same watch as marketplace-upload's, tracked in #61
+  - The minimum VS Code version stated for 1.0.0 (plan.md, Open questions) → answered: 1.0.0 shipped with `engines.vscode` `^1.138.0`
+- Lift candidates: none
+
 ## 2026-10-04: the implementer, launch PR (`marketplace-launch`)
 
 - Did: `packages/releases` (the site's releases fetch and parse, moved; the CHANGELOG renderer) and the extension's `changelog`, `release-notes` and `fill-release-notes` scripts. `package.yml` split into `build` (gates, CHANGELOG, VSIX, SHA-256, attestation) and `release` (the draft). New `publish.yml` on `release: published`. The manifest's description, categories, homepage, bugs, `qna` and keywords; the README opener and the website line; check:vsix at 9 files; ADR-0015, with ADR-0013, ADR-0014 and the README updated.

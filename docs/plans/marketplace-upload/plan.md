@@ -1,5 +1,7 @@
 # Plan: Hand upload to the VS Code Marketplace
 
+Status: Closed 2026-11-25
+
 ## Goal
 
 Get v1.0.0, and the releases after it, onto the VS Code Marketplace without an Azure subscription, a card or a secret, as exactly the verified release VSIX (→ 0001). This changes the last step of [marketplace-launch](../marketplace-launch/plan.md); everything before it stays.
