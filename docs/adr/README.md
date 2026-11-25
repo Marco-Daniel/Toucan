@@ -33,12 +33,14 @@ Toucan colors each VS Code window by its repository: the focused window's Comman
 | ADR | Decision | Kind | Status |
 |---|---|---|---|
 | [0001](0001-keep-toucans-settings-in-user-scope.md) | Keep Toucan's settings in user scope, never in the repo | constraint | Accepted |
+| [0017](0017-edit-settings-in-place-to-keep-comments.md) | Edit settings in place to keep comments | constraint | Accepted |
 
 ### colors
 
 | ADR | Decision | Kind | Status |
 |---|---|---|---|
 | [0002](0002-toucan-owns-the-commandcenter-keys.md) | Toucan owns the `commandCenter.*` color keys | constraint | Accepted |
+| [0018](0018-clear-toucans-keys-for-unconfigured-repos.md) | Clear Toucan's keys for unconfigured repos | constraint | Accepted |
 
 ### statusBar
 
@@ -79,6 +81,7 @@ Toucan colors each VS Code window by its repository: the focused window's Comman
 | ADR | Decision | Kind | Status |
 |---|---|---|---|
 | [0011](0011-qmd-docs-search.md) | qmd docs search is part of the setup | constraint | Accepted |
+| [0019](0019-amend-plans-never-rewrite-them.md) | Amend plans, never rewrite them | constraint | Accepted |
 
 ### releases
 
