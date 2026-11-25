@@ -12,7 +12,7 @@ Toucan colors each VS Code window by its repository: the focused window's Comman
 - **Where it runs.** VS Code, from the Visual Studio Marketplace; other VS Code-based editors may install the VSIX from a GitHub release, with best-effort support ([ADR-0016](0016-toucan-is-a-vs-code-extension.md)).
 - **How it's checked.** A modern toolchain ([ADR-0004](0004-use-a-modern-toolchain.md)), lint with no warnings ([ADR-0007](0007-no-lint-warnings.md)), and mutation testing outside the qmd scripts ([ADR-0012](0012-no-mutation-testing-for-scripts-qmd.md)). Agents find the docs through qmd ([ADR-0011](0011-qmd-docs-search.md)), and plans stay history, amended but never rewritten ([ADR-0019](0019-amend-plans-never-rewrite-them.md)); every release ships notes ([ADR-0013](0013-release-notes-for-every-release.md)) and reaches the Marketplace as the attested file it released, with no publishing secret ([ADR-0015](0015-release-through-drafts-and-publish-from-actions.md)).
 
-**Direction.** Every lint ignore states its reason; a lint rule will enforce that once oxlint's plugin support allows it ([ADR-0008](0008-lint-ignores-state-a-reason.md), tracked).
+**Direction.** Every lint ignore states its reason, and lint enforces it ([ADR-0008](0008-lint-ignores-state-a-reason.md), done 2026-11-25). No direction is open.
 
 ## Kinds
 

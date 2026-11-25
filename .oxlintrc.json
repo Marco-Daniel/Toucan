@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "import", "vitest"],
+  // The repo's own rules (scripts/lint/). oxlint marks JS plugins alpha, so a
+  // canary test checks this one still loads and reports (ADR-0008).
+  "jsPlugins": ["./scripts/lint/disableReason.plugin.mts"],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -12,6 +15,7 @@
   },
   "ignorePatterns": ["**/dist/**", "**/src/generated/**", "docs/**"],
   "rules": {
+    "toucan/disable-reason": "error",
     "no-unused-vars": [
       "error",
       {

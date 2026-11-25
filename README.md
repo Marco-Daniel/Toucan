@@ -16,7 +16,7 @@ config/vite/        @toucan/vite-config: the shared Vite and Vitest settings
 docs/adr/           the architecture decisions: the system's rules and direction
 docs/plans/         one folder per piece of work: its plan, decisions and progress
 docs/housekeeping/  the periodic maintenance inspection records
-scripts/, test/     the repo's own tooling and its tests: qmd docs search, mutate and the marketplace-upload helper
+scripts/, test/     the repo's own tooling and its tests: qmd docs search, mutate, the marketplace-upload helper and the lint plugin
 ```
 
 The root is the workspace: `pnpm-workspace.yaml`, `turbo.json`, the shared `.oxlintrc.json` and oxfmt config, the husky hook and CI. The [website plan](docs/plans/website/plan.md) records how the repo got this shape.

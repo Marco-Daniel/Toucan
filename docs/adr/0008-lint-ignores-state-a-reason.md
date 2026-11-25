@@ -26,3 +26,7 @@ Chosen: **a reason on every ignore**, and fixing first: an ignore is for the cas
 
 - Good: every exception explains itself where it is.
 - Bad: until the plugin exists, a reason-less ignore only fails review.
+
+## Amendment (2026-11-25): lint enforces it
+
+The tracked work is done. `toucan/disable-reason`, an oxlint JS plugin rule in `scripts/lint/disableReason.plugin.mts`, reports every `oxlint-disable`, `oxlint-disable-line` and `oxlint-disable-next-line` comment, and its `eslint-` spelling, in line or block form, that has no reason after `--`. `.oxlintrc.json` registers it, so it runs in every package's `pnpm lint` and in the root's. oxlint marks JS plugins alpha and outside semver, so three guards keep a breaking release from passing every disable silently: the workspace pins oxlint to an exact version, so each bump comes as its own PR; a canary test (`test/scripts/lint/disableReason.plugin.test.ts`) runs the real oxlint with the repo config and expects the rule's findings; and `turbo.json` lists the plugin as a global dependency, so a change to the rule re-runs every lint instead of replaying cached results. A reason-less ignore now fails lint, not only review. The decision above is unchanged.
