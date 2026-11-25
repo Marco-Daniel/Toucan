@@ -35,6 +35,8 @@ class World {
   writers: string[] = [];
   failWrites = false;
   warnings: string[] = [];
+  /** Every debug line, prefixed with the window's id, in order. */
+  debugLog: string[] = [];
   /** Windows whose next colors write stays pending until `release(id)`. */
   private readonly held = new Map<string, (() => void) | undefined>();
 
@@ -87,7 +89,7 @@ class World {
           }
         },
         warn: (message) => this.warnings.push(`${id}: ${message}`),
-        debug: () => {},
+        debug: (message) => this.debugLog.push(`${id}: ${message}`),
       },
       desired: () => {
         const value = desired();
@@ -558,7 +560,9 @@ describe("FocusCoordinator", () => {
     await settle();
     a.refresh();
     await vi.advanceTimersByTimeAsync(VERIFY_DELAY_MS);
-    expect(world.warnings).toHaveLength(1);
+    expect(world.warnings).toEqual([
+      "A: Couldn't update workbench.colorCustomizations: Error: settings.json has unsaved changes",
+    ]);
     world.failWrites = false;
     a.refresh();
     await settle();
@@ -655,5 +659,224 @@ describe("FocusCoordinator", () => {
     a.setFocused(false);
     await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS);
     expect(world.background).toBe("#aa0000");
+  });
+
+  it("checks its colors 1250 ms after focus, so it heals a clear that lands as a 1000 ms blur debounce ends", async () => {
+    const world = new World();
+    const b = world.window({ id: "B", background: "#0000bb" });
+    b.setFocused(true);
+    await vi.advanceTimersByTimeAsync(1000);
+    // Another window's blur check read itself as owner before B wrote; its clear lands now.
+    world.settings = { "editor.background": "#111111" };
+    await vi.advanceTimersByTimeAsync(249);
+    expect(world.background).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(world.background).toBe("#0000bb");
+  });
+
+  it("clears 1000 ms after the first blur, not restarting the debounce on a repeated blur event", async () => {
+    const world = new World();
+    const a = world.window({ id: "A", background: "#aa0000" });
+    a.setFocused(true);
+    await settle();
+    a.setFocused(false);
+    await vi.advanceTimersByTimeAsync(500);
+    a.setFocused(false);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(world.settings).toEqual({ "editor.background": "#111111" });
+  });
+
+  it("neither rewrites nor warns when the view already matches and the file can't be read", async () => {
+    const world = new World();
+    world.settings = { "editor.background": "#111111", ...applied("#aa0000") };
+    world.disk = "unreadable";
+    const a = world.window({ id: "A", background: "#aa0000" });
+    a.setFocused(true);
+    await settle();
+    expect(world.writes).toBe(0);
+    expect(world.warnings).toEqual([]);
+  });
+
+  it("rewrites a clear when the view has no setting but the file still holds Toucan's keys", async () => {
+    const world = new World();
+    world.settings = undefined;
+    world.disk = { value: applied("#aa0000") }; // the view missed another window's apply
+    const plain = world.window({ id: "P", background: undefined });
+    plain.setFocused(true);
+    await settle();
+    expect(world.writers).toEqual(["P"]);
+  });
+
+  it("records the first applied color without a warning", async () => {
+    const world = new World();
+    world.applied = false;
+    const a = world.window({ id: "A", background: "#aa0000" });
+    a.setFocused(true);
+    await settle();
+    expect(world.applied).toBe(true);
+    expect(world.warnings).toEqual([]);
+  });
+
+  describe("debug log", () => {
+    it("logs focus, owner, apply, self-check, blur and clear with itself as owner shown as me", async () => {
+      const world = new World();
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.setFocused(true);
+      await vi.advanceTimersByTimeAsync(VERIFY_DELAY_MS);
+      a.setFocused(false);
+      await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS);
+      expect(world.debugLog).toEqual([
+        "A: focused",
+        "A: took ownership",
+        "A: applied #aa0000",
+        "A: verify: focused=true owner=me",
+        "A: colors already applied",
+        "A: blurred",
+        "A: blur check: focused=false owner=me",
+        "A: cleared",
+      ]);
+    });
+
+    it("logs another window's id as the owner it found", async () => {
+      const world = new World();
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.setFocused(true);
+      await settle();
+      world.owner = "B";
+      a.customizationsChanged();
+      await settle();
+      a.setFocused(false);
+      await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS);
+      expect(world.debugLog).toEqual([
+        "A: focused",
+        "A: took ownership",
+        "A: applied #aa0000",
+        "A: verify: focused=true owner=B",
+        "A: blurred",
+        "A: blur check: focused=false owner=B",
+      ]);
+    });
+
+    it("logs that there is nothing to clear when the view has no Toucan keys", async () => {
+      const world = new World();
+      const plain = world.window({ id: "P", background: undefined });
+      plain.setFocused(true);
+      await settle();
+      expect(world.debugLog).toEqual(["P: focused", "P: took ownership", "P: nothing to clear"]);
+    });
+
+    it("logs why a window that never applied a color neither takes ownership nor clears", async () => {
+      const world = new World();
+      world.applied = false;
+      world.owner = "P"; // left over from an earlier session
+      const plain = world.window({ id: "P", background: undefined });
+      plain.setFocused(true);
+      await settle();
+      plain.setFocused(false);
+      await vi.advanceTimersByTimeAsync(BLUR_DEBOUNCE_MS);
+      expect(world.debugLog).toEqual([
+        "P: focused",
+        "P: not taking ownership: no color to apply or clear yet",
+        "P: blurred",
+        "P: blur check: focused=false owner=me",
+        "P: not managing commandCenter.* yet: no color applied in this profile",
+      ]);
+    });
+
+    it("logs a rewrite of a stale view", async () => {
+      const world = new World();
+      world.settings = { ...applied("#aa0000") };
+      world.disk = { value: {} };
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.setFocused(true);
+      await settle();
+      expect(world.debugLog).toEqual([
+        "A: focused",
+        "A: took ownership",
+        "A: settings view is stale; rewriting",
+        "A: applied #aa0000",
+      ]);
+    });
+
+    it("runs no blur check after a refocus within the blur debounce", async () => {
+      const world = new World();
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.setFocused(true);
+      await settle();
+      a.setFocused(false);
+      await vi.advanceTimersByTimeAsync(500);
+      a.setFocused(true);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(world.debugLog).toEqual([
+        "A: focused",
+        "A: took ownership",
+        "A: applied #aa0000",
+        "A: blurred",
+        "A: focused",
+        "A: took ownership",
+        "A: colors already applied",
+        "A: verify: focused=true owner=me",
+        "A: colors already applied",
+      ]);
+    });
+
+    it("runs no pending self-check after a blur", async () => {
+      const world = new World();
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.setFocused(true);
+      await settle();
+      a.setFocused(false);
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(world.debugLog).toEqual([
+        "A: focused",
+        "A: took ownership",
+        "A: applied #aa0000",
+        "A: blurred",
+        "A: blur check: focused=false owner=me",
+        "A: cleared",
+      ]);
+    });
+
+    it("runs no check on a settings change while unfocused", async () => {
+      const world = new World();
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.customizationsChanged();
+      await settle();
+      expect(world.debugLog).toEqual([]);
+    });
+
+    it("runs no pending self-check after dispose", async () => {
+      const world = new World();
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.setFocused(true);
+      await settle();
+      await a.dispose();
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(world.debugLog).toEqual([
+        "A: focused",
+        "A: took ownership",
+        "A: applied #aa0000",
+        "A: blur check: focused=false owner=me",
+        "A: cleared",
+      ]);
+    });
+
+    it("runs no pending blur check after dispose", async () => {
+      const world = new World();
+      const a = world.window({ id: "A", background: "#aa0000" });
+      a.setFocused(true);
+      await settle();
+      a.setFocused(false);
+      await a.dispose();
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(world.debugLog).toEqual([
+        "A: focused",
+        "A: took ownership",
+        "A: applied #aa0000",
+        "A: blurred",
+        "A: blur check: focused=false owner=me",
+        "A: cleared",
+      ]);
+    });
   });
 });
