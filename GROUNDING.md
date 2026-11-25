@@ -28,3 +28,10 @@ Run from the root; Turborepo runs lint, typecheck, test and build in every packa
 ## Primary tech + key skills
 
 VS Code extension (`marco-daniel.toucan`): pnpm 12, TypeScript 7, tsdown, oxlint, oxfmt, vitest 5, vscode-ext-gen, culori. Plain VS Code API, no framework. Repo skill: `/docs-sync` (`.claude/skills/docs-sync/`) reports doc drift since its last run.
+
+## Housekeeping
+
+- **Inspection record**: repo `docs/housekeeping`
+- **ADRs**: `docs/adr`
+- **Board**: GitHub Project `Marco-Daniel/4`
+- **Human-judgement label**: `hitl`
