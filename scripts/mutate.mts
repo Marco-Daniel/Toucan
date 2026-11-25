@@ -6,11 +6,11 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
 
 /** Never mutated: it locks files, writes qmd's cache and starts detached processes (ADR-0012). */
-export const EXCLUDED = "scripts/qmd/";
+const EXCLUDED = "scripts/qmd/";
 /** The mutate command itself, never mutated (see the header). */
-export const ENTRY = "scripts/mutate-cli.mts";
+const ENTRY = "scripts/mutate-cli.mts";
 /** The extension's package folder, whose scripts/ are never mutated: they signal, remove and spawn processes. */
-export const EXTENSION = "apps/extension";
+const EXTENSION = "apps/extension";
 /** Added to every explicit file list, which replaces the config's list and its exclusions. */
 export const EXCLUSIONS = [`!${EXCLUDED}**`, `!${ENTRY}`];
 
