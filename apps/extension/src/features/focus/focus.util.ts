@@ -252,7 +252,8 @@ export class FocusCoordinator {
 
   /**
    * Queues a task from a sync event handler or timer, which has no caller to
-   * await it; dispose waits behind it in the queue.
+   * await it; dispose waits behind it in the queue. enqueue logs every failure
+   * and never rejects, so handOff only starts it.
    */
   private post(task: () => Promise<void>): void {
     handOff({ log: this.ports, what: "Focus handling", task: () => this.enqueue(task) });
