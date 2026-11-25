@@ -1,5 +1,5 @@
 // import vscode
-import { commands as vscodeCommands, window } from "vscode";
+import { QuickPickItemKind, commands as vscodeCommands, window } from "vscode";
 
 // import adapters
 import { swatch, writeRepos } from "./commandUi.adapter.ts";
@@ -33,6 +33,7 @@ export async function setGlyph({ host, name }: CommandArgs): Promise<void> {
   const items: (QuickPickItem & { glyph?: Glyph })[] = glyphPickItems({
     current: repo.config.glyph,
     icon: (glyph) => swatch({ glyph, hex: repo.config.background }),
+    separator: QuickPickItemKind.Separator,
   });
   const picked = await pickWithPreview({
     host,
