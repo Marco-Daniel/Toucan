@@ -46,6 +46,16 @@ describe("statusBarBackground", () => {
     ).toBe("#222222");
   });
 
+  it("applies no theme block when the theme name is unknown, not even one keyed [undefined]", () => {
+    expect(
+      statusBarBackground({
+        kind: "dark",
+        themeName: undefined,
+        customizations: { "[undefined]": { "statusBar.background": "#222222" } },
+      }),
+    ).toBe("#181818");
+  });
+
   it("ignores an override that isn't a color", () => {
     expect(
       statusBarBackground({

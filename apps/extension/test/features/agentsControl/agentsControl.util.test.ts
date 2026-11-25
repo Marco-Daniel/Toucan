@@ -2,7 +2,10 @@
 import { describe, expect, it } from "vitest";
 
 // import utils
-import { agentsControlAction } from "../../../src/features/agentsControl/agentsControl.util.ts";
+import {
+  AGENTS_CONTROL,
+  agentsControlAction,
+} from "../../../src/features/agentsControl/agentsControl.util.ts";
 
 // import types
 import type { AgentsControlState } from "../../../src/features/agentsControl/agentsControl.util.ts";
@@ -34,5 +37,11 @@ describe("agentsControlAction", () => {
   it("does nothing when a workspace value decides it", () => {
     expect(agentsControlAction({ ...base, workspaceDecides: true })).toBe("none");
     expect(agentsControlAction({ ...base, workspaceDecides: true, declined: true })).toBe("none");
+  });
+});
+
+describe("AGENTS_CONTROL", () => {
+  it("names VS Code's chat.agentsControl.enabled setting, the one the offer reads and writes", () => {
+    expect(AGENTS_CONTROL).toBe("chat.agentsControl.enabled");
   });
 });

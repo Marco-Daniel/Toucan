@@ -60,6 +60,16 @@ describe("withBackground", () => {
       ["__proto__", "#ff0000"],
     ]);
   });
+
+  it("sets the key writable and configurable, as a plain assignment would", () => {
+    const result = withBackground({ raw: { webshop: "#000" }, repo: "webshop", background: RED });
+    expect(Object.getOwnPropertyDescriptor(result, "webshop")).toEqual({
+      value: "#ff0000",
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
+  });
 });
 
 describe("withGlyph", () => {
