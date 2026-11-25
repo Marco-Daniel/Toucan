@@ -5,6 +5,7 @@ import { isRecord } from "../../shared/records/records.util.ts";
 import { errorText, tryCatch, tryCatchSync } from "../../shared/async/tryCatch.util.ts";
 import { createTimer } from "../../shared/async/timer.util.ts";
 import { logFailure } from "../../shared/async/logFailure.util.ts";
+import { handOff } from "../../shared/async/handOff.util.ts";
 
 // import types
 import type { CommandCenterColors } from "../../shared/model/model.types.ts";
@@ -251,12 +252,11 @@ export class FocusCoordinator {
 
   /**
    * Queues a task from a sync event handler or timer, which has no caller to
-   * await it. The queue owns the promise: enqueue logs every failure and never
-   * rejects, and dispose waits behind it.
+   * await it; dispose waits behind it in the queue. enqueue logs every failure
+   * and never rejects, so handOff only starts it.
    */
   private post(task: () => Promise<void>): void {
-    // oxlint-disable-next-line typescript/no-floating-promises -- no caller to await (see above); the queue never rejects
-    this.enqueue(task);
+    handOff({ log: this.ports, what: "Focus handling", task: () => this.enqueue(task) });
   }
 
   /** Runs tasks one at a time, so this window's own writes never interleave. */

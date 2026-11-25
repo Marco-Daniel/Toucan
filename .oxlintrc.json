@@ -87,6 +87,11 @@
       }
     },
     {
+      // The glyph table and its geometry: the numbers are the design.
+      "files": ["**/features/glyphs/glyphDesign.consts.ts"],
+      "rules": { "typescript/no-magic-numbers": "off" }
+    },
+    {
       // The scripts run qmd and file steps in order on purpose.
       "files": ["**/scripts/**"],
       "rules": { "no-await-in-loop": "off" }
