@@ -74,7 +74,7 @@ describe("package.json sidebar block", () => {
     expect(manifest.contributes).not.toHaveProperty("viewsContainers");
   });
 
-  it("no longer has the sidebar visibility setting (sidebar-explorer/0002)", () => {
+  it("contributes exactly these settings, without the visibility setting (sidebar-explorer/0002)", () => {
     expect(Object.keys(properties)).toEqual([
       "toucan.repos",
       "toucan.sidebarBlock.enabled",
