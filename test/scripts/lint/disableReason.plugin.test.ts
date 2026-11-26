@@ -56,6 +56,10 @@ describe("the disable-reason rule", () => {
     ["a disable with a reason", " oxlint-disable-next-line no-void -- nothing to await"],
     ["a reason glued to `--`", " oxlint-disable-next-line no-void --nothing to await"],
     ["a reason on the next line of a block", " oxlint-disable no-void\n   -- nothing to await "],
+    [
+      "a reason on the line after `--`",
+      " oxlint-disable-next-line no-void --\n   nothing to await ",
+    ],
     ["a reason that starts with code", " oxlint-disable-next-line no-void -- `{}` is meant"],
     ["a reason of only a digit", " oxlint-disable-next-line no-void -- 2"],
     ["a reason of only a non-ASCII letter", " oxlint-disable-next-line no-void -- é"],
