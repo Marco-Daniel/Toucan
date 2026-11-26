@@ -8,7 +8,7 @@ The ADRs in [docs/adr/](../docs/adr/README.md) are the most important docs: the 
 
 - **constraint**: a rule code must follow. Changing it needs a new ADR that supersedes it.
 - **background**: context that explains the system.
-- **direction**: where the code is heading. `Migration: as touched` means move code you change; `tracked` means planned work.
+- **direction**: where the code is heading. `Migration: as touched` means move code you change; `tracked` means planned work; `done <date>` means the code has arrived and nothing is left to move.
 - Cite an ADR as `ADR-NNNN` in code and docs; a test fails on one that doesn't exist, or (in code and the guides) isn't Accepted.
 - Before changing an area, search its ADRs (qmd, `toucan-docs` `adr/`).
 - `docs/plans/<plan>/` holds one piece of work's intent and history, not rules.
@@ -24,14 +24,14 @@ Always look things up in the docs through qmd (ADR-0011), wherever you work in t
 
 ## Code rules
 
-- **Layout** (ADR-0010): the extension lives in `apps/extension/`, with `src/core/`, `src/shared/<topic>/`, `src/features/<feature>/` under it, role suffixes (`.adapter`, `.util`, `.consts`, `.types`, `.view`, `.messages`), no barrels or re-exports. Only adapters and `apps/extension/src/core/extension.ts` import `vscode` (ADR-0006). A package's `test/` mirrors its `src/`; shared test helpers go in its `test/helpers/<topic>.ts`. The repo's own tooling (qmd docs search, mutate, the marketplace-upload helper) lives in the root `scripts/` and `test/`.
+- **Layout** (ADR-0010): the extension lives in `apps/extension/`, with `src/core/`, `src/shared/<topic>/`, `src/features/<feature>/` under it, role suffixes (`.adapter`, `.util`, `.consts`, `.types`, `.view`, `.messages`), no barrels or re-exports. Only adapters and `apps/extension/src/core/extension.ts` import `vscode` (ADR-0006). A package's `test/` mirrors its `src/`; shared test helpers go in its `test/helpers/<topic>.ts`. The repo's own tooling (qmd docs search, mutate, the marketplace-upload helper, the lint plugin) lives in the root `scripts/` and `test/`.
 - **Names:** functions are verbs, booleans read as `is`/`has` questions, constants `UPPER_SNAKE`, types PascalCase, files camelCase with their role suffix.
 - **Imports:** grouped under comment headers in this order, only the ones needed: `// import vscode`, `// import libraries` (including `node:*`), `// import adapters`, `// import utils`, `// import views`, `// import consts`, `// import messages`, `// import types`. Generated tables go under `// import consts`; test helpers and suffix-less scripts under `// import utils`. Types come in through their own `import type`; importing a path twice is fine.
 - **Shared from the start:** code another feature could use unchanged goes to `shared/<topic>/` at once, even with one caller; feature code stays in its feature. No speculative options, generics nobody needs, single-call wrappers, feature rules dressed as generic code, or merged look-alikes that change for different reasons.
 - **Object arguments:** two or more parameters take one object, `fn({ a, b })`, typed by a named `<Function>Args` interface (`<Class>Args` for a constructor) next to it, or an existing domain type. Positional stays for callbacks whose shape someone else fixes, type guards, and single-value functions and port methods. The geometry helpers in `glyphDesign.consts.ts` are the one documented exception; new ones need the same agreement and a comment.
 - **Errors** (ADR-0009), in source and scripts alike: catch with `tryCatch(() => work())` or `tryCatchSync` (`apps/extension/src/shared/async/tryCatch.util.ts`), handle `error !== null`, show it with `errorText(error)`; cleanup then rethrow is tryCatch, cleanup, `throw error`. `try/finally` only for cleanup that must run; `.catch()` only on a chain nobody awaits, with a comment.
 - **Promises:** await every one; no `void`. A non-modal notification goes through `notify()` (`apps/extension/src/core/notify.adapter.ts`). A sync event handler or timer with no caller to await hands its work off: in the extension through `handOff()` (`apps/extension/src/shared/async/handOff.util.ts`), which logs a failure; elsewhere with a `.catch()` that logs it, as under Errors.
-- **Lint** (ADR-0007, ADR-0008): every finding is an error. Fix it; disable a rule only where a fix makes the code worse, and state the reason after `--` in the `oxlint-disable` comment.
+- **Lint** (ADR-0007, ADR-0008): every finding is an error. Fix it; disable a rule only where a fix makes the code worse, and state the reason after `--` in the `oxlint-disable` comment; lint fails one without it, apart from the few forms ADR-0008 lists.
 - **Exports:** remove one nothing uses; one only tests use may stay.
 
 ## Tests must be able to fail

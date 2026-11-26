@@ -9,8 +9,14 @@
   // Tasks see the whole environment, as they did before Turborepo: the tests
   // and scripts read HOME, PATH, CI and the qmd variables.
   "envMode": "loose",
-  // Root configs every package's lint and format run reads.
-  "globalDependencies": [".oxlintrc.json", ".oxfmtrc.json", ".nvmrc"],
+  // Root configs every package's lint and format run reads, and the lint
+  // plugin .oxlintrc.json loads: a change to the rule re-runs every lint.
+  "globalDependencies": [
+    ".oxlintrc.json",
+    "scripts/lint/disableReason.plugin.mts",
+    ".oxfmtrc.json",
+    ".nvmrc"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -115,10 +121,10 @@
       "dependsOn": ["build"],
       "outputs": []
     },
-    // The root's own tooling: docs search, mutate, the marketplace-upload helper
-    // and the ADR log test. It imports from the extension, uses the Vitest base
-    // and checks the ADRs cited in every package, so every package counts as its
-    // input too.
+    // The root's own tooling: docs search, mutate, the marketplace-upload helper,
+    // the lint plugin and the ADR log test. It imports from the extension, uses
+    // the Vitest base and checks the ADRs cited in every package, so every
+    // package counts as its input too.
     "//#lint:repo": {
       "inputs": ["$TURBO_DEFAULT$", "apps/**", "config/**", "packages/**", "docs/adr/**"],
       "outputs": []
