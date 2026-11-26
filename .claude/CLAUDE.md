@@ -8,7 +8,7 @@ The ADRs in [docs/adr/](../docs/adr/README.md) are the most important docs: the 
 
 - **constraint**: a rule code must follow. Changing it needs a new ADR that supersedes it.
 - **background**: context that explains the system.
-- **direction**: where the code is heading. `Migration: as touched` means move code you change; `tracked` means planned work.
+- **direction**: where the code is heading. `Migration: as touched` means move code you change; `tracked` means planned work; `done <date>` means the code has arrived and nothing is left to move.
 - Cite an ADR as `ADR-NNNN` in code and docs; a test fails on one that doesn't exist, or (in code and the guides) isn't Accepted.
 - Before changing an area, search its ADRs (qmd, `toucan-docs` `adr/`).
 - `docs/plans/<plan>/` holds one piece of work's intent and history, not rules.
