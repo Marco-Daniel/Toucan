@@ -25,7 +25,9 @@ updates:
   # first document of a two-document pnpm 12 lockfile like ours, so security
   # alerts may miss packages). If its pull requests fail, or CI's
   # `pnpm install --frozen-lockfile` rejects them, switch this block off again
-  # and record why.
+  # and record why. Direct dependencies are pinned (`savePrefix` in
+  # pnpm-workspace.yaml), so with this block off they stay where they are until
+  # someone bumps them by hand, advisory fixes included.
   - package-ecosystem: npm
     directory: /
     schedule:
