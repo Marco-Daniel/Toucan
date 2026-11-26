@@ -5,8 +5,8 @@ packages:
 
 # One version of each tool shared by several packages.
 catalog:
-  "@resvg/resvg-js": ^2.6.2
-  "@types/node": ^22.20.5
+  "@resvg/resvg-js": 2.6.2
+  "@types/node": 22.20.5
   "@types/pngjs": 6.0.5
   # Exact: oxlint's JS plugins are alpha and outside semver, so every bump needs a
   # pull request (Dependabot's lint-format group), where the disable-reason
@@ -14,8 +14,8 @@ catalog:
   oxlint: 1.94.0
   oxlint-tsgolint: 7.0.2007
   pngjs: 7.0.0
-  typescript: ^7.0.2
-  vitest: ^5.0.5
+  typescript: 7.0.2
+  vitest: 5.0.5
 
 # Floors for transitive dependencies with published advisories, so the weekly
 # audit stays green. Each range selects only the vulnerable versions; drop the
@@ -30,6 +30,12 @@ overrides:
 allowBuilds:
   "@vscode/vsce-sign": false
   esbuild: false
+
+# Dependencies are pinned to exact versions, and `pnpm add` saves new ones that
+# way, so package.json states what is installed and a re-resolve (a regenerated
+# lockfile, `pnpm update`) moves no direct dependency. Bumps come as pull
+# requests from Dependabot.
+savePrefix: ""
 
 # Supply-chain checks. pnpm applies them on every install, including CI's
 # frozen one, and fails if a lockfile entry breaks them.

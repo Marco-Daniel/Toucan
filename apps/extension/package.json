@@ -50,8 +50,8 @@
     "screenshots": "\"$npm_execpath\" package && node scripts/screenshots/capture.mts --vsix toucan-$npm_package_version.vsix"
   },
   "dependencies": {
-    "culori": "^4.0.2",
-    "jsonc-parser": "^3.3.1"
+    "culori": "4.0.2",
+    "jsonc-parser": "3.3.1"
   },
   "devDependencies": {
     "@resvg/resvg-js": "catalog:",
@@ -59,23 +59,23 @@
     "@toucan/releases": "workspace:*",
     "@toucan/ts-config": "workspace:*",
     "@toucan/vite-config": "workspace:*",
-    "@types/culori": "^4.0.1",
+    "@types/culori": "4.0.1",
     "@types/node": "catalog:",
     "@types/pngjs": "catalog:",
     "@types/vscode": "1.138.0",
-    "@vscode/vsce": "^4.1.0",
+    "@vscode/vsce": "4.1.0",
     "clipper-lib": "6.4.2",
     "gifenc": "1.0.3",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "pngjs": "catalog:",
-    "svg2ttf": "^6.1.0",
-    "svgicons2svgfont": "^16.0.0",
-    "tsdown": "^0.23.2",
-    "ttf2woff": "^3.0.0",
+    "svg2ttf": "6.1.0",
+    "svgicons2svgfont": "16.0.0",
+    "tsdown": "0.23.2",
+    "ttf2woff": "3.0.0",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "vscode-ext-gen": "^1.6.0"
+    "vscode-ext-gen": "1.6.0"
   },
   "contributes": {
     "configuration": {
