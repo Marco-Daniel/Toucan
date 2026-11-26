@@ -16,7 +16,7 @@ catalog:
   oxlint-tsgolint: 7.0.2007
   pngjs: 7.0.0
   typescript: 7.0.2
-  vitest: 5.0.5
+  vitest: 5.1.1
 
 # Floors for transitive dependencies with published advisories, so the weekly
 # audit stays green. Each range selects only the vulnerable versions; drop the
