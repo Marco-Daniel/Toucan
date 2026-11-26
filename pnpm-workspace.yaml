@@ -36,7 +36,8 @@ allowBuilds:
 # way, so package.json states what is installed and a re-resolve (a regenerated
 # lockfile, `pnpm update`) moves no direct dependency. Bumps come as pull
 # requests from Dependabot's npm block; while that trial is off, a pin moves
-# only by hand (`pnpm update <pkg> --latest`).
+# only by hand: edit it (in its package.json, or the catalog above) and run
+# `pnpm install`.
 savePrefix: ""
 
 # Supply-chain checks. pnpm applies them on every install, including CI's
